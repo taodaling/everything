@@ -14,7 +14,7 @@ public class CodeTemplate {
 
         Charset charset = Charset.forName("ascii");
 
-        FastIO io = local ? new FastIO(new FileInputStream("E:\\DATABASE\\TESTCASE\\Code.in"), System.out, charset) : new FastIO(System.in, System.out, charset);
+        FastIO io = local ? new FastIO(new FileInputStream("D:\\DATABASE\\TESTCASE\\Code.in"), System.out, charset) : new FastIO(System.in, System.out, charset);
         Task task = new Task(io);
 
         if (async) {

@@ -30,7 +30,7 @@ public class TestCaseExecutor implements Callable<Boolean> {
     @Override
     public Boolean call() {
         boolean result = true;
-        for (int i = 0; i < testTime; i++) {
+        for (int i = 1; i != testTime; i++) {
             MultiDirectionInput input = new MultiDirectionInput(inputFactory.newInstance(), 4);
             MultiDirectionInput output1 = null;
             MultiDirectionInput output2 = null;
@@ -53,9 +53,11 @@ public class TestCaseExecutor implements Callable<Boolean> {
 
 
             try {
-                output1 = new MultiDirectionInput(actualSolution.newInstance().apply(input.getInput(1)), 2);
+                output1 = new MultiDirectionInput(expectedSolution.newInstance().apply(input.getInput(1)), 2);
                 output2 = new MultiDirectionInput(actualSolution.newInstance().apply(input.getInput(2)), 2);
             } catch (Exception t) {
+                t.printStackTrace();
+
                 result = false;
                 output1 = new MultiDirectionInput(EmptyInput.getInstance(), 1);
                 output2 = new MultiDirectionInput(EmptyInput.getInstance(), 1);

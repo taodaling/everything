@@ -8,6 +8,10 @@ public class StringUtils {
     private StringUtils() {
     }
 
+    public static String valueOf(Object s) {
+        return s == null ? "" : s.toString();
+    }
+
     public static boolean isEmpty(String s) {
         return s == null || s.isEmpty();
     }

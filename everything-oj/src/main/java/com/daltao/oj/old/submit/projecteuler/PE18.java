@@ -1,6 +1,6 @@
 package com.daltao.oj.old.submit.projecteuler;
 
-import cn.dalt.oj.old.template.BlockReader;
+import com.daltao.oj.template.BlockReader;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -13,8 +13,8 @@ import java.util.List;
  */
 public class PE18 {
     public static final int MOD = (int) (1e9 + 7);
-    public static BlockReader input;
     public static PrintStream output;
+    public static BlockReader input;
 
     public static void main(String[] args) throws FileNotFoundException {
         init();
