@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConcurrentReferenceCache<K, V> implements Cache<K, V> {
     private static final int REGION_NUMBER = 16;
     private Reference<Map<K, V>>[] references;
-    private volatile Object volatileObject = null;
+    private volatile Reference volatileObject = null;
     private Object mutex = new Object();
 
     public ConcurrentReferenceCache() {
@@ -24,8 +24,8 @@ public class ConcurrentReferenceCache<K, V> implements Cache<K, V> {
             synchronized (mutex) {
                 map = references[h].get();
                 if (map == null) {
-                    volatileObject = new ConcurrentHashMap<>(1);
-                    references[h] = new SoftReference(volatileObject);
+                    volatileObject = new SoftReference(new ConcurrentHashMap<>(1));
+                    references[h] = volatileObject;
                     map = (Map<K, V>) volatileObject;
                 }
             }

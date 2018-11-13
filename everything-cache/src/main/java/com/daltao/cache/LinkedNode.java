@@ -16,11 +16,6 @@ public abstract class LinkedNode<T extends LinkedNode<T>> {
     }
 
     public void leave() {
-        if (next == this) {
-            //It a loop
-            return;
-        }
-
         prev.next = next;
         next.prev = prev;
     }

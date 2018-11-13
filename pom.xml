@@ -19,6 +19,7 @@
         <module>everything-tool</module>
         <module>everything-test</module>
         <module>everything-parent</module>
+        <module>everything-lsm</module>
     </modules>
 
 
