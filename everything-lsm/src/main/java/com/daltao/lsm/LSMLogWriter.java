@@ -1,5 +1,5 @@
 package com.daltao.lsm;
 
-public interface LSMLogWriter {
+public interface LSMLogWriter extends AutoCloseable{
     void append(byte[] key, byte[] value);
 }

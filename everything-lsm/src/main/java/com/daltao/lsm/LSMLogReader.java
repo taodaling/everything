@@ -2,5 +2,5 @@ package com.daltao.lsm;
 
 import java.util.Iterator;
 
-public interface LSMLogReader extends Iterator<LSMEntry>{
+public interface LSMLogReader extends Iterator<LSMEntry>, AutoCloseable{
 }

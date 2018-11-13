@@ -1,6 +1,6 @@
 package com.daltao.lsm;
 
-public interface LSMReader {
+public interface LSMReader extends AutoCloseable{
     int recordNum();
 
     byte[] keyOf(int index);

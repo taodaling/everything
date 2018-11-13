@@ -53,4 +53,8 @@ public class StringUtils {
         }
         return builder.toString();
     }
+
+    public static String defaultString(String s, String defaultStr) {
+        return s == null ? defaultStr : s;
+    }
 }
