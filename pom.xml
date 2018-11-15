@@ -7,6 +7,7 @@
     <groupId>com.daltao</groupId>
     <artifactId>everything</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
     <modules>
         <module>everything-util</module>
@@ -19,6 +20,7 @@
         <module>everything-tool</module>
         <module>everything-test</module>
         <module>everything-parent</module>
+        <module>everything-simple</module>
         <module>everything-lsm</module>
     </modules>
 
