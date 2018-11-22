@@ -15,9 +15,34 @@ public class SplayNode {
     SplayNode left = NIL;
     SplayNode right = NIL;
     SplayNode father = NIL;
+    int key;
 
-    public static void merge(SplayNode a, SplayNode b) {
+    /**
+     * Make the largest key node as the root of this tree and return new root.
+     * If no node less than or equal to key, then the smallest key node will be root.
+     */
+    public static SplayNode asRoot(SplayNode node, int key) {
+        if (node == NIL) {
+            return NIL;
+        }
 
+        SplayNode parent = NIL;
+        SplayNode trace = node;
+        while (trace != NIL && trace.key != key) {
+            parent = trace;
+            if (trace.key > key) {
+                trace = trace.left;
+            } else {
+                trace = trace.right;
+            }
+        }
+
+        if (trace != NIL) {
+            splay(trace);
+            return trace;
+        }
+        splay(parent);
+        return parent;
     }
 
     public static void splay(SplayNode x) {

@@ -6,8 +6,14 @@ import java.util.Random;
 public class TreapNode implements Cloneable {
     private static Random random = new Random();
 
-    TreapNode left;
-    TreapNode right;
+    private static TreapNode NIL = new TreapNode();
+
+    static {
+        NIL.left = NIL.right = NIL;
+    }
+
+    TreapNode left = NIL;
+    TreapNode right = NIL;
     int key;
 
     @Override
