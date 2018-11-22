@@ -1,114 +1,134 @@
 package com.daltao.oj.submit;
 
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
 
 public class LTSolution {
 
     public static void main(String[] args) {
-        System.out.println(new Solution().superpalindromesInRange("1",
-                "2"));
+        System.out.println(new Solution().shortestSuperstring(Arrays.asList("catg","ctaagt","gcta","ttca","atgcatc").toArray(new String[0])));
     }
 
 
 
     static class Solution {
-        public static long[] cache = new long[100000];
-        public static int cacheLen = 0;
-        public static int[] buf = new int[100];
-        public static long[] retval = new long[2];
-        public static long[] radix = new long[18];
-        static {
-            loadCache();
-        }
+        public String shortestSuperstring(String[] A) {
+            n = A.length;
+            mem = new int[1 << n][n];
+            visited = new boolean[1 << n][n];
+            last = new int[1 << n][n];
+            profit = new int[n][n];
 
-        public int superpalindromesInRange(String L, String R) {
-
-            return notMoreThan(Long.parseLong(R)) - notMoreThan(Long.parseLong(L) - 1);
-        }
-
-        public static int notMoreThan(long v) {
-            int num = 0;
-            for (int i = 0; i < cacheLen; i++) {
-                if (cache[i] <= v) {
-                    num++;
-                } else {
-                    break;
+            for(int i = 0; i < n; i++)
+            {
+                for(int j = 0; j < n; j++)
+                {
+                    profit[i][j] = cover(A[i], A[j]);
                 }
             }
-            return num;
-        }
 
-
-        public static void loadCache() {
-            radix[1] = 1;
-            for (int i = 2; i < radix.length; i++) {
-                radix[i] = radix[i - 1] * 10;
+            int maxIndex = 0;
+            int maxValue = -1;
+            int mask = (1 << n) - 1;
+            for(int i = 0; i < n; i++)
+            {
+                int val = solve(mask, i);
+                if(val > maxValue)
+                {
+                    maxValue = val;
+                    maxIndex = i;
+                }
             }
 
-            cache[cacheLen++] = 0;
-            long limit = (long) 1e9;
-            for (int i = 1; ; i++) {
-                long[] val = asPalindrom(i);
-                if (val[0] > limit && val[1] > limit) {
-                    break;
-                }
+            System.out.println(maxValue);
 
-                if (val[0] <= limit) {
-                    long sq = val[0] * val[0];
-                    if (isPalindrom(sq)) {
-                        cache[cacheLen++] = sq;
+            int lastIndex = maxIndex;
+            Deque<Integer> deque = new ArrayDeque();
+            int bits = mask;
+            while(bits != 0)
+            {
+                deque.addFirst(lastIndex);
+                int tempLastIndex = lastIndex;
+                lastIndex = last[bits][lastIndex];
+                bits &= ~(1 << tempLastIndex);
+            }
+
+            int lastKey = deque.removeFirst();
+            StringBuilder builder = new StringBuilder(A[lastKey]);
+            while(!deque.isEmpty())
+            {
+                int currentKey = deque.removeFirst();
+                builder.setLength(builder.length() - profit[lastKey][currentKey]);
+                builder.append(A[currentKey]);
+                lastKey = currentKey;
+            }
+
+            return builder.toString();
+        }
+
+        int[][] mem;
+        boolean[][] visited;
+        int[][] last;
+        int n;
+        int[][] profit;
+
+        private int solve(int bits, int b)
+        {
+            if(!visited[bits][b])
+            {
+                visited[bits][b] = true;
+
+                int remainBits = bits & ~(1 << b);
+                if(remainBits == 0)
+                {
+                    mem[bits][b] = 0;
+                }
+                else
+                {
+                    mem[bits][b] = -1;
+                    last[bits][b] = -1;
+                    for(int i = 0; i < n; i++)
+                    {
+                        if(((remainBits >> i) & 1) == 0)
+                        {
+                            continue;
+                        }
+                        int val = profit[i][b] + solve(remainBits, i);
+                        if(val > mem[bits][b])
+                        {
+                            mem[bits][b] = val;
+                            last[bits][b] = i;
+                        }
                     }
                 }
-                if (val[1] <= limit) {
-                    long sq = val[1] * val[1];
-                    if (isPalindrom(sq)) {
-                        cache[cacheLen++] = sq;
-                    }
-                }
             }
 
-            Arrays.sort(cache, 0, cacheLen);
+            return mem[bits][b];
         }
 
-        public static boolean isPalindrom(long n) {
-            int len = toIntArray(n);
-            int l = 1;
-            int r = len;
-            while (l < r) {
-                if (buf[l] != buf[r]) {
+        private static int cover(String a, String b)
+        {
+            for(int i = Math.min(a.length(), b.length()); i > 0; i--)
+            {
+                if(isCover(a, b, i))
+                {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+        private static boolean isCover(String a, String b, int l)
+        {
+            for(int i = a.length() - l, j = 0, until = a.length(); i < until; i++, j++)
+            {
+                if(a.charAt(i) != b.charAt(j))
+                {
                     return false;
                 }
-                l++;
-                r--;
             }
             return true;
-        }
-
-        public static int toIntArray(long n) {
-            int i = 1;
-            for (; n > 0; i++, n /= 10) {
-                buf[i] = (int) (n % 10);
-            }
-            return i - 1;
-        }
-
-        public static long[] asPalindrom(int n) {
-            int i = toIntArray(n);
-
-            int m = n;
-
-            long even = m * radix[i + 1];
-            long odd = m * radix[i];
-            for (int j = 1; j <= i; j++) {
-                even += radix[j] * buf[i - j + 1];
-                if (i != j) {
-                    odd += radix[j] * buf[i - j + 1];
-                }
-            }
-
-            retval[0] = odd;
-            retval[1] = even;
-            return retval;
         }
     }
 
