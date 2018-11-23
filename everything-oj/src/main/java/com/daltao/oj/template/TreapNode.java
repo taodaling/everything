@@ -32,8 +32,8 @@ public class TreapNode implements Cloneable {
     }
 
     private static TreapNode[] split(TreapNode root, int key) {
-        if (root == null) {
-            return new TreapNode[2];
+        if (root == NIL) {
+            return new TreapNode[]{NIL, NIL};
         }
         root.pushDown();
         TreapNode[] trees;
@@ -51,10 +51,10 @@ public class TreapNode implements Cloneable {
     }
 
     private static TreapNode merge(TreapNode a, TreapNode b) {
-        if (a == null) {
+        if (a == NIL) {
             return b;
         }
-        if (b == null) {
+        if (b == NIL) {
             return a;
         }
         if (random.nextBoolean()) {
@@ -70,5 +70,31 @@ public class TreapNode implements Cloneable {
         }
         a.pushUp();
         return a;
+    }
+
+    public static int toArray(TreapNode root, int[] data, int offset) {
+        if (root == NIL) {
+            return offset;
+        }
+        offset = toArray(root.left, data, offset);
+        data[offset++] = root.key;
+        offset = toArray(root.right, data, offset);
+        return offset;
+    }
+
+    public static void toString(TreapNode root, StringBuilder builder) {
+        if (root == NIL) {
+            return;
+        }
+        toString(root.left, builder);
+        builder.append(root.key).append(',');
+        toString(root.right, builder);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder().append(key).append(":");
+        toString(this, builder);
+        return builder.toString();
     }
 }

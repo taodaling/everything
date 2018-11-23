@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Comparator;
-import java.util.Random;
 
 public class BZOJ3224V2 {
     public static void main(String[] args) throws Exception {
@@ -15,7 +14,8 @@ public class BZOJ3224V2 {
 
         Charset charset = Charset.forName("ascii");
 
-        FastIO io = local ? new FastIO(new FileInputStream("D:\\DATABASE\\TESTCASE\\Code.in"), System.out, charset) : new FastIO(System.in, System.out, charset);
+        FastIO io = local ? new FastIO(new FileInputStream("/Users/daltao/DATABASE/TESTCASE/Code.in"), System.out, charset) : new FastIO(System.in, System.out,
+                charset);
         Task task = new Task(io);
 
         if (async) {
@@ -49,100 +49,89 @@ public class BZOJ3224V2 {
         public void solve() {
             int n = io.readInt();
 
-            SplayNode root = SplayNode.NIL;
+            SplayNode root = new SplayNode();
+            root.key = Integer.MIN_VALUE;
             for (int i = 0; i < n; i++) {
                 int cmd = io.readInt();
                 int x = io.readInt();
                 switch (cmd) {
-                    case 1: {
-                        //insert
-                        root = SplayNode.asRoot(root, x);
-                        if (root.key != x) {
-                            SplayNode node = new SplayNode();
-                            node.key = x;
-                            if (root.key < x) {
-                                node.setRight(root.right);
-                                node.pushUp();
-                                root.setRight(node);
-                                root.pushUp();
-                            } else {
-                                root.setLeft(node);
-                                root.pushUp();
-                            }
-                            SplayNode.splay(node);
-                            root = node;
-                        }
-
-                        root.cnt++;
+                case 1: {
+                    //insert
+                    root = SplayNode.asRoot(root, x);
+                    if (root.key != x) {
+                        SplayNode node = new SplayNode();
+                        node.key = x;
+                        node.setRight(root.right);
+                        node.pushUp();
+                        root.setRight(node);
                         root.pushUp();
+                        SplayNode.splay(node);
+                        root = node;
                     }
-                    break;
-                    case 2: {
-                        //delete
-                        root = SplayNode.asRoot(root, x);
-                        if (root.key == x) {
-                            root.cnt--;
-                            root.pushUp();
-                            if (root.cnt == 0) {
-                                if (root.left == SplayNode.NIL || root.right == SplayNode.NIL) {
-                                    if (root.left == SplayNode.NIL) {
-                                        root = root.right;
-                                    } else {
-                                        root = root.left;
-                                    }
-                                    root.father = SplayNode.NIL;
-                                } else {
-                                    root.left.father = SplayNode.NIL;
-                                    SplayNode left = SplayNode.asRoot(root.left, x);
-                                    left.setRight(root.right);
-                                    left.pushUp();
-                                    root = left;
-                                }
-                            }
-                        }
-                    }
-                    break;
-                    case 3: {
-                        //query rank
-                        root = SplayNode.asRoot(root, x - 1);
-                        io.cache.append(root.size - root.right.size + 1).append('\n');
-                        break;
-                    }
-                    case 4: {
-                        //query k-th
-                        int k = x;
-                        SplayNode trace = root;
-                        while (true) {
-                            if (trace.left.size >= k) {
-                                trace = trace.left;
-                            } else {
-                                k -= trace.size - trace.right.size;
-                                if (k <= 0) {
-                                    break;
-                                } else {
-                                    trace = trace.right;
-                                }
-                            }
-                        }
-                        SplayNode.splay(trace);
-                        root = trace;
-                        io.cache.append(trace.key).append('\n');
-                    }
-                    break;
-                    case 5: {
-                        root = SplayNode.asRoot(root, x - 1);
-                        io.cache.append(root.key).append('\n');
-                        break;
-                    }
-                    case 6: {
-                        root = SplayNode.asRoot(root, x);
-                        root.right.father = SplayNode.NIL;
-                        root.setRight(SplayNode.asRoot(root.right, x));
-                        root.pushUp();
 
-                        io.cache.append(root.right.key).append('\n');
-                        break;
+                    root.cnt++;
+                    root.pushUp();
+                }
+                break;
+                case 2: {
+                    //delete
+                    root = SplayNode.asRoot(root, x);
+                    if (root.key == x) {
+                        root.cnt--;
+                        root.pushUp();
+                        if (root.cnt == 0) {
+                            root.pushDown();
+                            SplayNode left = root.left;
+                            left.father = SplayNode.NIL;
+                            left = SplayNode.asRoot(left, x);
+                            left.setRight(root.right);
+                            left.pushUp();
+                            root = left;
+                        }
                     }
+                }
+                break;
+                case 3: {
+                    //query rank
+                    root = SplayNode.asRoot(root, x - 1);
+                    io.cache.append(root.size - root.right.size + 1).append('\n');
+                }
+                break;
+                case 4: {
+                    //query k-th
+                    int k = x;
+                    SplayNode trace = root;
+                    while (true) {
+                        trace.pushDown();
+                        if (trace.left.size >= k) {
+                            trace = trace.left;
+                        } else {
+                            k -= trace.size - trace.right.size;
+                            if (k <= 0) {
+                                break;
+                            } else {
+                                trace = trace.right;
+                            }
+                        }
+                    }
+                    SplayNode.splay(trace);
+                    root = trace;
+                    io.cache.append(trace.key).append('\n');
+                }
+                break;
+                case 5: {
+                    root = SplayNode.asRoot(root, x - 1);
+                    io.cache.append(root.key).append('\n');
+                    break;
+                }
+                case 6: {
+                    root = SplayNode.asRoot(root, x);
+                    root.right.father = SplayNode.NIL;
+                    root.setRight(SplayNode.asRoot(root.right, x));
+                    root.pushUp();
+                    io.cache.append(root.right.key).append('\n');
+                    break;
+                }
                 }
             }
         }
@@ -390,18 +379,25 @@ public class BZOJ3224V2 {
 
             SplayNode parent = NIL;
             SplayNode trace = node;
-            while (trace != NIL && trace.key != key) {
+            SplayNode smaller = NIL;
+            while (trace != NIL) {
                 parent = trace;
-                if (trace.key > key) {
+                if (trace.key <= key) {
+                    smaller = trace;
+                }
+                trace.pushDown();
+                if (trace.key == key) {
+                    break;
+                } else if (trace.key > key) {
                     trace = trace.left;
                 } else {
                     trace = trace.right;
                 }
             }
 
-            if (trace != NIL) {
-                splay(trace);
-                return trace;
+            if (smaller != NIL && smaller != parent) {
+                splay(parent);
+                parent = smaller;
             }
             splay(parent);
             return parent;
@@ -496,6 +492,22 @@ public class BZOJ3224V2 {
         }
 
         public void pushDown() {
+        }
+
+        public static void toString(SplayNode root, StringBuilder builder) {
+            if (root == NIL) {
+                return;
+            }
+            toString(root.left, builder);
+            builder.append(root.key).append('*').append(root.cnt).append(',');
+            toString(root.right, builder);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder().append(key).append(":");
+            toString(this, builder);
+            return builder.toString();
         }
     }
 }

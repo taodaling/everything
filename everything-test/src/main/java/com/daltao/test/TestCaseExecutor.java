@@ -5,6 +5,9 @@ import com.daltao.common.Factory;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -16,8 +19,11 @@ public class TestCaseExecutor implements Callable<Boolean> {
     private Consumer<Input[]> failInputRecord;
     private Appendable debugOutput;
     private int testTime;
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private long timeLimitForEachTestCase;
 
-    private TestCaseExecutor(Factory<Function<Input, Input>> actualSolution, Factory<Function<Input, Input>> expectedSolution, Factory<Input> inputFactory, Factory<Checker> checkerFactory, Consumer<Input[]> failInputRecord, Appendable debugOutput, int testTime) {
+    private TestCaseExecutor(Factory<Function<Input, Input>> actualSolution, Factory<Function<Input, Input>> expectedSolution, Factory<Input> inputFactory,
+            Factory<Checker> checkerFactory, Consumer<Input[]> failInputRecord, Appendable debugOutput, int testTime, long timeLimitForEachTestCase) {
         this.actualSolution = actualSolution;
         this.expectedSolution = expectedSolution;
         this.inputFactory = inputFactory;
@@ -25,6 +31,7 @@ public class TestCaseExecutor implements Callable<Boolean> {
         this.failInputRecord = failInputRecord;
         this.debugOutput = debugOutput;
         this.testTime = testTime;
+        this.timeLimitForEachTestCase = timeLimitForEachTestCase;
     }
 
     @Override
@@ -32,11 +39,11 @@ public class TestCaseExecutor implements Callable<Boolean> {
         boolean result = true;
         for (int i = 1; i != testTime; i++) {
             MultiDirectionInput input = new MultiDirectionInput(inputFactory.newInstance(), 4);
+            input.dispatchAll();
             MultiDirectionInput output1 = null;
             MultiDirectionInput output2 = null;
 
             //Prompt
-
             try {
                 Input example = input.getInput(3);
                 debugOutput.append("Input: \n\n");
@@ -51,25 +58,51 @@ public class TestCaseExecutor implements Callable<Boolean> {
                 throw new RuntimeException(e);
             }
 
-
             try {
-                output1 = new MultiDirectionInput(expectedSolution.newInstance().apply(input.getInput(1)), 2);
-                output2 = new MultiDirectionInput(actualSolution.newInstance().apply(input.getInput(2)), 2);
+                output1 = new MultiDirectionInput(executorService.submit(() -> expectedSolution.newInstance().apply(input.getInput(1)))
+                        .get(timeLimitForEachTestCase, TimeUnit.MILLISECONDS), 2);
             } catch (Exception t) {
                 t.printStackTrace();
-
+                try {
+                    debugOutput.append("Expect solution exceeded time limit\n\n");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 result = false;
                 output1 = new MultiDirectionInput(EmptyInput.getInstance(), 1);
+            }
+            try {
+                output2 = new MultiDirectionInput(executorService.submit(() -> actualSolution.newInstance().apply(input.getInput(2)))
+                        .get(timeLimitForEachTestCase, TimeUnit.MILLISECONDS), 2);
+            } catch (Exception t) {
+                t.printStackTrace();
+                try {
+                    debugOutput.append("Actual solution exceeded time limit\n\n");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                result = false;
                 output2 = new MultiDirectionInput(EmptyInput.getInstance(), 1);
             }
 
-            result = result &&
-                    checkerFactory.newInstance().check(
-                            output1.getInput(1), output2.getInput(1)
-                    );
+            try {
+                MultiDirectionInput finalOutput = output1;
+                MultiDirectionInput finalOutput1 = output2;
+                result = result && executorService.submit(() -> checkerFactory.newInstance().check(finalOutput.getInput(1), finalOutput1.getInput(1)))
+                        .get(timeLimitForEachTestCase, TimeUnit.MILLISECONDS);
+            } catch (Exception t) {
+                t.printStackTrace();
+                try {
+                    debugOutput.append("Checker exceeded time limit\n\n");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                result = false;
+                executorService.shutdownNow();
+            }
 
             if (!result) {
-                failInputRecord.accept(new Input[]{input.getInput(0), output1.getInput(0), output2.getInput(0)});
+                failInputRecord.accept(new Input[] { input.getInput(0), output1.getInput(0), output2.getInput(0) });
                 break;
             }
 
@@ -79,6 +112,8 @@ public class TestCaseExecutor implements Callable<Boolean> {
                 throw new RuntimeException(e);
             }
         }
+
+        executorService.shutdownNow();
         return result;
     }
 
@@ -90,6 +125,12 @@ public class TestCaseExecutor implements Callable<Boolean> {
         private Consumer<Input[]> failInputRecord = new FailResultPrinter(System.out);
         private Appendable debugOutput = System.out;
         private int testTime = 100;
+        private long timeLimitForEachTestCase = 3000;
+
+        public Builder setTimeLimitForEachTestCase(long timeLimitForEachTestCase) {
+            this.timeLimitForEachTestCase = timeLimitForEachTestCase;
+            return this;
+        }
 
         public Builder setActualSolution(Factory<Function<Input, Input>> actualSolution) {
             this.actualSolution = actualSolution;
@@ -128,7 +169,8 @@ public class TestCaseExecutor implements Callable<Boolean> {
 
         @Override
         public TestCaseExecutor build() {
-            return new TestCaseExecutor(actualSolution, expectedSolution, inputFactory, checkerFactory, failInputRecord, debugOutput, testTime);
+            return new TestCaseExecutor(actualSolution, expectedSolution, inputFactory, checkerFactory, failInputRecord, debugOutput, testTime,
+                    timeLimitForEachTestCase);
         }
     }
 

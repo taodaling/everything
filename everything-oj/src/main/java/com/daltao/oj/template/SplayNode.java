@@ -134,4 +134,30 @@ public class SplayNode {
 
     public void pushDown() {
     }
+
+    public static int toArray(SplayNode root, int[] data, int offset) {
+        if (root == NIL) {
+            return offset;
+        }
+        offset = toArray(root.left, data, offset);
+        data[offset++] = root.key;
+        offset = toArray(root.right, data, offset);
+        return offset;
+    }
+
+    public static void toString(SplayNode root, StringBuilder builder) {
+        if (root == NIL) {
+            return;
+        }
+        toString(root.left, builder);
+        builder.append(root.key).append(',');
+        toString(root.right, builder);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder().append(key).append(":");
+        toString(this, builder);
+        return builder.toString();
+    }
 }

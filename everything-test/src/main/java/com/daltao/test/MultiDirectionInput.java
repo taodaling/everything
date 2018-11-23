@@ -1,6 +1,5 @@
 package com.daltao.test;
 
-import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedList;
 
@@ -27,6 +26,14 @@ public class MultiDirectionInput<T> {
         }
     }
 
+    public void dispatchAll() {
+        while (source.available()) {
+            T value = source.read();
+            for (InputProxy proxy : proxies) {
+                proxy.deque.addLast(value);
+            }
+        }
+    }
 
     private class InputProxy<T> implements Input<T> {
         private Deque<T> deque = new LinkedList<>();
@@ -36,6 +43,7 @@ public class MultiDirectionInput<T> {
             if (deque.isEmpty()) {
                 dispatch();
             }
+
             return deque.removeFirst();
         }
 
