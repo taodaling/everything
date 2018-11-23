@@ -65,6 +65,6 @@ public class LSMManager {
     }
 
     public LSMLogReader getLogReader(int i) {
-
+        return null;
     }
 }
