@@ -8,4 +8,10 @@ import java.util.Map;
 public class LSMEntry implements Map.Entry<byte[], byte[]> {
     private byte[] key;
     private byte[] value;
+
+    public byte[] setValue(byte[] value) {
+        byte[] old = this.value;
+        this.value = value;
+        return old;
+    }
 }

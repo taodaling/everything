@@ -39,6 +39,6 @@ public class SLNode<K, V> {
     }
 
     public static <K, V> boolean insert(SLNode<K, V> root, K key, Comparator<K> cmp) {
-
+        return false;
     }
 }
