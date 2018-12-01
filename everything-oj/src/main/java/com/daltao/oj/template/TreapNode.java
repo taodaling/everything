@@ -1,5 +1,7 @@
 package com.daltao.oj.template;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Random;
 
 
@@ -14,7 +16,39 @@ public class TreapNode implements Cloneable {
 
     TreapNode left = NIL;
     TreapNode right = NIL;
+    int size;
     int key;
+
+    public static TreapNode buildFromSortedData(int[] data, int l, int r) {
+        Deque<TreapNode> deque = new ArrayDeque(r - l);
+
+        for (int i = l; i < r; i++) {
+            TreapNode node = new TreapNode();
+            node.key = data[i];
+            while (!deque.isEmpty()) {
+                if (random.nextBoolean()) {
+                    TreapNode tail = deque.removeLast();
+                    tail.right = node.left;
+                    node.left = tail;
+                    tail.pushUp();
+                } else {
+                    break;
+                }
+            }
+
+            deque.addLast(node);
+        }
+
+        TreapNode last = NIL;
+        while (!deque.isEmpty()) {
+            TreapNode tail = deque.removeLast();
+            tail.right = last;
+            tail.pushUp();
+            last = tail;
+        }
+
+        return last;
+    }
 
     @Override
     public TreapNode clone() {
@@ -29,28 +63,29 @@ public class TreapNode implements Cloneable {
     }
 
     public void pushUp() {
+        size = left.size + right.size + 1;
     }
 
-    private static TreapNode[] split(TreapNode root, int key) {
+    public static TreapNode[] splitByRank(TreapNode root, int rank) {
         if (root == NIL) {
             return new TreapNode[]{NIL, NIL};
         }
         root.pushDown();
-        TreapNode[] trees;
-        if (root.key > key) {
-            trees = split(root.left, key);
-            root.left = trees[1];
-            trees[1] = root;
+        TreapNode[] result;
+        if (root.left.size >= rank) {
+            result = splitByRank(root.left, rank);
+            root.left = result[1];
+            result[1] = root;
         } else {
-            trees = split(root.right, key);
-            root.right = trees[0];
-            trees[0] = root;
+            result = splitByRank(root.right, rank - (root.size - root.right.size));
+            root.right = result[0];
+            result[0] = root;
         }
         root.pushUp();
-        return trees;
+        return result;
     }
 
-    private static TreapNode merge(TreapNode a, TreapNode b) {
+    public static TreapNode merge(TreapNode a, TreapNode b) {
         if (a == NIL) {
             return b;
         }
@@ -58,43 +93,61 @@ public class TreapNode implements Cloneable {
             return a;
         }
         if (random.nextBoolean()) {
-            TreapNode tmp = a;
-            a = b;
-            b = tmp;
-        }
-        a.pushDown();
-        if (a.key >= b.key) {
-            a.left = merge(a.left, b);
-        } else {
+            a.pushDown();
             a.right = merge(a.right, b);
+            a.pushUp();
+            return a;
+        } else {
+            b.pushDown();
+            b.left = merge(a, b.left);
+            b.pushUp();
+            return b;
         }
-        a.pushUp();
-        return a;
-    }
-
-    public static int toArray(TreapNode root, int[] data, int offset) {
-        if (root == NIL) {
-            return offset;
-        }
-        offset = toArray(root.left, data, offset);
-        data[offset++] = root.key;
-        offset = toArray(root.right, data, offset);
-        return offset;
     }
 
     public static void toString(TreapNode root, StringBuilder builder) {
         if (root == NIL) {
             return;
         }
+        root.pushDown();
         toString(root.left, builder);
         builder.append(root.key).append(',');
         toString(root.right, builder);
     }
 
+    public static TreapNode clone(TreapNode root) {
+        if (root == NIL) {
+            return NIL;
+        }
+        TreapNode clone = root.clone();
+        clone.left = clone(root.left);
+        clone.right = clone(root.right);
+        return clone;
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder().append(key).append(":");
-        toString(this, builder);
+        toString(clone(this), builder);
         return builder.toString();
+    }
+
+    public static TreapNode[] splitByKey(TreapNode root, int key) {
+        if (root == NIL) {
+            return new TreapNode[]{NIL, NIL};
+        }
+        root.pushDown();
+        TreapNode[] result;
+        if (root.key > key) {
+            result = splitByKey(root.left, key);
+            root.left = result[1];
+            result[1] = root;
+        } else {
+            result = splitByKey(root.right, key);
+            root.right = result[0];
+            result[0] = root;
+        }
+        root.pushUp();
+        return result;
     }
 }

@@ -3,6 +3,7 @@ package com.daltao.test;
 import com.daltao.common.Factory;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -21,6 +22,7 @@ public class TestCaseExecutor implements Callable<Boolean> {
     private int testTime;
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
     private long timeLimitForEachTestCase;
+    private static MessageFormat passPrompt = new MessageFormat("Pass test ({0} ms): {1}\n\n");
 
     private TestCaseExecutor(Factory<Function<Input, Input>> actualSolution, Factory<Function<Input, Input>> expectedSolution, Factory<Input> inputFactory,
             Factory<Checker> checkerFactory, Consumer<Input[]> failInputRecord, Appendable debugOutput, int testTime, long timeLimitForEachTestCase) {
@@ -60,7 +62,7 @@ public class TestCaseExecutor implements Callable<Boolean> {
 
             try {
                 output1 = new MultiDirectionInput(executorService.submit(() -> expectedSolution.newInstance().apply(input.getInput(1)))
-                        .get(timeLimitForEachTestCase, TimeUnit.MILLISECONDS), 2);
+                        .get(), 2);
             } catch (Exception t) {
                 t.printStackTrace();
                 try {
@@ -71,9 +73,13 @@ public class TestCaseExecutor implements Callable<Boolean> {
                 result = false;
                 output1 = new MultiDirectionInput(EmptyInput.getInstance(), 1);
             }
+
+            long beginTime = System.currentTimeMillis();
+            long takeTime = 0;
             try {
                 output2 = new MultiDirectionInput(executorService.submit(() -> actualSolution.newInstance().apply(input.getInput(2)))
                         .get(timeLimitForEachTestCase, TimeUnit.MILLISECONDS), 2);
+                takeTime = System.currentTimeMillis() - beginTime;
             } catch (Exception t) {
                 t.printStackTrace();
                 try {
@@ -107,7 +113,7 @@ public class TestCaseExecutor implements Callable<Boolean> {
             }
 
             try {
-                debugOutput.append("Pass test : ").append(String.valueOf(i)).append("\n\n");
+                debugOutput.append(passPrompt.format(new Object[]{takeTime, i}));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -126,6 +132,10 @@ public class TestCaseExecutor implements Callable<Boolean> {
         private Appendable debugOutput = System.out;
         private int testTime = 100;
         private long timeLimitForEachTestCase = 3000;
+
+        public static Builder newBuilder(){
+            return new Builder();
+        }
 
         public Builder setTimeLimitForEachTestCase(long timeLimitForEachTestCase) {
             this.timeLimitForEachTestCase = timeLimitForEachTestCase;

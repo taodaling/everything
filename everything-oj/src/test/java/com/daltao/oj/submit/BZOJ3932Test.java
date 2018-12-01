@@ -1,4 +1,5 @@
-package com.daltao.oj.template;
+package com.daltao.oj.submit;
+
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,9 +8,15 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Random;
 
-public class OJCodeTemplate {
+/**
+ * BZOJ3932 Tester.
+ *
+ * @author <Authors name>
+ * @version 1.0
+ * @since <pre>ʮһ�� 24, 2018</pre>
+ */
+public class BZOJ3932Test {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -51,7 +58,13 @@ public class OJCodeTemplate {
         }
 
         public void solve() {
+
         }
+    }
+
+    public static class Node01 {
+        private Node01[] children = new Node01[2];
+
     }
 
     public static class FastIO {
@@ -344,4 +357,4 @@ public class OJCodeTemplate {
             System.out.println(Arrays.deepToString(x));
         }
     }
-}
+} 
