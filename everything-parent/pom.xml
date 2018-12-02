@@ -24,6 +24,7 @@
         <maven-source-plugin-version>3.1.0</maven-source-plugin-version>
         <maven-assembly-plugin>3.1.0</maven-assembly-plugin>
         <bytebuddy-version>1.9.4</bytebuddy-version>
+        <rocketmq-client-version>4.3.0</rocketmq-client-version>
     </properties>
 
     <dependencyManagement>
@@ -85,6 +86,11 @@
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy</artifactId>
                 <version>${bytebuddy-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.rocketmq</groupId>
+                <artifactId>rocketmq-client</artifactId>
+                <version>${rocketmq-client-version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
