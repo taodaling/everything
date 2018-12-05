@@ -1,17 +1,15 @@
 package reflection;
 
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.text.MessageFormat;
 
-public class WrapperVisitor implements ClassVisitor {
+public class DelegateGenerator extends AbstractClassVisitor{
     public static void main(String[] args) throws Exception {
-        WrapperVisitor visitor = new WrapperVisitor();
+        DelegateGenerator visitor = new DelegateGenerator();
         new ClassHostImpl(Object.class).accept(visitor);
         System.out.println(visitor);
     }
@@ -52,7 +50,7 @@ public class WrapperVisitor implements ClassVisitor {
         if (method.getReturnType() != Void.class && method.getReturnType() != void.class) {
             body.append("return ");
         }
-        body.append(MessageFormat.format("inner.{0}(", method.getName()));
+        body.append(MessageFormat.format("delegate().{0}(", method.getName()));
         for (Parameter arg : method.getParameters()) {
             body.append(MessageFormat.format("{0},", arg.getName()));
         }
@@ -64,11 +62,6 @@ public class WrapperVisitor implements ClassVisitor {
     }
 
     @Override
-    public void visitSuperClass(Class superClass) {
-
-    }
-
-    @Override
     public void visitInterface(Class cls) throws Exception {
         WrapperVisitor visitor = new WrapperVisitor();
         new ClassHostImpl(cls).accept(visitor);
@@ -76,24 +69,10 @@ public class WrapperVisitor implements ClassVisitor {
     }
 
     @Override
-    public void visitAnnotation(Annotation annotation) {
-    }
-
-    @Override
     public void visitClass(Class cls) {
-        head.append(MessageFormat.format("public class {0} '{'\n" + "  private final {1} inner;\n" + "  protected {0}({1} inner)'{this.inner = inner;}'\n",
-                cls.getSimpleName() + "Wrapper", cls.getSimpleName()));
+        head.append(MessageFormat.format("public abstract class {0} {2} {1} '{'\n" + "  protected abstract {1} delegate();\n",
+                "Forwarding" + cls.getSimpleName(), cls.getSimpleName(), cls.isInterface() ? "implements" : "extend"));
         tail.append("}");
-    }
-
-    @Override
-    public void visitConstructor(Constructor constructor) throws Exception {
-
-    }
-
-    @Override
-    public void end() {
-
     }
 
     @Override

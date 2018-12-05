@@ -1,5 +1,6 @@
 package reflection;
 
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -26,11 +27,6 @@ public class ClassHostImpl implements ClassHost {
         for (Field field : cls.getDeclaredFields()) {
             visitor.visitField(field);
         }
-
-        for (Method method : cls.getMethods()) {
-            visitor.visitPublicMethod(method);
-        }
-
         //Then visit method
         for (Method method : cls.getDeclaredMethods()) {
             visitor.visitMethod(method);
@@ -42,7 +38,7 @@ public class ClassHostImpl implements ClassHost {
         }
 
         //Then visit superClass
-        if (cls.getSuperclass() != null) {
+        if(cls.getSuperclass() != null) {
             visitor.visitSuperClass(cls.getSuperclass());
         }
         //Then visit interfaces

@@ -5,12 +5,15 @@ import com.daltao.utils.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.util.regex.Pattern;
 
 /**
  * Created by daltao on 2018/3/17.
  */
 public class ReflectionUtils {
-
+    private static Pattern setterPattern = Pattern.compile("(set|is)\\w+");
+    private static Pattern getterPattern = Pattern.compile("get\\w+");
     public static String getSetterAttributeName(String setter) {
         if (!setter.startsWith("set")) {
             throw new IllegalArgumentException();
@@ -63,6 +66,14 @@ public class ReflectionUtils {
             return b;
         }
         throw new IllegalArgumentException();
+    }
+
+    public static boolean isSetter(Method method) {
+        return setterPattern.matcher(method.getName()).matches() && method.getReturnType() == Void.TYPE && method.getParameterCount() == 1;
+    }
+
+    public static boolean isGetter(Method method) {
+        return getterPattern.matcher(method.getName()).matches() && method.getReturnType() != Void.TYPE && method.getParameterCount() == 0;
     }
 
 }

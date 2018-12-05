@@ -12,8 +12,6 @@ public interface ClassVisitor {
 
     public void visitMethod(Method method) throws Exception;
 
-    public void visitPublicMethod(Method method) throws Exception;
-
     public void visitSuperClass(Class superClass) throws Exception;
 
     public void visitInterface(Class cls) throws Exception;

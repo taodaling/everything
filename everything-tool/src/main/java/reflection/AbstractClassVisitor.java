@@ -50,9 +50,4 @@ public abstract class AbstractClassVisitor implements ClassVisitor {
     public void end() throws Exception {
 
     }
-
-    @Override
-    public void visitPublicMethod(Method method) throws Exception {
-
-    }
 }

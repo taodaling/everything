@@ -1,19 +1,22 @@
 package reflection;
 
 
+
 import com.daltao.util.ReflectionUtils;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.text.MessageFormat;
 
-public class FactoryVisitor extends AbstractClassVisitor {
+public class FactoryVisitor implements ClassVisitor {
 
     public static void main(String[] args) throws Exception {
-        FactoryVisitor visitor = new FactoryVisitor(true);
-        new ClassHostImpl(Thread.class).accept(visitor);
+        FactoryVisitor visitor = new FactoryVisitor(false);
+        new ClassHostImpl(Object.class).accept(visitor);
         System.out.println(visitor);
     }
 
@@ -118,6 +121,15 @@ public class FactoryVisitor extends AbstractClassVisitor {
         newInstance.append(visitor.newInstance);
     }
 
+    @Override
+    public void visitInterface(Class cls) throws Exception {
+
+    }
+
+    @Override
+    public void visitAnnotation(Annotation annotation) throws Exception {
+
+    }
 
     @Override
     public void visitClass(Class cls) throws Exception {
@@ -137,6 +149,15 @@ public class FactoryVisitor extends AbstractClassVisitor {
         }
     }
 
+    @Override
+    public void visitConstructor(Constructor constructor) throws Exception {
+
+    }
+
+    @Override
+    public void end() throws Exception {
+
+    }
 
     @Override
     public String toString() {
