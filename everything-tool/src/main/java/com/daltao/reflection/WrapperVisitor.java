@@ -1,4 +1,4 @@
-package reflection;
+package com.daltao.reflection;
 
 
 import java.lang.annotation.Annotation;
@@ -9,7 +9,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.text.MessageFormat;
 
-public class WrapperVisitor implements ClassVisitor {
+public class WrapperVisitor extends AbstractClassVisitor {
     public static void main(String[] args) throws Exception {
         WrapperVisitor visitor = new WrapperVisitor();
         new ClassHostImpl(Object.class).accept(visitor);
@@ -81,8 +81,8 @@ public class WrapperVisitor implements ClassVisitor {
 
     @Override
     public void visitClass(Class cls) {
-        head.append(MessageFormat.format("public class {0} '{'\n" + "  private final {1} inner;\n" + "  protected {0}({1} inner)'{this.inner = inner;}'\n",
-                cls.getSimpleName() + "Wrapper", cls.getSimpleName()));
+        head.append(MessageFormat.format("public class {0} {2} {1}  '{'\n" + "  private final {1} inner;\n" + "  protected {0}({1} inner)'{this.inner = inner;}'\n",
+                cls.getSimpleName() + "Wrapper", cls.getSimpleName(), cls.isInterface() ? "implements" : "extends"));
         tail.append("}");
     }
 

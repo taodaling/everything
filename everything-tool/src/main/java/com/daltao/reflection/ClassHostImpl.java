@@ -1,5 +1,4 @@
-package reflection;
-
+package com.daltao.reflection;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -31,6 +30,10 @@ public class ClassHostImpl implements ClassHost {
         for (Method method : cls.getDeclaredMethods()) {
             visitor.visitMethod(method);
         }
+        //Then visit public method
+        for (Method method : cls.getMethods()) {
+            visitor.visitPublicMethod(method);
+        }
 
         //Then visit constructor
         for (Constructor constructor : cls.getConstructors()) {
@@ -38,7 +41,7 @@ public class ClassHostImpl implements ClassHost {
         }
 
         //Then visit superClass
-        if(cls.getSuperclass() != null) {
+        if (cls.getSuperclass() != null) {
             visitor.visitSuperClass(cls.getSuperclass());
         }
         //Then visit interfaces

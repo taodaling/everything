@@ -1,4 +1,4 @@
-package reflection;
+package com.daltao.reflection;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -48,6 +48,11 @@ public abstract class AbstractClassVisitor implements ClassVisitor {
 
     @Override
     public void end() throws Exception {
+
+    }
+
+    @Override
+    public void visitPublicMethod(Method method) throws Exception {
 
     }
 }

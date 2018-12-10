@@ -1,4 +1,4 @@
-package reflection;
+package com.daltao.reflection;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -23,4 +23,6 @@ public interface ClassVisitor {
     public void visitConstructor(Constructor constructor) throws Exception;
 
     public void end() throws Exception;
+
+    public void visitPublicMethod(Method method) throws Exception;
 }

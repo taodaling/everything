@@ -1,4 +1,4 @@
-package reflection;
+package com.daltao.reflection;
 
 
 import java.lang.reflect.Field;
@@ -7,7 +7,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.text.MessageFormat;
 
-public class DelegateGenerator extends AbstractClassVisitor{
+public class DelegateGenerator extends AbstractClassVisitor {
     public static void main(String[] args) throws Exception {
         DelegateGenerator visitor = new DelegateGenerator();
         new ClassHostImpl(Object.class).accept(visitor);
@@ -31,12 +31,12 @@ public class DelegateGenerator extends AbstractClassVisitor{
     }
 
     @Override
-    public void visitMethod(Method method) {
+    public void visitPublicMethod(Method method) {
         int modifier = method.getModifiers();
         if (Modifier.isPrivate(modifier) || Modifier.isStatic(modifier)) {
             return;
         }
-        String accessLevel = Modifier.isProtected(modifier) ? "protected" : "public";
+        String accessLevel = "public";
         body.append(MessageFormat.format("  {0} {1} {2}(", accessLevel, method.getGenericReturnType().getTypeName(), method.getName()));
 
         int argCount = method.getParameterCount();
@@ -46,7 +46,16 @@ public class DelegateGenerator extends AbstractClassVisitor{
         if (argCount > 0) {
             body.setLength(body.length() - 1);
         }
-        body.append("){");
+        body.append(")");
+        if (method.getExceptionTypes().length > 0) {
+            body.append(" throws ");
+            for (Class cls : method.getExceptionTypes()) {
+                body.append(cls.getCanonicalName()).append(',');
+            }
+            body.setLength(body.length() - 1);
+        }
+        body.append("{");
+
         if (method.getReturnType() != Void.class && method.getReturnType() != void.class) {
             body.append("return ");
         }
@@ -63,15 +72,13 @@ public class DelegateGenerator extends AbstractClassVisitor{
 
     @Override
     public void visitInterface(Class cls) throws Exception {
-        WrapperVisitor visitor = new WrapperVisitor();
-        new ClassHostImpl(cls).accept(visitor);
-        body.append(visitor.body);
     }
 
     @Override
     public void visitClass(Class cls) {
-        head.append(MessageFormat.format("public abstract class {0} {2} {1} '{'\n" + "  protected abstract {1} delegate();\n",
-                "Forwarding" + cls.getSimpleName(), cls.getSimpleName(), cls.isInterface() ? "implements" : "extend"));
+        head.append(MessageFormat
+                .format("public abstract class {0} {2} {1} '{'\n" + "  protected abstract {1} delegate();\n", "Forwarding" + cls.getSimpleName(),
+                        cls.getSimpleName(), cls.isInterface() ? "implements" : "extends"));
         tail.append("}");
     }
 

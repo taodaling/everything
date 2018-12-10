@@ -1,8 +1,6 @@
-package reflection;
+package com.daltao.reflection;
 
 
-
-import com.daltao.util.ReflectionUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -12,7 +10,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.text.MessageFormat;
 
-public class FactoryVisitor implements ClassVisitor {
+public class FactoryVisitor extends AbstractClassVisitor {
 
     public static void main(String[] args) throws Exception {
         FactoryVisitor visitor = new FactoryVisitor(false);

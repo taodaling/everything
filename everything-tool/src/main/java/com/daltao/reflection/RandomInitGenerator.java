@@ -1,6 +1,5 @@
-package reflection;
+package com.daltao.reflection;
 
-import com.daltao.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
 import java.text.MessageFormat;
