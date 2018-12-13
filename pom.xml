@@ -22,6 +22,7 @@
         <module>everything-parent</module>
         <module>everything-simple</module>
         <module>everything-lsm</module>
+        <module>everything-script</module>
     </modules>
 
 
