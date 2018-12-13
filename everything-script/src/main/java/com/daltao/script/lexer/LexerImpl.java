@@ -29,7 +29,7 @@ public class LexerImpl implements Lexer {
      * blank: \s*
      * comment: //.*
      * int: [0-9]+
-     * string: "(\\"|\\n|\\\\|[^"])"
+     * string: "(\\"|\\n|\\\\|[^"])*"
      * variable: [A-Z_a-z][A-Z_a-z0-9]*
      * equal: ==
      * leq: <=
@@ -61,7 +61,7 @@ public class LexerImpl implements Lexer {
                     .append(")")
                     .append("|")
                     .append("(")
-                    .append("\"(\\\\\"|\\\\n|\\\\\\\\|[^\"])\"") //2: string
+                    .append("\"(\\\\\"|\\\\n|\\\\\\\\|[^\"])*\"") //2: string
                     .append(")")
                     .append("|")
                     .append("(")
