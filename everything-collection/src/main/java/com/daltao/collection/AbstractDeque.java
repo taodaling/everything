@@ -1,7 +1,11 @@
 package com.daltao.collection;
 
+import com.daltao.util.Iterators;
+
 import java.util.AbstractCollection;
 import java.util.Deque;
+import java.util.Iterator;
+import java.util.Objects;
 
 public abstract class AbstractDeque<T> extends AbstractCollection<T> implements Deque<T> {
     @Override
@@ -82,6 +86,35 @@ public abstract class AbstractDeque<T> extends AbstractCollection<T> implements 
 
     @Override
     public T pop() {
+        return removeFirst();
+    }
+
+    @Override
+    public boolean removeFirstOccurrence(Object o) {
+        Iterator<T> iterator = iterator();
+        while (iterator.hasNext()) {
+            if (Objects.equals(iterator.next(), o)) {
+                iterator.remove();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean removeLastOccurrence(Object o) {
+        Iterator<T> iterator = descendingIterator();
+        while (iterator.hasNext()) {
+            if (Objects.equals(iterator.next(), o)) {
+                iterator.remove();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public T remove() {
         return removeFirst();
     }
 }

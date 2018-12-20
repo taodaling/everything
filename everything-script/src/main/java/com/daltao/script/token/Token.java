@@ -1,11 +1,24 @@
 package com.daltao.script.token;
 
-public interface Token {
-    String getText();
+import lombok.Getter;
 
-    boolean isString();
+@Getter
+public class Token {
+    private String text;
+    private int lineNum;
 
-    boolean isNumber();
+    public Token(String text, int lineNum) {
+        this.text = text;
+        this.lineNum = lineNum;
+    }
 
-    boolean isIdentifier();
+
+    @Override
+    public String toString() {
+        return text;
+    }
+
+    public Object getType() {
+        return getClass();
+    }
 }

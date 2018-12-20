@@ -95,6 +95,10 @@ public class Precondition {
         isTrue(b, "");
     }
 
+    public static void isFalse(boolean b) {
+        isFalse(b, "");
+    }
+
     public static void isFalse(boolean b, String msg) {
         if (b) {
             throw new IllegalArgumentException(msg);
