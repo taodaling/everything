@@ -10,6 +10,7 @@ public class WhileNode implements ASTNode {
     private ASTNode block;
 
     public WhileNode(ASTList list) {
+        //"while" expr block
         condition = list.childAt(1);
         block = list.childAt(2);
     }

@@ -11,6 +11,7 @@ public class NegateNode implements ASTNode {
     private ASTNode value;
 
     public NegateNode(ASTList list) {
+        //"-" primary
         this.value = list.childAt(1);
     }
 

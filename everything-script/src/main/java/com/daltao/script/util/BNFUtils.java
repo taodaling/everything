@@ -4,6 +4,7 @@ import com.daltao.collection.PredictableIterator;
 import com.daltao.script.ast.ASTLeaf;
 import com.daltao.script.ast.ASTList;
 import com.daltao.script.ast.ASTNode;
+import com.daltao.script.ast.Constants;
 import com.daltao.script.bnf.AbstractRule;
 import com.daltao.script.bnf.Rule;
 import com.daltao.script.token.Token;
@@ -28,7 +29,7 @@ public class BNFUtils {
                 continue;
             }
             OperatorPriority priority = priorities.getOrder(opFetcher.apply(node));
-            while (!priorityDeque.isEmpty() && priorityDeque.getLast().compareTo(priority) < 0) {
+            while (!priorityDeque.isEmpty() && priorityDeque.getLast().compareTo(priority) > 0) {
                 ASTNode right = operands.removeLast();
                 ASTNode left = operands.removeLast();
                 priorityDeque.removeLast();
@@ -100,6 +101,7 @@ public class BNFUtils {
     public static Rule maybe(Rule rule) {
         MaybeRule maybeRule = new MaybeRule();
         maybeRule.setRule(rule);
+        maybeRule.setFunction(Constants.FETCH_FIRST_ONE);
         return maybeRule;
     }
 
@@ -113,6 +115,7 @@ public class BNFUtils {
     public static Rule string(String name) {
         StringRule rule = new StringRule();
         rule.setPattern(name);
+        rule.setFunction(Constants.FETCH_FIRST_ONE);
         return rule;
     }
 

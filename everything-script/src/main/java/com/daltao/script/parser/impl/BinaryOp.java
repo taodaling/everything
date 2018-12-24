@@ -5,6 +5,8 @@ import com.daltao.script.ast.ASTLeaf;
 import com.daltao.script.ast.ASTList;
 import com.daltao.script.ast.ASTNode;
 
+import java.util.Objects;
+
 public class BinaryOp implements ASTNode {
     private ASTNode leftOperand;
     private ASTNode rightOperand;
@@ -81,9 +83,17 @@ public class BinaryOp implements ASTNode {
                     }
                 };
                 break;
+            case "is":
+                delegate = new ASTNode() {
+                    @Override
+                    public Object eval(ASTContext context) {
+                        return Objects.equals(leftOperand.eval(context), rightOperand.eval(context)) ? 1 : 0;
+                    }
+                };
+                break;
             case "=":
                 delegate = new ASTNode() {
-                    IdentifierNode left = (IdentifierNode) leftOperand;
+                    SetValueAble left = (SetValueAble) leftOperand;
 
                     @Override
                     public Object eval(ASTContext context) {

@@ -20,7 +20,7 @@ public class StringUtils {
         return s != null && !s.isEmpty();
     }
 
-    public static String concatenate(List<String> values, String sep) {
+    public static String concatenate(String sep, List<String> values) {
         if (values.isEmpty()) {
             return "";
         }
@@ -37,7 +37,7 @@ public class StringUtils {
     }
 
     public static String concatenate(String sep, Object... values) {
-        return concatenate(Arrays.stream(values).map(Object::toString).collect(Collectors.toList()), sep);
+        return concatenate(sep, Arrays.stream(values).map(Object::toString).collect(Collectors.toList()));
     }
 
     public static String repeat(String s, int time) {

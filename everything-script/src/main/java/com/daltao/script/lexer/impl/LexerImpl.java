@@ -49,6 +49,7 @@ public class LexerImpl implements Lexer {
      * right curly bracket: }
      * set: =
      * module: %
+     * dot: ,
      */
     private static List<String> pieces = Lists.newArrayList();
     private static List<TokenType> tokenTypes = Lists.newArrayList();
@@ -87,7 +88,7 @@ public class LexerImpl implements Lexer {
         tokenTypes.add(TokenType.TWO_OPERAND_OPERATOR);
 
         pieces.add(";");
-        tokenTypes.add(TokenType.SEMICOLON);
+        tokenTypes.add(TokenType.TEXT);
 
         pieces.add("\\+");
         tokenTypes.add(TokenType.TWO_OPERAND_OPERATOR);
@@ -102,16 +103,34 @@ public class LexerImpl implements Lexer {
         tokenTypes.add(TokenType.TWO_OPERAND_OPERATOR);
 
         pieces.add("\\{");
-        tokenTypes.add(TokenType.LEFT_CURLY_BRACKET);
+        tokenTypes.add(TokenType.TEXT);
 
         pieces.add("\\}");
-        tokenTypes.add(TokenType.RIGHT_CURLY_BRACKET);
+        tokenTypes.add(TokenType.TEXT);
 
         pieces.add("=");
         tokenTypes.add(TokenType.TWO_OPERAND_OPERATOR);
 
         pieces.add("%");
         tokenTypes.add(TokenType.TWO_OPERAND_OPERATOR);
+
+        pieces.add("\\.");
+        tokenTypes.add(TokenType.TWO_OPERAND_OPERATOR);
+
+        pieces.add(",");
+        tokenTypes.add(TokenType.TEXT);
+
+        pieces.add("\\(");
+        tokenTypes.add(TokenType.TEXT);
+
+        pieces.add("\\)");
+        tokenTypes.add(TokenType.TEXT);
+
+        pieces.add("\\[");
+        tokenTypes.add(TokenType.TEXT);
+
+        pieces.add("\\]");
+        tokenTypes.add(TokenType.TEXT);
 
         StringBuilder builder = new StringBuilder("\\s*").append("(");
         for (int i = 2, until = pieces.size(); i < until; i++) {
@@ -153,14 +172,14 @@ public class LexerImpl implements Lexer {
             }
             for (int i = 2, until = tokenTypes.size(); i < until; i++) {
                 String group = null;
-                if ((group = matcher.group(i)) != null && tokenTypes.get(i) != null) {
+                if ((group = matcher.group(i)) != null && tokenTypes.get(i) != null && tokenTypes.get(i) != TokenType.COMMENT) {
                     tokenDeque.add(new TypedToken(group, reader.getLineNumber(), tokenTypes.get(i)));
                     break;
                 }
             }
         }
 
-        tokenDeque.addLast(new TypedToken("\n", reader.getLineNumber(), TokenType.EOL));
+        //tokenDeque.addLast(new TypedToken("\n", reader.getLineNumber(), TokenType.EOL));
         return true;
     }
 

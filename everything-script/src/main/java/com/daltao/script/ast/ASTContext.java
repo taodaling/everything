@@ -1,7 +1,7 @@
 package com.daltao.script.ast;
 
 public interface ASTContext {
-    Object getProperty(Object key);
-    void putProperty(Object key, Object value);
+    ValueReference getProperty(Object key);
+
     boolean definedProperty(Object key);
 }

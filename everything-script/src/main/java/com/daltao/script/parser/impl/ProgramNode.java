@@ -8,6 +8,7 @@ public class ProgramNode implements ASTNode {
     private ASTNode statement;
 
     public ProgramNode(ASTList list) {
+        //statement (";"|EOL) | (":"|EOL)
         if (list.listChildAt(0) != null) {
             statement = list.listChildAt(0).childAt(0);
         }
@@ -15,7 +16,7 @@ public class ProgramNode implements ASTNode {
 
     @Override
     public String toString() {
-        return statement == null ? ";" : statement.toString();
+        return (statement == null ? "" : statement.toString()) + ";\n";
     }
 
     @Override

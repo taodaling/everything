@@ -15,7 +15,6 @@ public class Iterators {
         }
     };
 
-
     public static <E> Iterator<E> emptyIterator() {
         return emptyIterator;
     }
