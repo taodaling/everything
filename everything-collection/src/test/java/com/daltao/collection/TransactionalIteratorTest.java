@@ -11,7 +11,7 @@ import java.util.Arrays;
  *
  * @author <Authors name>
  * @version 1.0
- * @since <pre>Ê®¶şÔÂ 18, 2018</pre>
+ * @since <pre>åäºŒæœˆ 18, 2018</pre>
  */
 public class TransactionalIteratorTest {
 
