@@ -20,6 +20,8 @@
         <module>everything-project-springcloud-eureka-provider</module>
         <module>everything-project-springcloud-eureka-server-ha</module>
         <module>everything-project-springcloud-eureka-consumer</module>
+        <module>everything-project-springcloud-hystrix</module>
+        <module>everything-project-springcloud-hystrix-dashboard</module>
     </modules>
 
     <build>

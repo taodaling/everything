@@ -1,4 +1,4 @@
-package com.daltao.simple;
+package com.daltao.simple.rocketmq;
 
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
@@ -11,11 +11,11 @@ import java.text.MessageFormat;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RocketMQStudy12 {
+public class RocketMQStudy10 {
     public static void main(String[] args) throws Exception {
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("daltao");
         consumer.setNamesrvAddr("192.168.1.6:9876");
-        consumer.subscribe("TopicTest", "BatchTest");
+        consumer.subscribe("TopicTest", "TagF");
         consumer.registerMessageListener(new MessageListenerConcurrently() {
             @Override
             public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs, ConsumeConcurrentlyContext context) {

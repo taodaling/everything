@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Random;
+
 @SpringBootApplication
 @EnableEurekaClient
 @RestController
@@ -23,8 +25,8 @@ public class Application {
     }
 
     @RequestMapping(value = "/hello", method = RequestMethod.GET)
-    public String index() {
-        return "Hello World, I'm port " + port;
+    public String index() throws InterruptedException {
+        return Integer.toString(new Random().nextInt());
     }
 
 }

@@ -8,4 +8,4 @@ spring:
     name: hello-service
 
 server:
-          port: 8770
+  port: 8770

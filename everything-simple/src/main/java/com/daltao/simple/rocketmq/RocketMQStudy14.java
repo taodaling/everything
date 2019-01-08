@@ -1,4 +1,4 @@
-package com.daltao.simple;
+package com.daltao.simple.rocketmq;
 
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.MessageSelector;
