@@ -25,6 +25,10 @@ public class SignalImpl implements Signal {
             return this;
         }
 
+        public Builder target(String value) {
+            return property("target", value);
+        }
+
         public SignalImpl build() {
             return instance;
         }
