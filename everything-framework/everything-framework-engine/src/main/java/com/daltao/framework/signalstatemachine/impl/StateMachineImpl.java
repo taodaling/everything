@@ -14,7 +14,7 @@ import java.util.*;
  */
 public class StateMachineImpl implements StateMachine {
     private Set<String> states;
-    private Map<String, Set<StateListener>> stateListeners;
+    private Map<String, List<StateListener>> stateListeners;
     private Map<String, SignalHandler> signalHandlers;
     private Map<String, Map<String, SignalHandler>> stateSignalHandlers;
     private String current;
@@ -46,7 +46,7 @@ public class StateMachineImpl implements StateMachine {
 
     public static class Builder {
         private Set<String> states = new HashSet<>();
-        private Map<String, Set<StateListener>> stateListeners = new HashMap<>();
+        private Map<String, List<StateListener>> stateListeners = new HashMap<>();
         private Map<String, SignalHandler> signalHandlers = new HashMap<>();
         private String initState;
         private SignalHandler defaultSignalHandler = NilSignalHandler.getInstance();
@@ -90,7 +90,7 @@ public class StateMachineImpl implements StateMachine {
                 throw new IllegalStateException("Duplicate state " + id);
             }
             states.add(id);
-            stateListeners.put(id, new LinkedHashSet<>());
+            stateListeners.put(id, new ArrayList<>());
             stateSignalHandlers.put(id, new HashMap<>());
             return this;
         }
