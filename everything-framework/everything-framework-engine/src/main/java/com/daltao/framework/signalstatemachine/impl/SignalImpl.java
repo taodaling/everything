@@ -2,20 +2,32 @@ package com.daltao.framework.signalstatemachine.impl;
 
 import com.daltao.framework.signalstatemachine.Signal;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 public class SignalImpl implements Signal {
     private String type;
-    private Map<Object, Object> properties = new LinkedHashMap<>();
+    private Map<Object, Object> properties = new HashMap<>();
 
-    public SignalImpl(String type) {
-        this.type = type;
+    private SignalImpl() {
     }
 
-    public SignalImpl addProperty(Object key, Object value) {
-        properties.put(key, value);
-        return this;
+    public static class Builder {
+        private SignalImpl instance = new SignalImpl();
+
+        public Builder type(String type) {
+            instance.type = type;
+            return this;
+        }
+
+        public Builder property(Object key, Object value) {
+            instance.properties.put(key, value);
+            return this;
+        }
+
+        public SignalImpl build() {
+            return instance;
+        }
     }
 
     @Override
