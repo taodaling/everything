@@ -23,6 +23,7 @@
         <module>everything-lsm</module>
         <module>everything-script</module>
         <module>everything-project</module>
+        <module>everything-framework</module>
     </modules>
 
     <properties>

@@ -1,0 +1,17 @@
+server:
+  port: 8810
+spring:
+  application:
+    name: turbine
+management:
+  server:
+    port: 8820
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8760/eureka/
+turbine:
+  app-config: hystrix #需要监控的服务名称
+  cluster-name-expression: new String('default')  #集群名称
+  combine-host-port: true #通过host:port方式区分服务，为false表示同一主机仅被视作一个服务
+  instanceUrlSuffix: hystrix.stream

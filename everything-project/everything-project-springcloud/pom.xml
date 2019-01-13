@@ -22,6 +22,7 @@
         <module>everything-project-springcloud-eureka-consumer</module>
         <module>everything-project-springcloud-hystrix</module>
         <module>everything-project-springcloud-hystrix-dashboard</module>
+        <module>everything-project-springcloud-turbine</module>
     </modules>
 
     <build>
