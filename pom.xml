@@ -53,6 +53,7 @@
         <spring-cloud-dependencies.version>Finchley.RELEASE</spring-cloud-dependencies.version>
         <maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
         <amqp-client.version>5.5.2</amqp-client.version>
+        <kafka-clients.version>2.1.0</kafka-clients.version>
     </properties>
 
     <dependencyManagement>
@@ -180,6 +181,16 @@
                 <version>${brave.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>${kafka-clients.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-streams</artifactId>
+                <version>${kafka-clients.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
