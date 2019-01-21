@@ -54,10 +54,22 @@
         <maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
         <amqp-client.version>5.5.2</amqp-client.version>
         <kafka-clients.version>2.1.0</kafka-clients.version>
+        <jackson-dataformat-yaml.version>2.9.8</jackson-dataformat-yaml.version>
+        <mybatis-spring-boot-starter.version>1.3.2</mybatis-spring-boot-starter.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-starter</artifactId>
+                <version>${mybatis-spring-boot-starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>${jackson-dataformat-yaml.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.rabbitmq</groupId>
                 <artifactId>amqp-client</artifactId>

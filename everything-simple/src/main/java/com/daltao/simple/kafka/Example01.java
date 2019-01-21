@@ -100,9 +100,10 @@ public class Example01 {
     public static class AdminTask {
         public static void main(String[] args) throws ExecutionException, InterruptedException {
             AdminClient client = createAdmin();
-            client.deleteTopics(Collections.singletonList(KafkaConstant.TOPIC)).all().get();
-            client.createTopics(Collections.singleton(new NewTopic(KafkaConstant.TOPIC, 5, (short) 1)))
+            //client.deleteTopics(Collections.singletonList(KafkaConstant.TOPIC)).all().get();
+            client.createTopics(Collections.singleton(new NewTopic(KafkaConstant.TOPIC, 1, (short) 1)))
                     .all().get();
+            client.close();
         }
     }
 

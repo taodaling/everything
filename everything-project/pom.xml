@@ -20,6 +20,7 @@
         <module>everything-project-springweb</module>
         <module>everything-project-springboot-dubbo</module>
         <module>everything-project-dubbo</module>
+        <module>everything-project-spring</module>
     </modules>
 
 

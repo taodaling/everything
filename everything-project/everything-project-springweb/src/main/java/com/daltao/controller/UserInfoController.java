@@ -9,6 +9,7 @@ import com.daltao.service.common.UserTransfer;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 @RequestMapping("/user/info")
 @ConfigurationProperties(prefix = "daltao")
 @Setter
+@EnableAsync
 public class UserInfoController {
     @Resource
     private UserInfoService userInfoService;
@@ -40,6 +42,10 @@ public class UserInfoController {
     @RequestMapping("/hello")
     public Result<String> helloWorld(@RequestParam("name") String name) {
         return Result.newSuccessResult("Hello, world!" + name + ". I'm " + this.name + " who is " + age);
+    }
+
+    @RequestMapping("/asyncSleep")
+    public void asyncSleep() {
     }
 
     @RequestMapping("/error")
