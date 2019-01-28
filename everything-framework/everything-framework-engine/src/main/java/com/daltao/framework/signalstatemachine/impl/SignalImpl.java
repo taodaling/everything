@@ -29,6 +29,10 @@ public class SignalImpl implements Signal {
             return property("target", value);
         }
 
+        public Builder routeKey(String value) {
+            return property("routeKey", value);
+        }
+
         public SignalImpl build() {
             return instance;
         }

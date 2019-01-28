@@ -1,141 +1,94 @@
 package com.daltao.oj.submit;
 
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Deque;
 
 public class LTSolution {
 
     public static void main(String[] args) {
         System.out.println(new Solution()
-        .isRationalEqual("9.99(999)", "10.00"));
+        .uniquePathsIII(new int[][]{
+                {1, -1},
+                {0, 2}
+        }));
     }
 
 
     static class Solution {
-        public boolean isRationalEqual(String S, String T) {
-            RationalNumber a = new RationalNumber(S);
-            RationalNumber b = new RationalNumber(T);
-            return RationalNumber.equal(a, b);
+
+        public int uniquePathsIII(int[][] grid) {
+            int n = grid.length;
+            int m = grid[0].length;
+
+            int total = n * m;
+            int mask = (1 << total) - 1;
+
+            int[][][] mem = new int[n][m][mask + 1];
+            boolean[][][] visit = new boolean[n][m][mask + 1];
+
+            int targetX = 0;
+            int targetY = 0;
+            for(int i = 0; i < n; i++)
+            {
+                for(int j = 0; j < m; j++)
+                {
+                    if(grid[i][j] == 1)
+                    {
+                        visit[i][j][1 << index(i, j, m)] = true;
+                        mem[i][j][1 << index(i, j, m)] = 1;
+                    }
+                    else if(grid[i][j] == -1)
+                    {
+                        Arrays.fill(mem[i][j], 0);
+                        Arrays.fill(visit[i][j], true);
+                        mask = removeBit(mask, index(i, j, m));
+                    }
+                    else if(grid[i][j] == 2)
+                    {
+                        targetX = j;
+                        targetY = i;
+                    }
+                }
+            }
+
+            //find(mem, visit, 1, 0, 5);
+            int result = find(mem, visit, targetY, targetX, mask);
+            return result;
         }
 
-        public static String repeat(String s, int k)
+        public static int index(int i, int j, int w)
         {
-            StringBuilder r = new StringBuilder();
-            for(int i = 0; i < k; i++)
-            {
-                r.append(s);
-            }
-            return r.toString();
+            return i * w + j;
         }
 
-        public static String addOne(String s)
+        public static boolean containBit(int i, int bit)
         {
-            int notNineIndex = s.length() - 1;
-            while(notNineIndex >= 0 && s.charAt(notNineIndex) == '9')
-            {
-                notNineIndex--;
-            }
-
-            if(notNineIndex == -1)
-            {
-                return "1" + repeat("0", s.length());
-            }
-
-            return s.substring(0, notNineIndex) + (char)(s.charAt(notNineIndex) + 1) + s.substring(notNineIndex + 1, s.length());
+            return ((i >> bit) & 1) == 1;
         }
 
-        public static class RationalNumber{
-            String intPart = "";
-            String nonRepPart = "";
-            String repPart = "";
+        public static int removeBit(int i, int bit)
+        {
+            return i & ~(1 << bit);
+        }
 
-            public RationalNumber(String s)
+        public static int find(int[][][] mem, boolean[][][] visit, int i, int j, int mask)
+        {
+            if(!containBit(mask, index(i, j, mem[0].length)))
             {
-                int dotIndex = s.indexOf(".");
-                if(dotIndex == -1)
-                {
-                    intPart = s;
-                    return;
-                }
-                intPart = s.substring(0, dotIndex);
-                s = s.substring(dotIndex + 1, s.length());
-
-                int leftIndex = s.indexOf("(");
-                if(leftIndex == -1)
-                {
-                    nonRepPart = s;
-                    return;
-                }
-
-                nonRepPart = s.substring(0, leftIndex);
-                repPart = s.substring(leftIndex + 1, s.length() - 1);
-
-                if(repPart.length() == 4)
-                {
-                    String piece = repPart.substring(0,2);
-                    if(repPart.equals(piece + piece))
-                    {
-                        repPart = piece;
-                    }
-                }
-                if(repPart.length() == 3)
-                {
-                    String piece = repPart.substring(0,1);
-                    if(repPart.equals(piece + piece + piece))
-                    {
-                        repPart = piece;
-                    }
-                }
-                if(repPart.length() == 2)
-                {
-                    String piece = repPart.substring(0,1);
-                    if(repPart.equals(piece + piece))
-                    {
-                        repPart = piece;
-                    }
-                }
-
-                Deque<Character> deque = new ArrayDeque();
-                for(char c : repPart.toCharArray())
-                {
-                    deque.addLast(c);
-                }
-                while(nonRepPart.endsWith(deque.getLast().toString()))
-                {
-                    nonRepPart = nonRepPart.substring(0, nonRepPart.length() - 1);
-                    deque.addFirst(deque.removeLast());
-                }
-
-                repPart = "";
-                while(!deque.isEmpty())
-                {
-                    repPart = repPart + deque.removeFirst();
-                }
-
-                if(repPart.equals("9"))
-                {
-                    repPart = "";
-                    if(nonRepPart.length() > 0)
-                    {
-                        nonRepPart = addOne(nonRepPart);
-                    }
-                    else
-                    {
-                        intPart = addOne(intPart);
-                    }
-                }
+                return 0;
             }
-
-            public static boolean equal(RationalNumber a, RationalNumber b)
+            if(i < 0 || i >= mem.length || j < 0 || j >= mem[0].length)
             {
-                return a.intPart.equals(b.intPart) && a.nonRepPart.equals(b.nonRepPart) && a.repPart.equals(b.repPart);
+                return 0;
             }
-
-            @Override
-            public String toString() {
-                return intPart + "." + nonRepPart + "(" + repPart + ")";
+            if(!visit[i][j][mask])
+            {
+                visit[i][j][mask] = true;
+                int preMask = removeBit(mask, index(i, j, mem[0].length));
+                mem[i][j][mask] = find(mem, visit, i - 1, j, preMask) + find(mem, visit, i + 1, j, preMask)
+                        + find(mem, visit, i, j - 1, preMask) + find(mem, visit, i, j + 1, preMask);
+                System.out.println(i + ":" + j + ":" + mask + ":" + mem[i][j][mask]);
             }
+            return mem[i][j][mask];
         }
     }
 
