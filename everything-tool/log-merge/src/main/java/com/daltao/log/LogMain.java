@@ -43,7 +43,7 @@ public class LogMain {
 
         LogMerger merger = new LogMerger(logReaderList, getComparator(arguments));
 
-        BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(new File("merge.log")));
+        BufferedOutputStream outputStream = new BufferedOutputStream(System.out);
         byte[] outputDelimiterBytes = outputDelimiter.getBytes(charset);
         while (merger.hasNext()) {
             outputStream.write(merger.next().getBytes(charset));
