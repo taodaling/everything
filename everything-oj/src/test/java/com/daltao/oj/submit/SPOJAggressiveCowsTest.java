@@ -1,7 +1,7 @@
 package com.daltao.oj.submit;
 
 
-import com.daltao.oj.template.FastIO;
+import com.daltao.template.FastIO;
 import com.daltao.oj.tool.OJMainSolution;
 import com.daltao.test.Input;
 import com.daltao.test.QueueInput;

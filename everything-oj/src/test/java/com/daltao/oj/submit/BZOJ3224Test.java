@@ -1,6 +1,6 @@
 package com.daltao.oj.submit;
 
-import com.daltao.oj.template.RankArray;
+import com.daltao.template.RankArray;
 import com.daltao.oj.tool.OJMainSolution;
 import com.daltao.test.Input;
 import com.daltao.test.QueueInput;

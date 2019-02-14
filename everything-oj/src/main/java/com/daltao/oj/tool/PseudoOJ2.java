@@ -1,7 +1,7 @@
 package com.daltao.oj.tool;
 
 
-import com.daltao.oj.template.FastIO;
+import com.daltao.template.FastIO;
 import com.daltao.utils.IOUtils;
 import com.daltao.common.NILRunnable;
 import com.daltao.utils.Precondition;

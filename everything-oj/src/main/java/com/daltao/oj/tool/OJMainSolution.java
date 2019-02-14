@@ -1,7 +1,7 @@
 package com.daltao.oj.tool;
 
 import com.daltao.common.Factory;
-import com.daltao.oj.template.FastIO;
+import com.daltao.template.FastIO;
 import com.daltao.test.Input;
 import com.daltao.test.QueueInput;
 import com.daltao.utils.StringUtils;

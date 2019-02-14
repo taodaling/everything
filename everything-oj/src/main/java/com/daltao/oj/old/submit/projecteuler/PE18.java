@@ -1,6 +1,6 @@
 package com.daltao.oj.old.submit.projecteuler;
 
-import com.daltao.oj.template.BlockReader;
+import com.daltao.template.BlockReader;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

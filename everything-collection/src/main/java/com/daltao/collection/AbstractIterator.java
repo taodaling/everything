@@ -3,6 +3,7 @@ package com.daltao.collection;
 import com.daltao.utils.Precondition;
 
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 public abstract class AbstractIterator<E> implements Iterator<E> {
     private static final Object END = new Object();
@@ -12,6 +13,11 @@ public abstract class AbstractIterator<E> implements Iterator<E> {
     private EndStatus<E> endStatus = new EndStatus<>();
     private Status<E> status = consumedStatus;
     private E nextElement;
+
+    @Override
+    public void remove() {
+        throw new UnsupportedOperationException();
+    }
 
     private void setStatus(Status<E> status) {
         this.status = status;
@@ -40,10 +46,10 @@ public abstract class AbstractIterator<E> implements Iterator<E> {
         public boolean hasNext() {
             nextElement = next0();
             if (nextElement == END) {
-                setStatus(endStatus);
+                setStatus(getEndStatus());
                 return false;
             } else {
-                setStatus(readyStatus);
+                setStatus(getReadyStatus());
                 return true;
             }
         }
@@ -63,7 +69,7 @@ public abstract class AbstractIterator<E> implements Iterator<E> {
 
         @Override
         public E next() {
-            setStatus(consumedStatus);
+            setStatus(getConsumedStatus());
             return (E) nextElement;
         }
     }
