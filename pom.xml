@@ -24,6 +24,7 @@
         <module>everything-script</module>
         <module>everything-project</module>
         <module>everything-framework</module>
+        <module>everything-code-generator</module>
     </modules>
 
     <properties>

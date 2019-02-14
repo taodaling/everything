@@ -6,13 +6,13 @@ import java.util.Iterator;
 import java.util.function.Consumer;
 
 public abstract class AbstractIterator<E> implements Iterator<E> {
-    private static final Object END = new Object();
 
     private ConsumedStatus<E> consumedStatus = new ConsumedStatus<>();
     private ReadyStatus<E> readyStatus = new ReadyStatus<>();
     private EndStatus<E> endStatus = new EndStatus<>();
     private Status<E> status = consumedStatus;
     private E nextElement;
+    private boolean end;
 
     @Override
     public void remove() {
@@ -45,7 +45,7 @@ public abstract class AbstractIterator<E> implements Iterator<E> {
         @Override
         public boolean hasNext() {
             nextElement = next0();
-            if (nextElement == END) {
+            if (end) {
                 setStatus(getEndStatus());
                 return false;
             } else {
@@ -88,7 +88,8 @@ public abstract class AbstractIterator<E> implements Iterator<E> {
 
 
     public final E end() {
-        return (E) END;
+        end = true;
+        return null;
     }
 
     @Override

@@ -54,6 +54,21 @@ public class StringUtils {
         return builder.toString();
     }
 
+    public static String trim(String s, boolean trimHead, boolean trimTail) {
+        int l = 0;
+        int r = s.length();
+        if (trimHead) {
+            for (; l < r && Character.isWhitespace(s.charAt(l)); l++) ;
+        }
+        if (trimTail) {
+            for (; l < r && Character.isWhitespace(s.charAt(r - 1)); r--) ;
+        }
+        if (l == r) {
+            return "";
+        }
+        return s.substring(l, r);
+    }
+
     public static String defaultString(String s, String defaultStr) {
         return s == null ? defaultStr : s;
     }

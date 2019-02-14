@@ -7,12 +7,12 @@ import com.daltao.template.KMPAutomaton;
 import java.io.IOException;
 import java.io.Reader;
 
-public class LogReaderAdapter extends AbstractIterator<Log> {
+public class LogReader extends AbstractIterator<String> {
     private final Reader reader;
     private final KMPAutomaton automaton;
     private StringBuilder builder = new StringBuilder();
 
-    public LogReaderAdapter(Reader reader, KMPAutomaton automaton) {
+    public LogReader(Reader reader, KMPAutomaton automaton) {
         this.reader = reader;
         this.automaton = automaton;
     }
@@ -31,7 +31,7 @@ public class LogReaderAdapter extends AbstractIterator<Log> {
         int c;
         while ((c = read()) != -1) {
             automaton.match((char) c);
-            builder.append(c);
+            builder.append((char)c);
             if (automaton.isMatch()) {
                 builder.setLength(builder.length() - automaton.length());
                 return builder.toString();
@@ -41,11 +41,11 @@ public class LogReaderAdapter extends AbstractIterator<Log> {
     }
 
     @Override
-    protected Log next0() {
+    protected String next0() {
         String s = readString();
         if (s.isEmpty()) {
             return end();
         }
-        return new Log(s);
+        return s;
     }
 }
