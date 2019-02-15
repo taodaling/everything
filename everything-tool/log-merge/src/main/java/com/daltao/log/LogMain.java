@@ -5,7 +5,14 @@ import com.daltao.template.KMPAutomaton;
 import com.daltao.utils.StringUtils;
 import com.google.common.base.Predicates;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -65,11 +72,7 @@ public class LogMain {
     }
 
     private static String escape(String s) {
-        return s.replace("\\n", "\n")
-                .replace("\\r", "")
-                .replace("\\t", "\t")
-                .replace("\\\\", "\\")
-                .replace("\\\"", "\"");
+        return StringUtils.percentageEscapeDecode(s);
     }
 
     private static Charset getCharset(CommandLineArguments arguments) {

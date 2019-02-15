@@ -72,4 +72,63 @@ public class StringUtils {
     public static String defaultString(String s, String defaultStr) {
         return s == null ? defaultStr : s;
     }
+
+    public static String percentageEscapeDecode(String s) {
+        PercentageEscapeConsumer consumer = new PercentageEscapeConsumer();
+        for (int i = 0, until = s.length(); i < until; i++) {
+            consumer.consume(s.charAt(i));
+        }
+        return consumer.toString();
+    }
+
+    public static String percentageEscapeEncode(String s) {
+        return s.replace("%", "%%");
+    }
+
+
+    private static class PercentageEscapeConsumer {
+        private StringBuilder builder = new StringBuilder();
+        private boolean open;
+
+        public void consume(char c) {
+            if (open) {
+                openConsume(c);
+            } else {
+                closeConsume(c);
+            }
+        }
+
+        private void closeConsume(char c) {
+            if (c == '%') {
+                open = true;
+            } else {
+                builder.append(c);
+            }
+        }
+
+        public String toString() {
+            return builder.toString();
+        }
+
+        private void openConsume(char c) {
+            open = false;
+            switch (c) {
+                case '%':
+                    builder.append('%');
+                    break;
+                case 'n':
+                    builder.append('\n');
+                    break;
+                case 't':
+                    builder.append('\t');
+                    break;
+                case 'r':
+                    builder.append('\r');
+                    break;
+                default:
+                    throw new IllegalStateException();
+            }
+        }
+    }
 }
+
