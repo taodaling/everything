@@ -12,8 +12,7 @@ import java.util.Date;
 public class TestCaseGenerator {
     static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
         generate("D:/Temp/log1", "log1");
         generate("D:/Temp/log2", "log2");
         generate("D:/Temp/log3", "log3");

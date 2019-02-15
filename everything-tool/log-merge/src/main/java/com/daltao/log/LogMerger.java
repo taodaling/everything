@@ -1,7 +1,6 @@
 package com.daltao.log;
 
 import com.daltao.collection.AbstractIterator;
-import com.daltao.template.MinHeap;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -14,7 +13,7 @@ public class LogMerger extends AbstractIterator<String> {
     private PriorityQueue<LogMeta> queue;
 
     public LogMerger(List<Iterator<String>> iterators, Comparator<String> comparator) {
-        this.queue = new PriorityQueue<>(iterators.size(), (a, b) -> comparator.compare(a.log, b.log));
+        this.queue = new PriorityQueue<>(iterators.size(), (a, b) -> comparator.compare(a.getLog(), b.getLog()));
         for (Iterator<String> logIterator : iterators) {
             addLogIterator(logIterator);
         }
@@ -24,8 +23,7 @@ public class LogMerger extends AbstractIterator<String> {
         if (!logIterator.hasNext()) {
             return;
         }
-        String log = logIterator.next();
-        queue.add(new LogMeta(log, logIterator));
+        queue.add(new LogMeta(logIterator.next(), logIterator));
     }
 
     @Data

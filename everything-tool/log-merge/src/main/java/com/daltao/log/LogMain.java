@@ -84,13 +84,13 @@ public class LogMain {
     }
 
     private static int compare(String a, String b, int from, int to) {
-        for (int i = from; i < to; i++) {
+        for (int i = from, until = Math.min(to, Math.min(a.length(), b.length())); i < to; i++) {
             int d = a.charAt(i) - b.charAt(i);
             if (d != 0) {
                 return d;
             }
         }
-        return 0;
+        return a.length() - b.length();
     }
 
     private static KMPAutomaton buildAutomaton(String s) {
