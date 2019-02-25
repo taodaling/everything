@@ -1,14 +1,17 @@
-package com.daltao.template;
+package com.daltao.oj.old.submit.bzoj;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.Random;
 
-public class OJCodeTemplate {
+public class BZOJ3678 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -50,8 +53,209 @@ public class OJCodeTemplate {
         }
 
         public void solve() {
+            int n = io.readInt();
+            int m = io.readInt();
+            int[] data = new int[n];
+            for (int i = 0; i < n; i++) {
+                data[i] = io.readInt();
+            }
+
+            Treap root = Treap.buildFromSortedData(data, 0, n - 1);
+
+            for (int i = 0; i < m; i++) {
+                int sym = io.readInt();
+                if (sym == 0) {
+                    int p = io.readInt();
+                    int a = io.readInt();
+                    int b = io.readInt();
+                    Treap[] parts = Treap.splitByRank(root, p);
+                    parts[0] = Treap.merge(parts[0], Treap.buildTreapFromRange(a, b));
+                    root = Treap.merge(parts[0], parts[1]);
+                } else if (sym == 1) {
+                    int a = io.readInt();
+                    int b = io.readInt();
+                    Treap[] parts = Treap.splitByRank(root, b);
+                    parts[0] = Treap.splitByRank(parts[0], a - 1)[0];
+                    root = Treap.merge(parts[0], parts[1]);
+                } else {
+                    int p = io.readInt();
+                    Treap[] parts = Treap.splitByRank(root, p);
+                    Treap[] parts2 = Treap.splitByRank(parts[0], p - 1);
+                    io.cache.append(parts2[1].key).append('\n');
+                    parts[0] = Treap.merge(parts2[0], parts2[1]);
+                    root = Treap.merge(parts[0], parts[1]);
+                }
+            }
         }
     }
+
+    public static class Treap implements Cloneable {
+        private static Random random = new Random();
+
+        private static Treap NIL = new Treap();
+
+        static {
+            NIL.left = NIL.right = NIL;
+        }
+
+        Treap left = NIL;
+        Treap right = NIL;
+        int size;
+        int key;
+        int l;
+        int r;
+
+        public static Treap buildFromSortedData(int[] data, int l, int r) {
+            Deque<Treap> deque = new ArrayDeque(r - l + 1);
+
+            for (int i = l; i <= r; i++) {
+                Treap node = new Treap();
+                node.key = data[i];
+                while (!deque.isEmpty()) {
+                    if (random.nextBoolean()) {
+                        Treap tail = deque.removeLast();
+                        tail.right = node.left;
+                        node.left = tail;
+                        tail.pushUp();
+                    } else {
+                        break;
+                    }
+                }
+
+                deque.addLast(node);
+            }
+
+            Treap last = NIL;
+            while (!deque.isEmpty()) {
+                Treap tail = deque.removeLast();
+                tail.right = last;
+                tail.pushUp();
+                last = tail;
+            }
+
+            return last;
+        }
+
+        @Override
+        public Treap clone() {
+            try {
+                return (Treap) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public static Treap buildTreapFromRange(int l, int r) {
+            if (l > r) {
+                return NIL;
+            }
+            Treap treap = new Treap();
+            treap.size = r - l + 1;
+            treap.key = (l + r) >> 1;
+            treap.l = l;
+            treap.r = r;
+            return treap;
+        }
+
+        public void pushDown() {
+            if (l == r) {
+                return;
+            }
+            left = buildTreapFromRange(l, key - 1);
+            right = buildTreapFromRange(key + 1, r);
+            l = r = key;
+        }
+
+        public void pushUp() {
+            size = left.size + right.size + 1;
+        }
+
+        public static Treap[] splitByRank(Treap root, int rank) {
+            if (root == NIL) {
+                return new Treap[]{NIL, NIL};
+            }
+            root.pushDown();
+            Treap[] result;
+            if (root.left.size >= rank) {
+                result = splitByRank(root.left, rank);
+                root.left = result[1];
+                result[1] = root;
+            } else {
+                result = splitByRank(root.right, rank - (root.size - root.right.size));
+                root.right = result[0];
+                result[0] = root;
+            }
+            root.pushUp();
+            return result;
+        }
+
+        public static Treap merge(Treap a, Treap b) {
+            if (a == NIL) {
+                return b;
+            }
+            if (b == NIL) {
+                return a;
+            }
+            if (random.nextBoolean()) {
+                a.pushDown();
+                a.right = merge(a.right, b);
+                a.pushUp();
+                return a;
+            } else {
+                b.pushDown();
+                b.left = merge(a, b.left);
+                b.pushUp();
+                return b;
+            }
+        }
+
+        public static void toString(Treap root, StringBuilder builder) {
+            if (root == NIL) {
+                return;
+            }
+            root.pushDown();
+            toString(root.left, builder);
+            builder.append(root.key).append(',');
+            toString(root.right, builder);
+        }
+
+        public static Treap clone(Treap root) {
+            if (root == NIL) {
+                return NIL;
+            }
+            Treap clone = root.clone();
+            clone.left = clone(root.left);
+            clone.right = clone(root.right);
+            return clone;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder().append(key).append(":");
+            toString(clone(this), builder);
+            return builder.toString();
+        }
+
+        public static Treap[] splitByKey(Treap root, int key) {
+            if (root == NIL) {
+                return new Treap[]{NIL, NIL};
+            }
+            root.pushDown();
+            Treap[] result;
+            if (root.key > key) {
+                result = splitByKey(root.left, key);
+                root.left = result[1];
+                result[1] = root;
+            } else {
+                result = splitByKey(root.right, key);
+                root.right = result[0];
+                result[0] = root;
+            }
+            root.pushUp();
+            return result;
+        }
+    }
+
 
     public static class FastIO {
         private final InputStream is;
@@ -69,10 +273,6 @@ public class OJCodeTemplate {
             this.is = is;
             this.os = os;
             this.charset = charset;
-        }
-
-        public FastIO(InputStream is, OutputStream os) {
-            this(is, os, Charset.forName("ascii"));
         }
 
         private int read() {
@@ -153,20 +353,19 @@ public class OJCodeTemplate {
             }
 
             next = read();
-            double f = readLong();
-            while (f >= 100000000) {
-                f /= 1000000000;
+            long divisor = 1;
+            long later = 0;
+            while (next >= '0' && next <= '9') {
+                divisor = divisor * 10;
+                later = later * 10 + next - '0';
+                next = read();
             }
-            while (f >= 10000) {
-                f /= 100000;
+
+            if (num >= 0) {
+                return num + (later / (double) divisor);
+            } else {
+                return num - (later / (double) divisor);
             }
-            while (f >= 100) {
-                f /= 1000;
-            }
-            while (f >= 1) {
-                f /= 10;
-            }
-            return num > 0 ? (num + f) : (num - f);
         }
 
         public String readString(StringBuilder builder) {
@@ -183,15 +382,6 @@ public class OJCodeTemplate {
         public String readString() {
             defaultStringBuf.setLength(0);
             return readString(defaultStringBuf);
-        }
-
-        public int readLine(char[] data, int offset) {
-            int originalOffset = offset;
-            while (next != -1 && next != '\n') {
-                data[offset++] = (char) next;
-                next = read();
-            }
-            return offset - originalOffset;
         }
 
         public int readString(char[] data, int offset) {

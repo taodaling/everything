@@ -1,14 +1,17 @@
-package com.daltao.template;
+package com.daltao.oj.old.submit.bzoj;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.Random;
 
-public class OJCodeTemplate {
+public class BZOJ1269 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -50,8 +53,226 @@ public class OJCodeTemplate {
         }
 
         public void solve() {
+            int n = io.readInt();
+            char[] cache = new char[1 << 20];
+            int pos = 0;
+            Treap root = Treap.NIL;
+            Deque<Treap> deque = new ArrayDeque<>(1 << 20);
+            for (int i = 0; i < n; i++) {
+                io.readString(cache, 0);
+                switch (cache[0]) {
+                    case 'M': {
+                        pos = io.readInt();
+                    }
+                    break;
+                    case 'I': {
+                        int len = io.readInt();
+                        io.readLine(cache, 0);
+                        io.readLine(cache, 0);
+                        Treap added = Treap.buildFromSortedData(cache, 0, len, deque);
+                        Treap[] parts = Treap.splitByRank(root, pos);
+                        parts[0] = Treap.merge(parts[0], added);
+                        root = Treap.merge(parts[0], parts[1]);
+                    }
+                    break;
+                    case 'D': {
+                        int len = io.readInt();
+                        Treap[] parts = Treap.splitByRank(root, pos);
+                        parts[1] = Treap.splitByRank(parts[1], len)[1];
+                        root = Treap.merge(parts[0], parts[1]);
+                    }
+                    break;
+                    case 'R': {
+                        int len = io.readInt();
+                        Treap[] parts = Treap.splitByRank(root, pos);
+                        Treap[] parts2 = Treap.splitByRank(parts[1], len);
+                        parts2[0].rotate();
+                        parts[1] = Treap.merge(parts2[0], parts2[1]);
+                        root = Treap.merge(parts[0], parts[1]);
+
+                    }
+                    break;
+                    case 'G': {
+                        Treap[] parts = Treap.splitByRank(root, pos);
+                        Treap[] parts2 = Treap.splitByRank(parts[1], 1);
+                        io.cache.append((char) parts2[0].key).append('\n');
+                        parts[1] = Treap.merge(parts2[0], parts2[1]);
+                        root = Treap.merge(parts[0], parts[1]);
+                    }
+                    break;
+                    case 'P': {
+                        pos--;
+                    }
+                    break;
+                    case 'N': {
+                        pos++;
+                    }
+                    break;
+                }
+            }
         }
     }
+
+    public static class Treap implements Cloneable {
+        private static Random random = new Random();
+
+        private static Treap NIL = new Treap();
+
+        static {
+            NIL.left = NIL.right = NIL;
+        }
+
+        Treap left = NIL;
+        Treap right = NIL;
+        int size;
+        int key;
+        boolean rotate;
+
+        public void rotate() {
+            rotate = !rotate;
+        }
+
+        public static Treap buildFromSortedData(char[] data, int l, int r,
+                                                Deque<Treap> deque) {
+            for (int i = l; i < r; i++) {
+                Treap node = new Treap();
+                node.key = data[i];
+                while (!deque.isEmpty()) {
+                    if (random.nextBoolean()) {
+                        Treap tail = deque.removeLast();
+                        tail.right = node.left;
+                        node.left = tail;
+                        tail.pushUp();
+                    } else {
+                        break;
+                    }
+                }
+
+                deque.addLast(node);
+            }
+
+            Treap last = NIL;
+            while (!deque.isEmpty()) {
+                Treap tail = deque.removeLast();
+                tail.right = last;
+                tail.pushUp();
+                last = tail;
+            }
+
+            return last;
+        }
+
+        @Override
+        public Treap clone() {
+            try {
+                return (Treap) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public void pushDown() {
+            if (!rotate) {
+                return;
+            }
+            rotate = false;
+            left.rotate();
+            right.rotate();
+            Treap tmp = left;
+            left = right;
+            right = tmp;
+        }
+
+        public void pushUp() {
+            size = left.size + right.size + 1;
+        }
+
+        public static Treap[] splitByRank(Treap root, int rank) {
+            if (root == NIL) {
+                return new Treap[]{NIL, NIL};
+            }
+            root.pushDown();
+            Treap[] result;
+            if (root.left.size >= rank) {
+                result = splitByRank(root.left, rank);
+                root.left = result[1];
+                result[1] = root;
+            } else {
+                result = splitByRank(root.right, rank - (root.size - root.right.size));
+                root.right = result[0];
+                result[0] = root;
+            }
+            root.pushUp();
+            return result;
+        }
+
+        public static Treap merge(Treap a, Treap b) {
+            if (a == NIL) {
+                return b;
+            }
+            if (b == NIL) {
+                return a;
+            }
+            if (random.nextBoolean()) {
+                a.pushDown();
+                a.right = merge(a.right, b);
+                a.pushUp();
+                return a;
+            } else {
+                b.pushDown();
+                b.left = merge(a, b.left);
+                b.pushUp();
+                return b;
+            }
+        }
+
+        public static void toString(Treap root, StringBuilder builder) {
+            if (root == NIL) {
+                return;
+            }
+            root.pushDown();
+            toString(root.left, builder);
+            builder.append(root.key).append(',');
+            toString(root.right, builder);
+        }
+
+        public static Treap clone(Treap root) {
+            if (root == NIL) {
+                return NIL;
+            }
+            Treap clone = root.clone();
+            clone.left = clone(root.left);
+            clone.right = clone(root.right);
+            return clone;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder().append(key).append(":");
+            toString(clone(this), builder);
+            return builder.toString();
+        }
+
+        public static Treap[] splitByKey(Treap root, int key) {
+            if (root == NIL) {
+                return new Treap[]{NIL, NIL};
+            }
+            root.pushDown();
+            Treap[] result;
+            if (root.key > key) {
+                result = splitByKey(root.left, key);
+                root.left = result[1];
+                result[1] = root;
+            } else {
+                result = splitByKey(root.right, key);
+                root.right = result[0];
+                result[0] = root;
+            }
+            root.pushUp();
+            return result;
+        }
+    }
+
 
     public static class FastIO {
         private final InputStream is;
@@ -189,6 +410,9 @@ public class OJCodeTemplate {
             int originalOffset = offset;
             while (next != -1 && next != '\n') {
                 data[offset++] = (char) next;
+                next = read();
+            }
+            if (next == '\n') {
                 next = read();
             }
             return offset - originalOffset;

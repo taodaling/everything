@@ -84,7 +84,7 @@ public class LogMain {
     }
 
     private static int compare(String a, String b, int from, int to) {
-        for (int i = from, until = Math.min(to, Math.min(a.length(), b.length())); i < to; i++) {
+        for (int i = from, until = Math.min(to, Math.min(a.length(), b.length())); i < until; i++) {
             int d = a.charAt(i) - b.charAt(i);
             if (d != 0) {
                 return d;

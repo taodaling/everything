@@ -11,8 +11,8 @@ public class KMPAutomaton  {
     int length;
 
     public KMPAutomaton(int cap) {
-        data = new char[cap + 1];
-        fail = new int[cap + 1];
+        data = new char[cap + 2];
+        fail = new int[cap + 2];
         fail[0] = -1;
         buildLast = 0;
         length = cap;

@@ -137,6 +137,15 @@ public class FastIO {
         return readString(defaultStringBuf);
     }
 
+    public int readLine(char[] data, int offset) {
+        int originalOffset = offset;
+        while (next != -1 && next != '\n') {
+            data[offset++] = (char) next;
+            next = read();
+        }
+        return offset - originalOffset;
+    }
+
     public int readString(char[] data, int offset) {
         skipBlank();
 

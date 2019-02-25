@@ -5,29 +5,29 @@ import java.util.Deque;
 import java.util.Random;
 
 
-public class TreapNode implements Cloneable {
+public class Treap implements Cloneable {
     private static Random random = new Random();
 
-    private static TreapNode NIL = new TreapNode();
+    private static Treap NIL = new Treap();
 
     static {
         NIL.left = NIL.right = NIL;
     }
 
-    TreapNode left = NIL;
-    TreapNode right = NIL;
+    Treap left = NIL;
+    Treap right = NIL;
     int size;
     int key;
 
-    public static TreapNode buildFromSortedData(int[] data, int l, int r) {
-        Deque<TreapNode> deque = new ArrayDeque(r - l);
+    public static Treap buildFromSortedData(int[] data, int l, int r) {
+        Deque<Treap> deque = new ArrayDeque(r - l);
 
         for (int i = l; i < r; i++) {
-            TreapNode node = new TreapNode();
+            Treap node = new Treap();
             node.key = data[i];
             while (!deque.isEmpty()) {
                 if (random.nextBoolean()) {
-                    TreapNode tail = deque.removeLast();
+                    Treap tail = deque.removeLast();
                     tail.right = node.left;
                     node.left = tail;
                     tail.pushUp();
@@ -39,9 +39,9 @@ public class TreapNode implements Cloneable {
             deque.addLast(node);
         }
 
-        TreapNode last = NIL;
+        Treap last = NIL;
         while (!deque.isEmpty()) {
-            TreapNode tail = deque.removeLast();
+            Treap tail = deque.removeLast();
             tail.right = last;
             tail.pushUp();
             last = tail;
@@ -51,9 +51,9 @@ public class TreapNode implements Cloneable {
     }
 
     @Override
-    public TreapNode clone() {
+    public Treap clone() {
         try {
-            return (TreapNode) super.clone();
+            return (Treap) super.clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
@@ -66,12 +66,12 @@ public class TreapNode implements Cloneable {
         size = left.size + right.size + 1;
     }
 
-    public static TreapNode[] splitByRank(TreapNode root, int rank) {
+    public static Treap[] splitByRank(Treap root, int rank) {
         if (root == NIL) {
-            return new TreapNode[]{NIL, NIL};
+            return new Treap[]{NIL, NIL};
         }
         root.pushDown();
-        TreapNode[] result;
+        Treap[] result;
         if (root.left.size >= rank) {
             result = splitByRank(root.left, rank);
             root.left = result[1];
@@ -85,7 +85,7 @@ public class TreapNode implements Cloneable {
         return result;
     }
 
-    public static TreapNode merge(TreapNode a, TreapNode b) {
+    public static Treap merge(Treap a, Treap b) {
         if (a == NIL) {
             return b;
         }
@@ -105,7 +105,7 @@ public class TreapNode implements Cloneable {
         }
     }
 
-    public static void toString(TreapNode root, StringBuilder builder) {
+    public static void toString(Treap root, StringBuilder builder) {
         if (root == NIL) {
             return;
         }
@@ -115,11 +115,11 @@ public class TreapNode implements Cloneable {
         toString(root.right, builder);
     }
 
-    public static TreapNode clone(TreapNode root) {
+    public static Treap clone(Treap root) {
         if (root == NIL) {
             return NIL;
         }
-        TreapNode clone = root.clone();
+        Treap clone = root.clone();
         clone.left = clone(root.left);
         clone.right = clone(root.right);
         return clone;
@@ -132,12 +132,12 @@ public class TreapNode implements Cloneable {
         return builder.toString();
     }
 
-    public static TreapNode[] splitByKey(TreapNode root, int key) {
+    public static Treap[] splitByKey(Treap root, int key) {
         if (root == NIL) {
-            return new TreapNode[]{NIL, NIL};
+            return new Treap[]{NIL, NIL};
         }
         root.pushDown();
-        TreapNode[] result;
+        Treap[] result;
         if (root.key > key) {
             result = splitByKey(root.left, key);
             root.left = result[1];

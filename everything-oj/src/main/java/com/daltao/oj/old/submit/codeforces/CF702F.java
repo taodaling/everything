@@ -1,14 +1,18 @@
-package com.daltao.template;
+package com.daltao.oj.old.submit.codeforces;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.Random;
+import java.util.function.Consumer;
 
-public class OJCodeTemplate {
+public class CF702F {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -50,8 +54,189 @@ public class OJCodeTemplate {
         }
 
         public void solve() {
+            int n = io.readInt();
+            int[][] tshirts = new int[n][2];
+            for (int i = 0; i < n; i++) {
+                tshirts[i][0] = io.readInt();
+                tshirts[i][1] = io.readInt();
+            }
+
+            Arrays.sort(tshirts, (a, b) -> a[1] != b[1] ? b[1] - a[1] : a[0] - b[0]);
+
+            int m = io.readInt();
+            Treap root = Treap.NIL;
+            for (int i = 0; i < m; i++) {
+                Treap node = new Treap();
+                node.id = i;
+                node.key = io.readInt();
+                root = Treap.insertSingleNode(root, node);
+            }
+
+            for (int[] tshirt : tshirts) {
+                debug.debug("tshirt", tshirt);
+                int price = tshirt[0];
+                Treap[] parts = Treap.splitByKey(root, price - 1);
+                parts[1].addCnt(1);
+                parts[1].subtract(price);
+                Treap[] parts2 = Treap.splitByKey(parts[1], price - 1);
+                Treap.dfs(parts2[0], node -> {
+                    node.left = Treap.NIL;
+                    node.right = Treap.NIL;
+                    parts[0] = Treap.insertSingleNode(parts[0], node);
+                });
+
+                root = Treap.merge(parts[0], parts2[1]);
+            }
+
+            int[] count = new int[m];
+            Treap.dfs(root, node -> {
+                count[node.id] = node.cnt;
+            });
+
+            for (int i = 0; i < m; i++) {
+                io.cache.append(count[i]).append(' ');
+            }
         }
     }
+
+
+    public static class Treap implements Cloneable {
+        private static Random random = new Random(19950823);
+
+        private static Treap NIL = new Treap();
+
+        static {
+            NIL.left = NIL.right = NIL;
+        }
+
+        Treap left = NIL;
+        Treap right = NIL;
+        int key;
+        int id;
+        int subDirty;
+        int cnt;
+        int cntDirty;
+
+        public static void dfs(Treap root, Consumer<Treap> consumer) {
+            if (root == NIL) {
+                return;
+            }
+            root.pushDown();
+            dfs(root.left, consumer);
+            dfs(root.right, consumer);
+            consumer.accept(root);
+            root.pushUp();
+        }
+
+        public void subtract(int s) {
+            subDirty += s;
+            key -= s;
+        }
+
+        public void addCnt(int cnt) {
+            this.cnt += cnt;
+            this.cntDirty += cnt;
+        }
+
+        @Override
+        public Treap clone() {
+            try {
+                return (Treap) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public void pushDown() {
+            if (subDirty != 0) {
+                left.subtract(subDirty);
+                right.subtract(subDirty);
+                subDirty = 0;
+            }
+            if (cntDirty != 0) {
+                left.addCnt(cntDirty);
+                right.addCnt(cntDirty);
+                cntDirty = 0;
+            }
+        }
+
+        public void pushUp() {
+        }
+
+
+        public static Treap merge(Treap a, Treap b) {
+            if (a == NIL) {
+                return b;
+            }
+            if (b == NIL) {
+                return a;
+            }
+            if (random.nextBoolean()) {
+                a.pushDown();
+                a.right = merge(a.right, b);
+                a.pushUp();
+                return a;
+            } else {
+                b.pushDown();
+                b.left = merge(a, b.left);
+                b.pushUp();
+                return b;
+            }
+        }
+
+        public static void toString(Treap root, StringBuilder builder) {
+            if (root == NIL) {
+                return;
+            }
+            root.pushDown();
+            toString(root.left, builder);
+            builder.append(root.id).append(',');
+            toString(root.right, builder);
+        }
+
+        public static Treap clone(Treap root) {
+            if (root == NIL) {
+                return NIL;
+            }
+            Treap clone = root.clone();
+            clone.left = clone(root.left);
+            clone.right = clone(root.right);
+            return clone;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder().append(key).append(":");
+            toString(clone(this), builder);
+            return builder.toString();
+        }
+
+        public static Treap[] splitByKey(Treap root, int key) {
+            if (root == NIL) {
+                return new Treap[]{NIL, NIL};
+            }
+            root.pushDown();
+            Treap[] result;
+            if (root.key > key) {
+                result = splitByKey(root.left, key);
+                root.left = result[1];
+                result[1] = root;
+            } else {
+                result = splitByKey(root.right, key);
+                root.right = result[0];
+                result[0] = root;
+            }
+            root.pushUp();
+            return result;
+        }
+
+        public static Treap insertSingleNode(Treap root, Treap single) {
+            Treap[] parts = root.splitByKey(root, single.key);
+            parts[0] = merge(parts[0], single);
+            return merge(parts[0], parts[1]);
+        }
+    }
+
 
     public static class FastIO {
         private final InputStream is;
