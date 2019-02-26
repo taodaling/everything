@@ -226,7 +226,7 @@ public class CF1016F {
 
         @Override
         public String toString() {
-            return String.format("%s-%d->%s", src, length, dst);
+            return String.format("%s-%d1->%s", src, length, dst);
         }
     }
 
