@@ -1,15 +1,18 @@
-package com.daltao.oj.old.submit.codeforces;
+package com.daltao.oj.old.submit.icpcarchive;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.Random;
 import java.util.function.Consumer;
 
-public class CF702F {
+public class ICPC4156 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -39,6 +42,7 @@ public class CF702F {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
+        int cCnt = 0;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -51,163 +55,61 @@ public class CF702F {
         }
 
         public void solve() {
+            Treap[] versions = new Treap[50001];
+            int currentVersion = 0;
+            versions[0] = Treap.NIL;
             int n = io.readInt();
-            int[][] tshirts = new int[n][2];
-            for (int i = 0; i < n; i++) {
-                tshirts[i][0] = io.readInt();
-                tshirts[i][1] = io.readInt();
-            }
-
-            Arrays.sort(tshirts, (a, b) -> a[1] != b[1] ? b[1] - a[1] : a[0] - b[0]);
-
-            int m = io.readInt();
-            Splay root = Splay.NIL;
-            for (int i = 0; i < m; i++) {
-                Splay node = new Splay();
-                node.id = i;
-                node.key = io.readInt();
-                root = Splay.add(root, node);
-            }
-
-            for (int[] tshirt : tshirts) {
-                debug.debug("root", root);
-                debug.debug("tshirt", tshirt);
-                int price = tshirt[0];
-                Splay[] parts = Splay.split(root, price - 1);
-                parts[1].addCnt(1);
-                parts[1].addKey(-price);
-                root = Splay.bruteForceMerge(parts[0], parts[1]);
-            }
-
-            int[] count = new int[m];
-            Splay.dfs(root, node -> count[node.id] = node.cnt);
-
-            for (int i = 0; i < m; i++) {
-                io.cache.append(count[i]).append(' ');
+            char[] buf = new char[1000000];
+            Deque<Treap> deque = new ArrayDeque<>(1000000);
+            for (int i = 1; i <= n; i++) {
+                int t = io.readInt();
+                if (t == 1) {
+                    //add
+                    int p = io.readInt() - cCnt;
+                    int len = io.readString(buf, 0);
+                    Treap treap = Treap.buildFromSortedData(buf, 0, len, deque);
+                    Treap[] pair = Treap.splitByRank(versions[currentVersion], p);
+                    pair[0] = Treap.merge(pair[0], treap);
+                    versions[++currentVersion] = Treap.merge(pair[0], pair[1]);
+                } else if (t == 2) {
+                    int p = io.readInt() - cCnt;
+                    int c = io.readInt() - cCnt;
+                    Treap[] pair = Treap.splitByRank(versions[currentVersion], p - 1);
+                    pair[1] = Treap.splitByRank(pair[1], c)[1];
+                    versions[++currentVersion] = Treap.merge(pair[0], pair[1]);
+                } else {
+                    int v = io.readInt() - cCnt;
+                    int p = io.readInt() - cCnt;
+                    int c = io.readInt() - cCnt;
+                    Treap[] pair = Treap.splitByRank(versions[v], p - 1);
+                    Treap region = Treap.splitByRank(pair[1], c)[0];
+                    Treap.dfs(region, node -> {
+                        io.cache.append((char) node.key);
+                        if (node.key == 'c') {
+                            cCnt++;
+                        }
+                    });
+                    io.cache.append('\n');
+                }
             }
         }
     }
 
-    /**
-     * Created by dal 2018/5/20.
-     */
-    public static class Splay implements Cloneable {
-        public static final Splay NIL = new Splay();
+    public static class Treap implements Cloneable {
+        private static Random random = new Random();
+
+        private static Treap NIL = new Treap();
 
         static {
-            NIL.left = NIL;
-            NIL.right = NIL;
-            NIL.father = NIL;
+            NIL.left = NIL.right = NIL;
         }
 
-        Splay left = NIL;
-        Splay right = NIL;
-        Splay father = NIL;
+        Treap left = NIL;
+        Treap right = NIL;
+        int size;
         int key;
-        int id;
-        int keyDirty;
-        int cnt;
-        int cntDirty;
 
-        public void addKey(int k) {
-            key += k;
-            keyDirty += k;
-        }
-
-        public void addCnt(int cnt) {
-            this.cnt += cnt;
-            cntDirty += cnt;
-        }
-
-
-        public static void splay(Splay x) {
-            if (x == NIL) {
-                return;
-            }
-            Splay y, z;
-            while ((y = x.father) != NIL) {
-                if ((z = y.father) == NIL) {
-                    y.pushDown();
-                    x.pushDown();
-                    if (x == y.left) {
-                        zig(x);
-                    } else {
-                        zag(x);
-                    }
-                } else {
-                    z.pushDown();
-                    y.pushDown();
-                    x.pushDown();
-                    if (x == y.left) {
-                        if (y == z.left) {
-                            zig(y);
-                            zig(x);
-                        } else {
-                            zig(x);
-                            zag(x);
-                        }
-                    } else {
-                        if (y == z.left) {
-                            zag(x);
-                            zig(x);
-                        } else {
-                            zag(y);
-                            zag(x);
-                        }
-                    }
-                }
-            }
-
-            x.pushDown();
-            x.pushUp();
-        }
-
-        public static void zig(Splay x) {
-            Splay y = x.father;
-            Splay z = y.father;
-            Splay b = x.right;
-
-            y.setLeft(b);
-            x.setRight(y);
-            z.changeChild(y, x);
-
-            y.pushUp();
-        }
-
-        public static void zag(Splay x) {
-            Splay y = x.father;
-            Splay z = y.father;
-            Splay b = x.left;
-
-            y.setRight(b);
-            x.setLeft(y);
-            z.changeChild(y, x);
-
-            y.pushUp();
-        }
-
-        public void setLeft(Splay x) {
-            left = x;
-            x.father = this;
-        }
-
-        public void setRight(Splay x) {
-            right = x;
-            x.father = this;
-        }
-
-        public void changeChild(Splay y, Splay x) {
-            if (left == y) {
-                setLeft(x);
-            } else {
-                setRight(x);
-            }
-        }
-
-        public void pushUp() {
-        }
-
-        public static void dfs(Splay root, Consumer<Splay> consumer) {
+        public static void dfs(Treap root, Consumer<Treap> consumer) {
             if (root == NIL) {
                 return;
             }
@@ -218,30 +120,94 @@ public class CF702F {
             root.pushUp();
         }
 
+        public static Treap buildFromSortedData(char[] data, int l, int r, Deque<Treap> deque) {
+            for (int i = l; i < r; i++) {
+                Treap node = new Treap();
+                node.key = data[i];
+                while (!deque.isEmpty()) {
+                    if (random.nextBoolean()) {
+                        Treap tail = deque.removeLast();
+                        tail.right = node.left;
+                        node.left = tail;
+                        tail.pushUp();
+                    } else {
+                        break;
+                    }
+                }
+
+                deque.addLast(node);
+            }
+
+            Treap last = NIL;
+            while (!deque.isEmpty()) {
+                Treap tail = deque.removeLast();
+                tail.right = last;
+                tail.pushUp();
+                last = tail;
+            }
+
+            return last;
+        }
+
+        @Override
+        public Treap clone() {
+            try {
+                return (Treap) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         public void pushDown() {
-            if (keyDirty != 0) {
-                left.addKey(keyDirty);
-                right.addKey(keyDirty);
-                keyDirty = 0;
-            }
-            if (cntDirty != 0) {
-                left.addCnt(cntDirty);
-                right.addCnt(cntDirty);
-                cntDirty = 0;
-            }
         }
 
-        public static int toArray(Splay root, int[] data, int offset) {
+        public void pushUp() {
+            size = left.size + right.size + 1;
+        }
+
+        public static Treap[] splitByRank(Treap root, int rank) {
             if (root == NIL) {
-                return offset;
+                return new Treap[]{NIL, NIL};
             }
-            offset = toArray(root.left, data, offset);
-            data[offset++] = root.key;
-            offset = toArray(root.right, data, offset);
-            return offset;
+            root.pushDown();
+            root = root.clone();
+            Treap[] result;
+            if (root.left.size >= rank) {
+                result = splitByRank(root.left, rank);
+                root.left = result[1];
+                result[1] = root;
+            } else {
+                result = splitByRank(root.right, rank - (root.size - root.right.size));
+                root.right = result[0];
+                result[0] = root;
+            }
+            root.pushUp();
+            return result;
         }
 
-        public static void toString(Splay root, StringBuilder builder) {
+        public static Treap merge(Treap a, Treap b) {
+            if (a == NIL) {
+                return b;
+            }
+            if (b == NIL) {
+                return a;
+            }
+            if (random.nextBoolean()) {
+                a.pushDown();
+                a = a.clone();
+                a.right = merge(a.right, b);
+                a.pushUp();
+                return a;
+            } else {
+                b.pushDown();
+                b = b.clone();
+                b.left = merge(a, b.left);
+                b.pushUp();
+                return b;
+            }
+        }
+
+        public static void toString(Treap root, StringBuilder builder) {
             if (root == NIL) {
                 return;
             }
@@ -251,177 +217,25 @@ public class CF702F {
             toString(root.right, builder);
         }
 
-        public Splay clone() {
-            try {
-                return (Splay) super.clone();
-            } catch (CloneNotSupportedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        public static Splay cloneTree(Splay splay) {
-            if (splay == NIL) {
+        public static Treap clone(Treap root) {
+            if (root == NIL) {
                 return NIL;
             }
-            splay = splay.clone();
-            splay.left = cloneTree(splay.left);
-            splay.right = cloneTree(splay.right);
-            return splay;
-        }
-
-        public static Splay add(Splay root, Splay node) {
-            if (root == NIL) {
-                return node;
-            }
-            Splay p = root;
-            while (root != NIL) {
-                p = root;
-                root.pushDown();
-                if (root.key < node.key) {
-                    root = root.right;
-                } else {
-                    root = root.left;
-                }
-            }
-
-            if (p.key < node.key) {
-                p.setRight(node);
-            } else {
-                p.setLeft(node);
-            }
-            p.pushUp();
-            splay(node);
-            return node;
-        }
-
-        /**
-         * Make the node with the minimum key as the root of tree
-         */
-        public static Splay selectMinAsRoot(Splay root) {
-            if (root == NIL) {
-                return root;
-            }
-            root.pushDown();
-            while (root.left != NIL) {
-                root = root.left;
-                root.pushDown();
-            }
-            splay(root);
-            return root;
-        }
-
-        /**
-         * Make the node with the maximum key as the root of tree
-         */
-        public static Splay selectMaxAsRoot(Splay root) {
-            if (root == NIL) {
-                return root;
-            }
-            root.pushDown();
-            while (root.right != NIL) {
-                root = root.right;
-                root.pushDown();
-            }
-            splay(root);
-            return root;
-        }
-
-        /**
-         * delete root of tree, then merge remain nodes into a new tree, and return the new root
-         */
-        public static Splay deleteRoot(Splay root) {
-            root.pushDown();
-            Splay left = splitLeft(root);
-            Splay right = splitRight(root);
-            return merge(left, right);
-        }
-
-        /**
-         * detach the left subtree from root and return the root of left subtree
-         */
-        public static Splay splitLeft(Splay root) {
-            root.pushDown();
-            Splay left = root.left;
-            left.father = NIL;
-            root.setLeft(NIL);
-            root.pushUp();
-            return left;
-        }
-
-        /**
-         * detach the right subtree from root and return the root of right subtree
-         */
-        public static Splay splitRight(Splay root) {
-            root.pushDown();
-            Splay right = root.right;
-            right.father = NIL;
-            root.setRight(NIL);
-            root.pushUp();
-            return right;
-        }
-
-
-        public static Splay merge(Splay a, Splay b) {
-            if (a == NIL) {
-                return b;
-            }
-            if (b == NIL) {
-                return a;
-            }
-            a = selectMaxAsRoot(a);
-            a.setRight(b);
-            a.pushUp();
-            return a;
-        }
-
-        public static Splay bruteForceMerge(Splay a, Splay b) {
-            if (a == NIL) {
-                return b;
-            }
-            a = selectMaxAsRoot(a);
-            int k = a.key;
-            while (b != NIL) {
-                b = selectMinAsRoot(b);
-                if (b.key >= k) {
-                    break;
-                }
-                Splay kickedOut = b;
-                b = deleteRoot(b);
-                a = add(a, kickedOut);
-            }
-            return merge(a, b);
-        }
-
-        public static Splay[] split(Splay root, int key) {
-            if (root == NIL) {
-                return new Splay[]{NIL, NIL};
-            }
-            Splay p = root;
-            while (root != NIL) {
-                p = root;
-                root.pushDown();
-                if (root.key > key) {
-                    root = root.left;
-                } else {
-                    root = root.right;
-                }
-            }
-
-            splay(p);
-            if (p.key <= key) {
-                return new Splay[]{p, splitRight(p)};
-            } else {
-                return new Splay[]{splitLeft(p), p};
-            }
+            Treap clone = root.clone();
+            clone.left = clone(root.left);
+            clone.right = clone(root.right);
+            return clone;
         }
 
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder().append(key).append(":");
-            toString(cloneTree(this), builder);
+            toString(clone(this), builder);
             return builder.toString();
         }
+
     }
+
 
     public static class FastIO {
         private final InputStream is;
