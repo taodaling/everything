@@ -8,11 +8,13 @@ import java.util.Set;
 public class LTSolution {
 
     public static void main(String[] args) {
-        System.out.println(new Solution()
+        System.out.println(new Integer(5) == Integer.valueOf(5));
+
+        /*System.out.println(new Solution()
                 .gridIllumination(5,
                         new int[][]{{0, 0}, {4, 4}},
                         new int[][]{{1, 1}, {1, 1}}
-                ));
+                ));*/
     }
 
 
