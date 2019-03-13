@@ -241,6 +241,24 @@ public class OJCodeTemplate {
             data[j] = tmp;
         }
 
+        public static void swap(char[] data, int i, int j) {
+            char tmp = data[i];
+            data[i] = data[j];
+            data[j] = tmp;
+        }
+
+        public static void swap(int[] data, int i, int j) {
+            int tmp = data[i];
+            data[i] = data[j];
+            data[j] = tmp;
+        }
+
+        public static void swap(long[] data, int i, int j) {
+            long tmp = data[i];
+            data[i] = data[j];
+            data[j] = tmp;
+        }
+
         public static <T> int min(T[] data, int from, int to, Comparator<T> cmp) {
             int m = from;
             for (int i = from + 1; i < to; i++) {
@@ -262,6 +280,15 @@ public class OJCodeTemplate {
         }
 
         public static <T> void reverse(T[] data, int f, int t) {
+            int l = f, r = t - 1;
+            while (l < r) {
+                swap(data, l, r);
+                l++;
+                r--;
+            }
+        }
+
+        public static void reverse(int[] data, int f, int t) {
             int l = f, r = t - 1;
             while (l < r) {
                 swap(data, l, r);

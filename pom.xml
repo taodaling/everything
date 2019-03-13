@@ -57,6 +57,7 @@
         <kafka-clients.version>2.1.0</kafka-clients.version>
         <jackson-dataformat-yaml.version>2.9.8</jackson-dataformat-yaml.version>
         <mybatis-spring-boot-starter.version>1.3.2</mybatis-spring-boot-starter.version>
+        <tensorflow.version>1.12.0</tensorflow.version>
     </properties>
 
     <dependencyManagement>
@@ -204,6 +205,16 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-streams</artifactId>
                 <version>${kafka-clients.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.tensorflow</groupId>
+                <artifactId>tensorflow</artifactId>
+                <version>${tensorflow.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.tensorflow</groupId>
+                <artifactId>tensorflow</artifactId>
+                <version>${tensorflow.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

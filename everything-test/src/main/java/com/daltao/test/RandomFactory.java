@@ -7,12 +7,11 @@ import java.util.Random;
 import java.util.function.Supplier;
 
 public abstract class RandomFactory implements Factory<Input> {
-    private Random random = new Random();
+    protected Random random = new Random();
 
     protected int nextInt(int l, int r) {
         return random.nextInt(r - l + 1) + l;
     }
-
     protected String nextString(int len) {
         Precondition.ge(len, 0);
         StringBuilder builder = new StringBuilder(len);

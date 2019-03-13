@@ -8,13 +8,9 @@ import java.util.Set;
 public class LTSolution {
 
     public static void main(String[] args) {
-        System.out.println(new Integer(5) == Integer.valueOf(5));
 
-        /*System.out.println(new Solution()
-                .gridIllumination(5,
-                        new int[][]{{0, 0}, {4, 4}},
-                        new int[][]{{1, 1}, {1, 1}}
-                ));*/
+        System.out.println(new Solution()
+                .mergeStones(new int[]{3, 2, 4, 1}, 2));
     }
 
 
@@ -29,106 +25,90 @@ public class LTSolution {
     }
 
     static class Solution {
-        public static class Point {
-            int x;
-            int y;
-
-            public Point(int x, int y) {
-                this.x = x;
-                this.y = y;
+        public static class Helper{
+            int[][][] mem;
+            int[] fee;
+            boolean[][][] visited;
+            int[] stones;
+            int k;
+            int n;
+            static int inf = 100000000;
+            public Helper(int[] stones, int k){
+                this.stones = stones;
+                this.k = k;
+                n = stones.length;
+                mem = new int[n][n][k + 1];
+                visited = new boolean[n][n][k + 1];
+                fee = new int[n + 1];
+                fee[0] = 0;
+                for(int i = 1; i <= n; i++)
+                {
+                    fee[i] = fee[i - 1] + stones[i - 1];
+                }
             }
 
-            public boolean equals(Object o) {
-                Point other = (Point) o;
-                return x == other.x && y == other.y;
+            public int getTotal(int l, int r)
+            {
+                return fee[r + 1] - fee[l];
             }
 
-            public int hashCode() {
-                return x * 31 + y;
+            public int dp(int l, int r, int p)
+            {
+                if(visited[l][r][p])
+                {
+                    return mem[l][r][p];
+                }
+                visited[l][r][p] = true;
+                int len = r - l + 1;
+                if(p == 0)
+                {
+                    mem[l][r][p] = inf;
+                    return mem[l][r][p];
+                }
+                //unable to fetch
+                if(len < p)
+                {
+                    mem[l][r][p] = inf;
+                    return mem[l][r][p];
+                }
+                //equal case
+                if(len == p)
+                {
+                    mem[l][r][p] = 0;
+                    return mem[l][r][p];
+                }
+                //unable to merge
+                if(len < k && p != len)
+                {
+                    mem[l][r][p] = inf;
+                    return mem[l][r][p];
+                }
+                if(len == k && p == 1)
+                {
+                    mem[l][r][p] = getTotal(l, r);
+                    return mem[l][r][p];
+                }
+                if(p == 1)
+                {
+                    mem[l][r][p] = getTotal(l, r) + dp(l, r, k);
+                    return mem[l][r][p];
+                }
+                mem[l][r][p] = inf;
+                for(int i = l; i <= r - 1; i++)
+                {
+                    for(int j = 1; j < p; j++)
+                    {
+                        mem[l][r][p] = Math.min(mem[l][r][p], dp(l, i, j) + dp(i + 1, r, p - j));
+                    }
+                }
+                return mem[l][r][p];
             }
         }
-
-        public static class Grid {
-            Set<Point> points = new HashSet<>();
-            Map<Integer, Integer> h = new HashMap<>();
-            Map<Integer, Integer> v = new HashMap<>();
-            Map<Integer, Integer> d1 = new HashMap<>();
-            Map<Integer, Integer> d2 = new HashMap<>();
-
-            static int getD1(int x, int y) {
-                return x - y;
-            }
-
-            static int getD2(int x, int y) {
-                return x + y;
-            }
-
-            public void inc(Map<Integer, Integer> map, Integer key) {
-                map.put(key, map.getOrDefault(key, 0) + 1);
-            }
-
-            public void dec(Map<Integer, Integer> map, Integer key) {
-                map.put(key, map.getOrDefault(key, 0) - 1);
-            }
-
-
-            public Grid(int[][] lamps) {
-                for (int[] lamp : lamps) {
-                    inc(h, lamp[0]);
-                    inc(v, lamp[1]);
-                    inc(d1, getD1(lamp[0], lamp[1]));
-                    inc(d2, getD2(lamp[0], lamp[1]));
-                    points.add(new Point(lamp[0], lamp[1]));
-                }
-            }
-
-            public int answer(int x, int y) {
-                if (h.getOrDefault(x, 0) + v.getOrDefault(y, 0) + d1.getOrDefault(getD1(x, y), 0)
-                        + d2.getOrDefault(getD2(x, y), 0) > 0) {
-                    return 1;
-                }
-                return 0;
-            }
-
-            public void turnOff(int x, int y) {
-                if (!points.remove(new Point(x, y))) {
-                    return;
-                }
-                dec(h, x);
-                dec(v, y);
-                dec(d1, getD1(x, y));
-                dec(d2, getD2(x, y));
-            }
-        }
-
-        public int[] gridIllumination(int N, int[][] lamps, int[][] queries) {
-            Grid grid = new Grid(lamps);
-            int n = queries.length;
-            int[] ans = new int[n];
-
-            int[][] directions = new int[][]{
-                    {0, 0},
-                    {1, 0},
-                    {0, 1},
-                    {-1, 0},
-                    {0, -1},
-                    {1, 1},
-                    {-1, -1},
-                    {1, -1},
-                    {-1, 1}
-            };
-
-            for (int i = 0; i < n; i++) {
-                int x = queries[i][0];
-                int y = queries[i][1];
-                ans[i] = grid.answer(x, y);
-                for (int[] direction : directions) {
-                    grid.turnOff(x + direction[0], y + direction[1]);
-                }
-            }
-
-            return ans;
+        public int mergeStones(int[] stones, int K) {
+            Helper helper = new Helper(stones, K);
+            helper.dp(0, stones.length - 1, 2);
+            int v = helper.dp(0, stones.length - 1, 1);
+            return v == Helper.inf ? -1 : v;
         }
     }
-
 }

@@ -21,8 +21,9 @@ public class QueueInput<T> implements Input<T> {
         return deque.peekFirst() != END;
     }
 
-    public void add(T data) {
+    public QueueInput add(T data) {
         deque.addLast(data);
+        return this;
     }
 
     public void end() {
