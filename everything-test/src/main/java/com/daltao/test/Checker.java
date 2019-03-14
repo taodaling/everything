@@ -7,5 +7,5 @@ public interface Checker {
      * @param actual
      * @return
      */
-    boolean check(Input expected, Input actual);
+    boolean check(Input expected, Input actual, Input input);
 }

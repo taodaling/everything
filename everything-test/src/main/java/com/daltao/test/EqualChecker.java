@@ -13,7 +13,7 @@ public class EqualChecker implements Checker {
     }
 
     @Override
-    public boolean check(Input expected, Input actual) {
+    public boolean check(Input expected, Input actual, Input input) {
         while (expected.available() && actual.available()) {
             if (!Objects.equals(expected.read(), actual.read())) {
                 return false;

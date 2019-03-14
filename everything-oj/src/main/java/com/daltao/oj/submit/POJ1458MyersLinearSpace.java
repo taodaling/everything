@@ -8,7 +8,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class POJ1458Myers {
+public class POJ1458MyersLinearSpace {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -40,15 +40,9 @@ public class POJ1458Myers {
         int inf = (int) 1e8;
         char[] a = new char[250];
         char[] b = new char[250];
-        int n;
-        int m;
-        RangeArray[] furthest = new RangeArray[500];
+        RangeArray furthest00 = new RangeArray(-500, 500);
+        RangeArray furthestnm = new RangeArray(-500, 500);
 
-        {
-            for (int i = 0; i < 500; i++) {
-                furthest[i] = new RangeArray(-500, 500);
-            }
-        }
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -63,57 +57,133 @@ public class POJ1458Myers {
         }
 
         public void solve() {
-            n = io.readString(a, 0);
-            m = io.readString(b, 0);
+            int n = io.readString(a, 0);
+            int m = io.readString(b, 0);
+            lcs(new CharArray(a, 0, n), new CharArray(b, 0, m));
+            io.cache.append('\n');
+        }
+
+
+
+        public void output(CharArray array) {
+            for (int i = 0, until = array.size(); i < until; i++) {
+                io.cache.append(array.get(i));
+            }
+        }
+
+        public void lcs0(CharArray a, CharArray b, int i, int u, int x, int d) {
+            int n = a.size();
+            int m = b.size();
+            int y = x - i;
+            int v = u - i;
+            if (d > 1) {
+                lcs(a.subArray(0, u), b.subArray(0, v));
+                output(a.subArray(u, x));
+                lcs(a.subArray(x, n), b.subArray(y, m));
+            } else if (n < m) {
+                output(a);
+            } else {
+                output(b);
+            }
+        }
+
+        public void lcs(CharArray a, CharArray b) {
+            debug.debug("a", a);
+            debug.debug("b", b);
+            int n = a.size();
+            int m = b.size();
+            if (n == 0 || m == 0) {
+                return;
+            }
+            furthest00.fill(-1, -m, n);
+            furthestnm.fill(n + 1, -m, n);
+            furthest00.set(0, 0);
+            furthestnm.set(0, n + 1);
             for (int d = 0; ; d++) {
-                for (int from = -d, to = d, i = from; i <= to; i += 2) {
-                    int x = 0;
-                    if (i < -m) {
-                        continue;
-                    }
+                for (int left = -d, right = d, i = left; i <= right; i += 2) {
                     if (i > n) {
                         continue;
                     }
-                    if (i > from && i > -m) {
-                        x = Math.max(x, Math.min(n, furthest[d - 1].get(i - 1) + 1));
+                    if (i < -m) {
+                        continue;
                     }
-                    if (i < to && i < n) {
-                        x = Math.max(x, furthest[d - 1].get(i + 1));
+                    int x = 0;
+                    if (i > left && i > -m) {
+                        x = Math.max(x, Math.min(furthest00.get(i - 1) + 1, n));
+                    }
+                    if (i < right && i < n) {
+                        x = Math.max(x, furthest00.get(i + 1));
                     }
                     int y = x - i;
-                    while (x < n && y < m && a[x] == b[y]) {
+                    while (x < n && y < m && a.get(x) == b.get(y)) {
                         x++;
                         y++;
                     }
-                    furthest[d].set(i, x);
-                    if (x == n && y == m) {
-                        display(d, i);
-                        io.cache.append('\n');
+                    furthest00.set(i, x);
+                    if (furthest00.get(i) >= furthestnm.get(i)) {
+                        lcs0(a, b, i, furthestnm.get(i), furthest00.get(i), d * 2 - 1);
+                        return;
+                    }
+                }
+                for (int left = -d + n - m, right = d + n - m, i = left; i <= right; i += 2) {
+                    if (i > n) {
+                        continue;
+                    }
+                    if (i < -m) {
+                        continue;
+                    }
+                    int x = n;
+                    if (i > left && i > -m) {
+                        x = Math.min(x, furthestnm.get(i - 1));
+                    }
+                    if (i < right && i < n) {
+                        x = Math.min(x, Math.max(0, furthestnm.get(i + 1) - 1));
+                    }
+                    int y = x - i;
+                    while (x > 0 && y > 0 && a.get(x - 1) == b.get(y - 1)) {
+                        x--;
+                        y--;
+                    }
+                    furthestnm.set(i, x);
+                    if (furthest00.get(i) >= furthestnm.get(i)) {
+                        lcs0(a, b, i, furthestnm.get(i), furthest00.get(i), d * 2);
                         return;
                     }
                 }
             }
         }
+    }
 
-        public void display(int d, int i) {
-            if (d < 0) {
-                return;
-            }
-            int x = 0;
-            int j = 0;
-            if (i > -d && Math.min(n, furthest[d - 1].get(i - 1) + 1) >= x) {
-                x = Math.min(n, furthest[d - 1].get(i - 1) + 1);
-                j = i - 1;
-            }
-            if (i < d && furthest[d - 1].get(i + 1) >= x) {
-                x = furthest[d - 1].get(i + 1);
-                j = i + 1;
-            }
-            display(d - 1, j);
-            while (x < furthest[d].get(i)) {
-                io.cache.append(a[x]);
-                x++;
-            }
+    public static class CharArray {
+        private int offset;
+        private int length;
+        private char[] data;
+
+        public CharArray(char[] data, int offset, int length) {
+            this.data = data;
+            this.offset = offset;
+            this.length = length;
+        }
+
+        public char get(int i) {
+            return data[i + offset];
+        }
+
+        public void set(int i, char c) {
+            data[i + offset] = c;
+        }
+
+        public int size() {
+            return length;
+        }
+
+        public CharArray subArray(int begin, int end) {
+            return new CharArray(data, offset + begin, end - begin);
+        }
+
+        @Override
+        public String toString() {
+            return String.valueOf(data, offset, length);
         }
     }
 
@@ -132,6 +202,10 @@ public class POJ1458Myers {
 
         public void set(int i, int val) {
             data[i + offset] = val;
+        }
+
+        public void fill(int val, int l, int r) {
+            Arrays.fill(data, offset + l, offset + r + 1, val);
         }
     }
 
