@@ -94,7 +94,7 @@ public class MinimumCost {
             int[] supplier = mSupplier[i];
             int[] shopKeeper = nShopKeeper[i];
 
-            //Build graph
+            //Build datagraph
             Node sink = new Node();
             Node dest = new Node();
             List<Node> shopKeepersNodeList = new ArrayList(n);

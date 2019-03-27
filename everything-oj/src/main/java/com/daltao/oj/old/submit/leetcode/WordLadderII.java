@@ -41,7 +41,7 @@ public class WordLadderII {
         src.flag = 0;
         dst.flag = Integer.MAX_VALUE;
 
-        //Build graph
+        //Build datagraph
         for (int i = 0, bound = n + 2; i < bound; i++) {
             for (int j = i + 1; j < bound; j++) {
                 if (differForOneLetter(node[i].signature, node[j].signature)) {

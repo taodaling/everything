@@ -88,7 +88,7 @@ public class FourMelodies {
             }
         }
 
-        //Now we have build the net graph successfully
+        //Now we have build the net datagraph successfully
         //Then we should do preparation for append flow
         prepare(net);
         for (int i = 0; i < 4; i++) {

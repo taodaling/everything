@@ -56,7 +56,7 @@ public class Paratroopers {
     }
 
     public double solve() {
-        //Build graph
+        //Build datagraph
         Node sink = new Node();
         Node target = new Node();
         List<Node> rowNodeList = new ArrayList(rowNum);

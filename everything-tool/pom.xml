@@ -16,6 +16,7 @@
 
     <modules>
         <module>log-merge</module>
+        <module>data-graph</module>
     </modules>
 
 
