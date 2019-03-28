@@ -40,9 +40,6 @@ public class HDU1695 {
     }
 
     public static void main(String[] args) throws FileNotFoundException {
-        System.setIn(new FileInputStream("D:\\DataBase\\TESTCASE\\hdu\\HDU1695.in"));
-
-
         input = new BlockReader(System.in);
         StringBuilder builder = new StringBuilder(2048);
         HDU1695 solution = new HDU1695();

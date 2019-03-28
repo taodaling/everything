@@ -1,4 +1,4 @@
-package com.daltao.oj.old.submit.hdu;
+package com.daltao.oj.old.submit.bzoj;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -8,10 +8,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Comparator;
 
-/**
- * Created by dalt on 2018/3/25.
- */
-public class HDU1000 {
+public class BZOJ3994 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -49,13 +46,65 @@ public class HDU1000 {
 
         @Override
         public void run() {
-            while (io.hasMore()) {
-                solve();
-            }
+            solve();
         }
 
         public void solve() {
-            io.cache.append(io.readInt() + io.readInt()).append('\n');
+            int range = 500000;
+            int[] mu = new int[range + 1];
+            mu[1] = 1;
+            int[] dc = new int[range + 1];
+            dc[1] = 1;
+            int[] expMinFactor = new int[range + 1];
+            int[] minFactor = new int[range + 1];
+            boolean[] isComp = new boolean[range + 1];
+            int[] primes = new int[range + 1];
+            int primeCnt = 0;
+            for (int i = 2; i <= range; i++) {
+                if (!isComp[i]) {
+                    expMinFactor[i] = i;
+                    minFactor[i] = i;
+                    primes[primeCnt++] = i;
+                    mu[i] = -1;
+                    dc[i] = 2;
+                } else {
+                    mu[i] = mu[expMinFactor[i]] * mu[i / expMinFactor[i]];
+                    dc[i] = (dc[expMinFactor[i] / minFactor[i]] + 1) * dc[i / expMinFactor[i]];
+                }
+                for (int j = 0; j < primeCnt && i * primes[j] <= range; j++) {
+                    if (i % primes[j] == 0) {
+                        expMinFactor[i * primes[j]] = expMinFactor[i] * primes[j];
+                    } else {
+                        expMinFactor[i * primes[j]] = primes[j];
+                    }
+                    minFactor[i * primes[j]] = primes[j];
+                    isComp[i * primes[j]] = true;
+                    if (i % primes[j] == 0) {
+                        break;
+                    }
+                }
+            }
+
+            long[] preSumOfDc = new long[range + 1];
+            long[] preSumOfMu = new long[range + 1];
+            for (int i = 1; i <= range; i++) {
+                preSumOfMu[i] = preSumOfMu[i - 1] + mu[i];
+                preSumOfDc[i] = preSumOfDc[i - 1] + dc[i];
+            }
+
+            int t = io.readInt();
+            while (t-- > 0) {
+                int n = io.readInt();
+                int m = io.readInt();
+                long sum = 0;
+                for (int i = 1, r; i <= n && i <= m; i = r + 1) {
+                    r = Math.min(n / (n / i), m / (m / i));
+                    sum += (preSumOfMu[r] - preSumOfMu[i - 1])
+                            * (preSumOfDc[m / i])
+                            * (preSumOfDc[n / i]);
+                }
+                io.cache.append(sum).append('\n');
+            }
         }
     }
 

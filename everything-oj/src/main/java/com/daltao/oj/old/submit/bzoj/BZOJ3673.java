@@ -1,4 +1,4 @@
-package com.daltao.oj.old.submit.hdu;
+package com.daltao.oj.old.submit.bzoj;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -8,10 +8,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Comparator;
 
-/**
- * Created by dalt on 2018/3/25.
- */
-public class HDU1000 {
+public class BZOJ3673 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -49,13 +46,146 @@ public class HDU1000 {
 
         @Override
         public void run() {
-            while (io.hasMore()) {
-                solve();
-            }
+            solve();
         }
 
         public void solve() {
-            io.cache.append(io.readInt() + io.readInt()).append('\n');
+            int n = io.readInt();
+            int m = io.readInt();
+            Segment[] history = new Segment[m + 1];
+            history[0] = Segment.build(1, n);
+            for (int i = 1; i <= m; i++) {
+                int op = io.readInt();
+                if (op == 1) {
+                    history[i] = merge(history[i - 1], io.readInt(), io.readInt(), 1, n);
+                } else if (op == 2) {
+                    history[i] = history[io.readInt()];
+                } else {
+                    int a = getRoot(history[i - 1], io.readInt(), 1, n);
+                    int b = getRoot(history[i - 1], io.readInt(), 1, n);
+                    io.cache.append(a == b ? 1 : 0).append('\n');
+                    history[i] = history[i - 1];
+                }
+            }
+        }
+
+        public Segment merge(Segment root, int a, int b, int l, int r) {
+            a = getRoot(root, a, l, r);
+            b = getRoot(root, b, l, r);
+
+            if (a == b) {
+                return root;
+            }
+
+            Segment sa = Segment.query(a, a, l, r, root);
+            Segment sb = Segment.query(b, b, l, r, root);
+            if (sa.rank < sb.rank) {
+                int tmp = a;
+                a = b;
+                b = tmp;
+            }
+
+            root = Segment.updatePersistently(a, a, l, r, a, sa.rank + sb.rank, root);
+            root = Segment.updatePersistently(b, b, l, r, a, Math.min(sa.rank, sb.rank), root);
+            return root;
+        }
+
+        public int getRoot(Segment root, int a, int l, int r) {
+            Segment s = Segment.query(a, a, l, r, root);
+            while (s.father != a && s.father != 0) {
+                a = s.father;
+                s = Segment.query(a, a, l, r, root);
+            }
+            return a;
+        }
+    }
+
+    public static class Segment implements Cloneable {
+        Segment left;
+        Segment right;
+        int father;
+        int rank;
+
+        public static Segment build(int l, int r) {
+            Segment segment = new Segment();
+            segment.left = segment.right = segment;
+            return segment;
+        }
+
+        public static boolean checkOutOfRange(int ll, int rr, int l, int r) {
+            return ll > r || rr < l;
+        }
+
+        public static boolean checkCoverage(int ll, int rr, int l, int r) {
+            return ll <= l && rr >= r;
+        }
+
+        public static void update(int ll, int rr, int l, int r, Segment segment) {
+            if (checkOutOfRange(ll, rr, l, r)) {
+                return;
+            }
+            if (checkCoverage(ll, rr, l, r)) {
+                return;
+            }
+            int m = (l + r) >> 1;
+
+            segment.pushDown();
+            update(ll, rr, l, m, segment.left);
+            update(ll, rr, m + 1, r, segment.right);
+            segment.pushUp();
+        }
+
+        public static Segment updatePersistently(int ll, int rr, int l, int r, int father, int rank, Segment segment) {
+            if (checkOutOfRange(ll, rr, l, r)) {
+                return segment;
+            }
+            segment = segment.clone();
+            if (checkCoverage(ll, rr, l, r)) {
+                segment.father = father;
+                segment.rank = rank;
+                return segment;
+            }
+
+            int m = (l + r) >> 1;
+
+            segment.pushDown();
+            segment.left = updatePersistently(ll, rr, l, m, father, rank, segment.left);
+            segment.right = updatePersistently(ll, rr, m + 1, r, father, rank, segment.right);
+            segment.pushUp();
+            return segment;
+        }
+
+        public static Segment query(int ll, int rr, int l, int r, Segment segment) {
+            if (checkOutOfRange(ll, rr, l, r)) {
+                return null;
+            }
+            if (checkCoverage(ll, rr, l, r)) {
+                return segment;
+            }
+            int m = (l + r) >> 1;
+
+            segment.pushDown();
+            return pickNonNull(query(ll, rr, l, m, segment.left),
+                    query(ll, rr, m + 1, r, segment.right));
+        }
+
+        private static Segment pickNonNull(Segment a, Segment b) {
+            return a == null ? b : a;
+        }
+
+        public void pushDown() {
+        }
+
+        public void pushUp() {
+        }
+
+        @Override
+        public Segment clone() {
+            try {
+                return (Segment) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
