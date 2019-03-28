@@ -103,7 +103,7 @@ public class RoadsInTheKingdom {
                 queue.add(node);
             }
 
-            //Find the max length of subDirty graph
+            //Find the max length of subDirty datagraph
             for (GNode node : nodes) {
                 node.former = null;
             }

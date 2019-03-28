@@ -4,11 +4,6 @@ package com.daltao.template;
  * Created by dalt on 2018/5/25.
  */
 public class Mathematics {
-    public static void main(String[] args) {
-        int[] p = new int[1000000];
-        int n = Mathematics.eulerSieve(1 << 16, p, 0);
-        System.out.println(p[n - 1]);
-    }
 
     public static int ceilPowerOf2(int x) {
         return 32 - Integer.numberOfLeadingZeros(x - 1);

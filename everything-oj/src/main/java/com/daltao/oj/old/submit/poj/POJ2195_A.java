@@ -53,7 +53,7 @@ public class POJ2195_A{
 
         int expense = 0;
 
-        //Build graph
+        //Build datagraph
         Node sink = new Node();
         Node dest = new Node();
         List<Node> manNodeList = new ArrayList();

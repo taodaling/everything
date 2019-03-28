@@ -65,7 +65,7 @@ public class BZOJ1202 {
             edges[t][s].existFlag = runtime;
         }
 
-        //spfa used to find negative loop in graph
+        //spfa used to find negative loop in datagraph
         LinkedList<Node> queue = new LinkedList();
         queue.addFirst(nodes[NODE_LIMIT]);
         nodes[NODE_LIMIT].distance = 0;
