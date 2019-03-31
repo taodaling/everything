@@ -1,4 +1,4 @@
-package com.daltao.oj.old.submit.hdu;
+package com.daltao.oj.old.submit.bzoj;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -8,10 +8,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Comparator;
 
-/**
- * Created by dalt on 2018/3/25.
- */
-public class HDU1000 {
+public class BZOJ2301 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -41,6 +38,44 @@ public class HDU1000 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
+        int limit = 50000;
+
+        boolean[] isComp = new boolean[limit + 1];
+        int[] primes = new int[limit + 1];
+        int[] mu = new int[limit + 1];
+        int[] minPrimeFactor = new int[limit + 1];
+        int[] preSumOfMu = new int[limit + 1];
+
+        {
+
+            mu[1] = 1;
+            int wpos = 0;
+            for (int i = 2; i <= limit; i++) {
+                if (!isComp[i]) {
+                    primes[wpos++] = i;
+                    mu[i] = -1;
+                } else {
+                    if (i / minPrimeFactor[i] % minPrimeFactor[i] == 0) {
+                        mu[i] = 0;
+                    } else {
+                        mu[i] = -mu[i / minPrimeFactor[i]];
+                    }
+                }
+                for (int j = 0, until = limit / i; j < wpos && primes[j] <= until; j++) {
+                    int pi = primes[j] * i;
+                    isComp[pi] = true;
+                    minPrimeFactor[pi] = primes[j];
+                    if (i % primes[j] == 0) {
+                        break;
+                    }
+                }
+            }
+
+            for (int i = 1; i <= limit; i++) {
+                preSumOfMu[i] = preSumOfMu[i - 1] + mu[i];
+            }
+        }
+
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -49,13 +84,44 @@ public class HDU1000 {
 
         @Override
         public void run() {
-            while (io.hasMore()) {
+            int t = io.readInt();
+            while (t-- > 0) {
                 solve();
             }
         }
 
+        public long calc(int n, int m) {
+            if (n > m) {
+                int tmp = n;
+                n = m;
+                m = tmp;
+            }
+            if (n == 0) {
+                return 0;
+            }
+            long sum = 0;
+            for (int i = 1, r; i <= n; i = r + 1) {
+                r = Math.min(n / (n / i), m / (m / i));
+                long p1 = n / i;
+                long p2 = m / i;
+                sum += (preSumOfMu[r] - preSumOfMu[i - 1]) *
+                        (p1 * p2);
+            }
+            return sum;
+        }
+
         public void solve() {
-            io.cache.append(io.readInt() + io.readInt()).append('\n');
+            int a = io.readInt();
+            int b = io.readInt();
+            int c = io.readInt();
+            int d = io.readInt();
+            int k = io.readInt();
+            a = (a + k - 1) / k;
+            b /= k;
+            c = (c + k - 1) / k;
+            d /= k;
+            io.cache.append(calc(b, d) + calc(a - 1, c - 1) - calc(a - 1, d) - calc(b, c - 1))
+                    .append('\n');
         }
     }
 
