@@ -13,6 +13,10 @@ public class Mathematics {
         return 31 - Integer.numberOfLeadingZeros(x);
     }
 
+    public static long modmul(long a, long b, long mod) {
+        return b == 0 ? 0 : ((modmul(a, b >> 1, mod) << 1) % mod + a * (b & 1)) % mod;
+    }
+
     /**
      * Get the greatest common divisor of a and b
      */
@@ -109,6 +113,18 @@ public class Mathematics {
             }
         }
         return (int) product;
+    }
+
+    public static long longpow(long x, long n, long mod) {
+        if (n == 0) {
+            return 1;
+        }
+        long prod = longpow(x, n >> 1, mod);
+        prod = modmul(prod, prod, mod);
+        if ((n & 1) == 1) {
+            prod = modmul(prod, x, mod);
+        }
+        return prod;
     }
 
     /**
