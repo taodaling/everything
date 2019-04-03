@@ -71,7 +71,7 @@ public class BZOJ3675 {
             }
 
             Node[] firstRow = loop.get();
-            Deque<Node> deque = new ArrayDeque<>(100001);
+            Deque<Node> deque = new ArrayDeque(100001);
             for (int i = 1; i <= n; i++) {
                 firstRow[i].dp = 0;
                 firstRow[i].x = prefixSum[i];
@@ -82,8 +82,13 @@ public class BZOJ3675 {
                 Node[] lastRow = loop.get();
                 Node[] nextRow = loop.turn();
                 lastRow[0].g = negInf;
+                deque.clear();
                 deque.addLast(lastRow[0]);
                 for (int j = 1; j <= n; j++) {
+                    if (prefixSum[j] == prefixSum[j - 1]) {
+                        nextRow[j].dp = nextRow[j - 1].dp;
+                        continue;
+                    }
                     while (deque.size() > 1) {
                         Node head = deque.removeFirst();
                         if (deque.peekFirst().g > prefixSum[j]) {
@@ -91,7 +96,7 @@ public class BZOJ3675 {
                             break;
                         }
                     }
-                    Node support = deque.peekLast();
+                    Node support = deque.peekFirst();
                     nextRow[j].dp = support.dp + (prefixSum[j] - prefixSum[support.id]) * prefixSum[support.id];
                     nextRow[j].x = prefixSum[j];
                     nextRow[j].y = pow2(prefixSum[j]) - nextRow[j].dp;
