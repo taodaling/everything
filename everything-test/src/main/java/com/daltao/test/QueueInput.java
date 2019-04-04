@@ -26,7 +26,8 @@ public class QueueInput<T> implements Input<T> {
         return this;
     }
 
-    public void end() {
+    public QueueInput end() {
         add((T) END);
+        return this;
     }
 }
