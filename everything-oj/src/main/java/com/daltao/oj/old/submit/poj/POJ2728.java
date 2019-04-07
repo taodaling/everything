@@ -24,7 +24,7 @@ public class POJ2728 {
     public static int n;
 
     public static void main(String[] args) throws FileNotFoundException {
-        System.setIn(new FileInputStream("D:\\DataBase\\TESTCASE\\poj\\POJ2728.in"));
+        //System.setIn(new FileInputStream("D:\\DataBase\\TESTCASE\\Code.in"));
 
         input = new BlockReader(System.in);
         while (input.hasMore()) {

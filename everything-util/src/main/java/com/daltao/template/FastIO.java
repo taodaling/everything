@@ -99,26 +99,31 @@ public class FastIO {
     }
 
     public double readDouble() {
-        long num = readLong();
-        if (next != '.') {
-            return num;
+        boolean sign = true;
+        skipBlank();
+        if (next == '+' || next == '-') {
+            sign = next == '+' ? true : false;
+            next = read();
         }
 
+        long val = 0;
+        while (next >= '0' && next <= '9') {
+            val = val * 10 + next - '0';
+            next = read();
+        }
+        if (next != '.') {
+            return sign ? val : -val;
+        }
         next = read();
-        double f = readLong();
-        while (f >= 100000000) {
-            f /= 1000000000;
+        long radix = 1;
+        long point = 0;
+        while (next >= '0' && next <= '9') {
+            point = point * 10 + next - '0';
+            radix = radix * 10;
+            next = read();
         }
-        while (f >= 10000) {
-            f /= 100000;
-        }
-        while (f >= 100) {
-            f /= 1000;
-        }
-        while (f >= 1) {
-            f /= 10;
-        }
-        return num > 0 ? (num + f) : (num - f);
+        double result = val + (double) point / radix;
+        return sign ? result : -result;
     }
 
     public String readString(StringBuilder builder) {
