@@ -129,7 +129,7 @@ public class BZOJ2595 {
         public void solve() {
             n = io.readInt();
             m = io.readInt();
-            deque = new ArrayDeque<>(n * m);
+            deque = new ArrayDeque(n * m);
             nodes = new Node[n][m];
             Node root = null;
             for (int i = 0; i < n; i++) {
@@ -157,6 +157,9 @@ public class BZOJ2595 {
                 for (int j = 0; j < n; j++) {
                     for (int k = 0; k < m; k++) {
                         Node node = nodes[j][k];
+                        if ((node.bit & i) != node.bit) {
+                            continue;
+                        }
                         //merge two set
                         generator.setSet(i);
                         while (generator.hasNext()) {
@@ -202,7 +205,6 @@ public class BZOJ2595 {
 
     public static class Node {
         long[] dp;
-        int id = 32;
         int bit = 0;
         long cost;
         int row;
