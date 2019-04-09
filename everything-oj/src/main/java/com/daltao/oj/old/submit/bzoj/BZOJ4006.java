@@ -172,7 +172,7 @@ public class BZOJ4006 {
 
     public static class Edge {
         Node a;
-        Node b;
+        Node b;a
         int cost;
 
         public Node another(Node me) {
