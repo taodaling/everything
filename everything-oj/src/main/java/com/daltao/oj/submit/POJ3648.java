@@ -1,13 +1,17 @@
-package com.daltao.oj.old.submit.bzoj;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.List;
 
-public class BZOJ4006 {
+public class POJ3648 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -37,11 +41,20 @@ public class BZOJ4006 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        Node[] nodes;
-        int idAllocator = 0;
-        int[] channels;
-        SubsetGenerator generator = new SubsetGenerator();
-        Deque<Node> deque;
+        static int limit = 100000;
+        Node[][] nodes = new Node[limit][2];
+        int n;
+        int m;
+        Deque<Node> deque = new ArrayDeque(limit);
+
+        {
+            for (int i = 0; i < limit; i++) {
+                nodes[i][0] = new Node();
+                nodes[i][1] = new Node();
+                nodes[i][0].id = i;
+                nodes[i][1].id = -i;
+            }
+        }
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -53,183 +66,176 @@ public class BZOJ4006 {
             solve();
         }
 
-        public void squeeze() {
-            int wpos = 0;
-            int rpos = 0;
-            while (rpos < channels.length) {
-                if (channels[rpos] != 0) {
-                    channels[wpos++] = channels[rpos];
-                }
-                rpos++;
-            }
-            channels = Arrays.copyOfRange(channels, 0, wpos);
-        }
-
-        void spfa(int mask) {
-            while (!deque.isEmpty()) {
-                Node head = deque.removeFirst();
-                head.inque = false;
-                for (Edge edge : head.edgeList) {
-                    Node node = edge.another(head);
-                    int cost = head.dp[mask] + edge.cost;
-                    if (cost >= node.dp[mask | node.bit]) {
-                        continue;
-                    }
-                    node.dp[mask | node.bit] = cost;
-                    if ((mask | node.bit) != mask || node.inque) {
-                        continue;
-                    }
-                    node.inque = true;
-                    deque.addLast(node);
-                }
-            }
-        }
-
         public void solve() {
-            int n = io.readInt();
-            int m = io.readInt();
-            int p = io.readInt();
-            channels = new int[p];
-            deque = new ArrayDeque(n);
-            nodes = new Node[n + 1];
-            for (int i = 1; i <= n; i++) {
-                nodes[i] = new Node();
-                nodes[i].id = i;
-                nodes[i].dp = new int[1 << p];
-                Arrays.fill(nodes[i].dp, inf);
-                nodes[i].dp[0] = 0;
+            while (true) {
+                n = io.readInt();
+                m = io.readInt();
+                if (n == 0 && m == 0) {
+                    break;
+                }
+                solveSingleCase();
             }
+
+        }
+
+
+        public void solveSingleCase() {
+            for (int i = 1, until = n; i < until; i++) {
+                for (int j = 0; j < 2; j++) {
+                    nodes[i][j].dfn = 0;
+                    nodes[i][j].out.clear();
+                    nodes[i][j].in.clear();
+                    nodes[i][j].relyOn = 0;
+                    nodes[i][j].val = 0;
+                    nodes[i][j].opposite = nodes[i][1 - j];
+                }
+            }
+
             for (int i = 1; i <= m; i++) {
-                Edge edge = new Edge();
-                edge.a = nodes[io.readInt()];
-                edge.b = nodes[io.readInt()];
-                edge.cost = io.readInt();
-                edge.a.edgeList.add(edge);
-                edge.b.edgeList.add(edge);
+                //!(a && b) => !a || !b
+                int a = io.readInt();
+                int gendera = io.readChar() == 'h' ? 0 : 1;
+                int b = io.readInt();
+                int genderb = io.readChar() == 'h' ? 0 : 1;
+
+                if (a == b) {
+                    continue;
+                }
+                if (a == 0) {
+                    if (gendera == 0) {
+                        //adulterous with the husband
+                        addEdge(nodes[b][genderb], nodes[b][genderb].opposite);
+                    }
+                    continue;
+                }
+                if (b == 0) {
+                    if (genderb == 0) {
+                        //adulterous with the husband
+                        addEdge(nodes[a][gendera], nodes[a][gendera].opposite);
+                    }
+                    continue;
+                }
+
+                addEdge(nodes[a][gendera], nodes[b][gendera].opposite);
+                addEdge(nodes[b][gendera], nodes[a][gendera].opposite);
             }
-            for (int i = 0; i < p; i++) {
-                int c = io.readInt();
-                Node d = nodes[io.readInt()];
-                d.bit = 1 << (idAllocator++);
-                d.dp[d.bit] = 0;
-                d.dp[0] = inf;
-                channels[c - 1] |= d.bit;
+
+            for (int i = 1, until = n; i < until; i++) {
+                for(int j = 0; j < 2; j++) {
+                    tarjan(nodes[i][j], deque);
+                }
             }
-            int mask = (1 << idAllocator) - 1;
-            for (int i = 0; i <= mask; i++) {
-                for (int j = 1; j <= n; j++) {
-                    Node node = nodes[j];
-                    if ((i & node.bit) != node.bit) {
+
+            for (int i = 1, until = n; i < until; i++) {
+                if (nodes[i][0].set == nodes[i][0].opposite.set) {
+                    io.cache.append("bad luck\n");
+                    return;
+                }
+            }
+
+            for (int i = 1, until = n; i < until; i++) {
+                for(int j = 0; j < 2; j++) {
+                    if (nodes[i][j].set != nodes[i][j]) {
                         continue;
                     }
-                    generator.setSet(i);
-                    while (generator.hasNext()) {
-                        int s = generator.next();
-                        int s1 = node.bit | s;
-                        int s2 = node.bit | (i - s);
-                        if (s1 == node.bit || s2 == node.bit) {
+                    for (Node node : nodes[i][j].in) {
+                        if (node.set == nodes[i][j]) {
                             continue;
                         }
-                        node.dp[i] = Math.min(node.dp[i], node.dp[s1] + node.dp[s2]);
+                        node.relyOn++;
                     }
-                    if (node.dp[i] < inf) {
+                }
+            }
+
+            for (int i = 0, until = n; i < until; i++) {
+                for(int j = 0; j < 2; j++) {
+                    if (nodes[i][j].set != nodes[i][j]) {
+                        continue;
+                    }
+                    if (nodes[i][j].relyOn == 0) {
+                        deque.addLast(nodes[i][j]);
+                    }
+                }
+            }
+
+            while (!deque.isEmpty()) {
+                Node head = deque.removeFirst();
+                for (Node node : head.in) {
+                    if (node.set == head) {
+                        continue;
+                    }
+                    node.relyOn--;
+                    if (node.relyOn == 0) {
                         deque.addLast(node);
-                        node.inque = true;
                     }
                 }
-                spfa(i);
-            }
-            //squeeze();
-            int[] channel2IdBits = new int[1 << channels.length];
-            int[] minDp = new int[1 << idAllocator];
-            Arrays.fill(minDp, inf);
-            for (int i = 1; i <= n; i++) {
-                for (int j = 0; j <= mask; j++) {
-                    minDp[j] = Math.min(minDp[j], nodes[i].dp[j]);
+                head.val = -head.opposite.set.val;
+                if (head.val != 0) {
+                    continue;
                 }
+                head.val = 1;
             }
-            int[] dp = new int[1 << channels.length];
-            Arrays.fill(dp, inf);
-            dp[0] = 0;
-            for (int i = 1, until = channel2IdBits.length; i < until; i++) {
-                if (i == (i & -i)) {
-                    channel2IdBits[i] = channels[31 - Integer.numberOfLeadingZeros(i)];
-                } else {
-                    channel2IdBits[i] = channel2IdBits[i & (i - 1)] + channel2IdBits[i & (-i)];
-                }
+
+            for (int i = 1, until = n; i < until; i++) {
+                io.cache.append(i).append(nodes[i][0].set.val == 1 ? 'w' : 'h').append(' ');
             }
-            for (int i = 1, until = 1 << channels.length; i < until; i++) {
-                generator.setSet(i);
-                while (generator.hasNext()) {
-                    int s = generator.next();
-                    int s2 = i - s;
-                    dp[i] = Math.min(dp[i], dp[s] + minDp[channel2IdBits[s2]]);
-                }
-            }
-            io.cache.append(dp[(1 << channels.length) - 1]);
+            io.cache.append('\n');
         }
-    }
 
-    public static class Edge {
-        Node a;
-        Node b;
-        int cost;
+        public void addEdge(Node a, Node b) {
+            a.out.add(b);
+            b.in.add(a);
+        }
 
-        public Node another(Node me) {
-            return a == me ? b : a;
+        static int id = 0;
+
+        public static int order() {
+            return ++id;
+        }
+
+        public static void tarjan(Node root, Deque<Node> deque) {
+            if (root.dfn != 0) {
+                return;
+            }
+            root.low = root.dfn = order();
+            root.inStack = true;
+            deque.addLast(root);
+            for (Node node : root.out) {
+                tarjan(node, deque);
+                if (node.inStack) {
+                    root.low = Math.min(root.low, node.low);
+                }
+            }
+            if (root.low == root.dfn) {
+                while (true) {
+                    Node last = deque.removeLast();
+                    last.inStack = false;
+                    last.set = root;
+                    if (last == root) {
+                        break;
+                    }
+                    root.out.addAll(last.out);
+                    root.in.addAll(last.in);
+                }
+            }
         }
     }
 
     public static class Node {
-        int bit;
+        List<Node> out = new ArrayList();
+        List<Node> in = new ArrayList();
         int id;
-        List<Edge> edgeList = new ArrayList();
-        int[] dp;
-        boolean inque;
+        int dfn;
+        int low;
+        Node opposite;
+        boolean inStack;
+        Node set;
+        int relyOn;
+        int val;
 
         @Override
         public String toString() {
             return "" + id;
-        }
-    }
-
-    public static class SubsetGenerator {
-        private int[] meanings = new int[33];
-        private int[] bits = new int[33];
-        private int remain;
-        private int next;
-
-        public void setSet(int set) {
-            int bitCount = 0;
-            while (set != 0) {
-                meanings[bitCount] = set & -set;
-                bits[bitCount] = 0;
-                set -= meanings[bitCount];
-                bitCount++;
-            }
-            remain = 1 << bitCount;
-            next = 0;
-        }
-
-        public boolean hasNext() {
-            return remain > 0;
-        }
-
-        private void consume() {
-            remain = remain - 1;
-            int i;
-            for (i = 0; bits[i] == 1; i++) {
-                bits[i] = 0;
-                next -= meanings[i];
-            }
-            bits[i] = 1;
-            next += meanings[i];
-        }
-
-        public int next() {
-            int returned = next;
-            consume();
-            return returned;
         }
     }
 
@@ -368,6 +374,13 @@ public class BZOJ4006 {
         public String readString() {
             defaultStringBuf.setLength(0);
             return readString(defaultStringBuf);
+        }
+
+        public char readChar() {
+            skipBlank();
+            char c = (char) next;
+            next = read();
+            return c;
         }
 
         public int readLine(char[] data, int offset) {

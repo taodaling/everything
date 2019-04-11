@@ -1,13 +1,13 @@
-package com.daltao.oj.old.submit.bzoj;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
 
-public class BZOJ4006 {
+public class POJ3207 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -37,11 +37,6 @@ public class BZOJ4006 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        Node[] nodes;
-        int idAllocator = 0;
-        int[] channels;
-        SubsetGenerator generator = new SubsetGenerator();
-        Deque<Node> deque;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -53,183 +48,69 @@ public class BZOJ4006 {
             solve();
         }
 
-        public void squeeze() {
-            int wpos = 0;
-            int rpos = 0;
-            while (rpos < channels.length) {
-                if (channels[rpos] != 0) {
-                    channels[wpos++] = channels[rpos];
-                }
-                rpos++;
-            }
-            channels = Arrays.copyOfRange(channels, 0, wpos);
-        }
-
-        void spfa(int mask) {
-            while (!deque.isEmpty()) {
-                Node head = deque.removeFirst();
-                head.inque = false;
-                for (Edge edge : head.edgeList) {
-                    Node node = edge.another(head);
-                    int cost = head.dp[mask] + edge.cost;
-                    if (cost >= node.dp[mask | node.bit]) {
-                        continue;
-                    }
-                    node.dp[mask | node.bit] = cost;
-                    if ((mask | node.bit) != mask || node.inque) {
-                        continue;
-                    }
-                    node.inque = true;
-                    deque.addLast(node);
-                }
-            }
-        }
-
         public void solve() {
             int n = io.readInt();
             int m = io.readInt();
-            int p = io.readInt();
-            channels = new int[p];
-            deque = new ArrayDeque(n);
-            nodes = new Node[n + 1];
-            for (int i = 1; i <= n; i++) {
-                nodes[i] = new Node();
-                nodes[i].id = i;
-                nodes[i].dp = new int[1 << p];
-                Arrays.fill(nodes[i].dp, inf);
-                nodes[i].dp[0] = 0;
-            }
-            for (int i = 1; i <= m; i++) {
-                Edge edge = new Edge();
-                edge.a = nodes[io.readInt()];
-                edge.b = nodes[io.readInt()];
-                edge.cost = io.readInt();
-                edge.a.edgeList.add(edge);
-                edge.b.edgeList.add(edge);
-            }
-            for (int i = 0; i < p; i++) {
-                int c = io.readInt();
-                Node d = nodes[io.readInt()];
-                d.bit = 1 << (idAllocator++);
-                d.dp[d.bit] = 0;
-                d.dp[0] = inf;
-                channels[c - 1] |= d.bit;
-            }
-            int mask = (1 << idAllocator) - 1;
-            for (int i = 0; i <= mask; i++) {
-                for (int j = 1; j <= n; j++) {
-                    Node node = nodes[j];
-                    if ((i & node.bit) != node.bit) {
+            Node[][] nodes = new Node[m][2];
+
+            int[][] link = new int[m][2];
+
+            for (int i = 0; i < m; i++) {
+                nodes[i][0] = new Node();
+                nodes[i][1] = new Node();
+
+                int f = io.readInt();
+                int t = io.readInt();
+                link[i][0] = Math.min(f, t);
+                link[i][1] = Math.max(f, t);
+
+                for (int j = 0; j < i; j++) {
+                    if (!intersect(link[i][0], link[i][1], link[j][0], link[j][1])) {
                         continue;
                     }
-                    generator.setSet(i);
-                    while (generator.hasNext()) {
-                        int s = generator.next();
-                        int s1 = node.bit | s;
-                        int s2 = node.bit | (i - s);
-                        if (s1 == node.bit || s2 == node.bit) {
-                            continue;
-                        }
-                        node.dp[i] = Math.min(node.dp[i], node.dp[s1] + node.dp[s2]);
-                    }
-                    if (node.dp[i] < inf) {
-                        deque.addLast(node);
-                        node.inque = true;
-                    }
-                }
-                spfa(i);
-            }
-            //squeeze();
-            int[] channel2IdBits = new int[1 << channels.length];
-            int[] minDp = new int[1 << idAllocator];
-            Arrays.fill(minDp, inf);
-            for (int i = 1; i <= n; i++) {
-                for (int j = 0; j <= mask; j++) {
-                    minDp[j] = Math.min(minDp[j], nodes[i].dp[j]);
+                    Node.union(nodes[i][0], nodes[j][1]);
+                    Node.union(nodes[i][1], nodes[j][0]);
                 }
             }
-            int[] dp = new int[1 << channels.length];
-            Arrays.fill(dp, inf);
-            dp[0] = 0;
-            for (int i = 1, until = channel2IdBits.length; i < until; i++) {
-                if (i == (i & -i)) {
-                    channel2IdBits[i] = channels[31 - Integer.numberOfLeadingZeros(i)];
-                } else {
-                    channel2IdBits[i] = channel2IdBits[i & (i - 1)] + channel2IdBits[i & (-i)];
+
+            for (int i = 0; i < m; i++) {
+                if (nodes[i][0].find() == nodes[i][1].find()) {
+                    io.cache.append("the evil panda is lying again");
+                    return;
                 }
             }
-            for (int i = 1, until = 1 << channels.length; i < until; i++) {
-                generator.setSet(i);
-                while (generator.hasNext()) {
-                    int s = generator.next();
-                    int s2 = i - s;
-                    dp[i] = Math.min(dp[i], dp[s] + minDp[channel2IdBits[s2]]);
-                }
-            }
-            io.cache.append(dp[(1 << channels.length) - 1]);
+            io.cache.append("panda is telling the truth...");
+        }
+
+        public boolean intersect(int f1, int t1, int f2, int t2) {
+            return (f1 > f2 && f1 < t2 && t1 > t2)
+                    || (f1 < f2 && t1 > f2 && t1 < t2);
         }
     }
 
-    public static class Edge {
-        Node a;
-        Node b;
-        int cost;
-
-        public Node another(Node me) {
-            return a == me ? b : a;
-        }
-    }
 
     public static class Node {
-        int bit;
-        int id;
-        List<Edge> edgeList = new ArrayList();
-        int[] dp;
-        boolean inque;
+        Node p = this;
+        int rank = 0;
 
-        @Override
-        public String toString() {
-            return "" + id;
+        public Node find() {
+            return p == p.p ? p : (p = p.find());
         }
-    }
 
-    public static class SubsetGenerator {
-        private int[] meanings = new int[33];
-        private int[] bits = new int[33];
-        private int remain;
-        private int next;
-
-        public void setSet(int set) {
-            int bitCount = 0;
-            while (set != 0) {
-                meanings[bitCount] = set & -set;
-                bits[bitCount] = 0;
-                set -= meanings[bitCount];
-                bitCount++;
+        public static void union(Node a, Node b) {
+            a = a.find();
+            b = b.find();
+            if (a == b) {
+                return;
             }
-            remain = 1 << bitCount;
-            next = 0;
-        }
-
-        public boolean hasNext() {
-            return remain > 0;
-        }
-
-        private void consume() {
-            remain = remain - 1;
-            int i;
-            for (i = 0; bits[i] == 1; i++) {
-                bits[i] = 0;
-                next -= meanings[i];
+            if (a.rank == b.rank) {
+                a.rank++;
             }
-            bits[i] = 1;
-            next += meanings[i];
-        }
-
-        public int next() {
-            int returned = next;
-            consume();
-            return returned;
+            if (a.rank > b.rank) {
+                b.p = a;
+            } else {
+                a.p = b;
+            }
         }
     }
 

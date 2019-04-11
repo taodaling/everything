@@ -18,7 +18,7 @@ public class BZOJ1857 {
 
 
     public static void main(String[] args) throws FileNotFoundException, InterruptedException {
-        System.setIn(new FileInputStream("D:\\test\\bzoj\\BZOJ1857.in"));
+        //System.setIn(new FileInputStream("D:\\test\\bzoj\\BZOJ1857.in"));
 
         input = new BlockReader(System.in);
 
