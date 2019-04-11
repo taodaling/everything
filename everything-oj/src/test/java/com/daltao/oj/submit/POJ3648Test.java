@@ -30,7 +30,7 @@ public class POJ3648Test {
     public static class Checker implements com.daltao.test.Checker {
         @Override
         public boolean check(Input expected, Input actual, Input input) {
-            if (!expected.available() || !actual.available() || !expected.read().equals(actual.read())) {
+            if (!expected.available() || !actual.available() || expected.read().equals("bad luck") != actual.read().equals("bad luck")) {
                 return false;
             }
 
@@ -139,8 +139,8 @@ public class POJ3648Test {
         @Override
         public Input newInstance() {
             QueueInput input = new QueueInput();
-            int n = nextInt(2, 10);
-            int m = nextInt(1, 10);
+            int n = nextInt(2, 3);
+            int m = nextInt(1, 3);
             input.add(String.format("%d %d", n, m));
             for (int i = 0; i < m; i++) {
                 String s = "";
