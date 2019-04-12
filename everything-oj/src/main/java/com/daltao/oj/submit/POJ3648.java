@@ -41,7 +41,7 @@ public class POJ3648 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        static int limit = 100000;
+        static int limit = 50;
         Node[][] nodes = new Node[limit][2];
         int n;
         int m;
@@ -80,7 +80,7 @@ public class POJ3648 {
 
 
         public void solveSingleCase() {
-            for (int i = 1, until = n; i < until; i++) {
+            for (int i = 0; i < n; i++) {
                 for (int j = 0; j < 2; j++) {
                     nodes[i][j].dfn = 0;
                     nodes[i][j].out.clear();
@@ -90,56 +90,34 @@ public class POJ3648 {
                     nodes[i][j].opposite = nodes[i][1 - j];
                 }
             }
-
-            for (int i = 1; i <= m; i++) {
-                //!(a && b) => !a || !b
-                int a = io.readInt();
-                int gendera = io.readChar() == 'h' ? 0 : 1;
-                int b = io.readInt();
-                int genderb = io.readChar() == 'h' ? 0 : 1;
-
-                if (a == b) {
-                    continue;
-                }
-                if (a == 0) {
-                    if (gendera == 0) {
-                        //adulterous with the husband
-                        addEdge(nodes[b][genderb], nodes[b][genderb].opposite);
-                    }
-                    continue;
-                }
-                if (b == 0) {
-                    if (genderb == 0) {
-                        //adulterous with the husband
-                        addEdge(nodes[a][gendera], nodes[a][gendera].opposite);
-                    }
-                    continue;
-                }
-
-                addEdge(nodes[a][gendera], nodes[b][gendera].opposite);
-                addEdge(nodes[b][gendera], nodes[a][gendera].opposite);
+            addEdge(nodes[0][1], nodes[0][0]);
+            for (int i = 0; i < m; i++) {
+                //!(a&&b)
+                Node a = nodes[io.readInt()][readGender()];
+                Node b = nodes[io.readInt()][readGender()];
+                addEdge(a, b.opposite);
+                addEdge(b, a.opposite);
             }
 
-            for (int i = 1, until = n; i < until; i++) {
-                for(int j = 0; j < 2; j++) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < 2; j++) {
                     tarjan(nodes[i][j], deque);
                 }
-            }
-
-            for (int i = 1, until = n; i < until; i++) {
-                if (nodes[i][0].set == nodes[i][0].opposite.set) {
+                if (nodes[i][0].set == nodes[i][1].set) {
                     io.cache.append("bad luck\n");
                     return;
                 }
             }
 
-            for (int i = 1, until = n; i < until; i++) {
-                for(int j = 0; j < 2; j++) {
-                    if (nodes[i][j].set != nodes[i][j]) {
+
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < 2; j++) {
+                    if (nodes[i][j] != nodes[i][j].set) {
                         continue;
                     }
                     for (Node node : nodes[i][j].in) {
-                        if (node.set == nodes[i][j]) {
+                        node = node.set;
+                        if (node == nodes[i][j]) {
                             continue;
                         }
                         node.relyOn++;
@@ -147,9 +125,9 @@ public class POJ3648 {
                 }
             }
 
-            for (int i = 0, until = n; i < until; i++) {
-                for(int j = 0; j < 2; j++) {
-                    if (nodes[i][j].set != nodes[i][j]) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < 2; j++) {
+                    if (nodes[i][j] != nodes[i][j].set) {
                         continue;
                     }
                     if (nodes[i][j].relyOn == 0) {
@@ -161,7 +139,8 @@ public class POJ3648 {
             while (!deque.isEmpty()) {
                 Node head = deque.removeFirst();
                 for (Node node : head.in) {
-                    if (node.set == head) {
+                    node = node.set;
+                    if (node == head) {
                         continue;
                     }
                     node.relyOn--;
@@ -170,16 +149,24 @@ public class POJ3648 {
                     }
                 }
                 head.val = -head.opposite.set.val;
-                if (head.val != 0) {
-                    continue;
+                if (head.val == 0) {
+                    head.val = 1;
                 }
-                head.val = 1;
             }
 
-            for (int i = 1, until = n; i < until; i++) {
-                io.cache.append(i).append(nodes[i][0].set.val == 1 ? 'w' : 'h').append(' ');
+            for (int i = 1; i < n; i++) {
+                if (nodes[i][0].set.val == 1) {
+                    io.cache.append(i).append('w');
+                } else {
+                    io.cache.append(i).append('h');
+                }
+                io.cache.append(' ');
             }
             io.cache.append('\n');
+        }
+
+        public int readGender() {
+            return io.readChar() == 'h' ? 0 : 1;
         }
 
         public void addEdge(Node a, Node b) {
