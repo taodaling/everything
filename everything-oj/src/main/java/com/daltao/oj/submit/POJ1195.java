@@ -1,4 +1,4 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-public class OJCodeTemplate {
+public class POJ1195 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -49,15 +49,75 @@ public class OJCodeTemplate {
         }
 
         public void solve() {
+            if (debug.allowDebug) {
+                BIT2D bit = new BIT2D(3, 3);
+                debug.assertTrue(bit.query(3, 3) == 0);
+                bit.update(1, 2, 1);
+                debug.assertTrue(bit.query(1, 2) == 1);
+                debug.assertTrue(bit.query(1, 1) == 0);
+                debug.assertTrue(bit.query(3, 3) == 1);
+            }
+
+            io.readInt();
+            int c = io.readInt();
+            BIT2D bit = new BIT2D(c, c);
+            int cmd;
+            while ((cmd = io.readInt()) != 3) {
+                if (cmd == 1) {
+                    int x = io.readInt() + 1;
+                    int y = io.readInt() + 1;
+                    int v = io.readInt();
+                    bit.update(x, y, v);
+                } else {
+                    int l = io.readInt() + 1;
+                    int b = io.readInt() + 1;
+                    int r = io.readInt() + 1;
+                    int t = io.readInt() + 1;
+                    io.cache.append(
+                            bit.query(r, t) - bit.query(r, b - 1) - bit.query(l - 1, t) + bit.query(l - 1, b - 1)
+                    ).append('\n');
+                }
+            }
+        }
+    }
+
+    public static class BIT2D {
+        int[][] data;
+        int c1;
+        int c2;
+
+        public BIT2D(int c1, int c2) {
+            this.c1 = c1 + 1;
+            this.c2 = c2 + 1;
+            data = new int[this.c1][this.c2];
+        }
+
+        public void update(int i1, int i2, int v) {
+            for (int i = i1; i < c1; i += i & -i) {
+                for (int j = i2; j < c2; j += j & -j) {
+                    data[i][j] += v;
+                }
+            }
+        }
+
+        public int query(int i1, int i2) {
+            int s = 0;
+            for (int i = i1; i > 0; i = i & (i - 1)) {
+                for (int j = i2; j > 0; j = j & (j - 1)) {
+                    s += data[i][j];
+                }
+            }
+            return s;
         }
     }
 
     public static class FastIO {
-        public final StringBuilder cache = new StringBuilder();
         private final InputStream is;
         private final OutputStream os;
         private final Charset charset;
         private StringBuilder defaultStringBuf = new StringBuilder(1 << 8);
+        public final StringBuilder cache = new StringBuilder();
+
         private byte[] buf = new byte[1 << 13];
         private int bufLen;
         private int bufOffset;
@@ -148,7 +208,7 @@ public class OJCodeTemplate {
             boolean sign = true;
             skipBlank();
             if (next == '+' || next == '-') {
-                sign = next == '+';
+                sign = next == '+' ? true : false;
                 next = read();
             }
 
@@ -221,13 +281,6 @@ public class OJCodeTemplate {
             return offset - originalOffset;
         }
 
-        public char readChar() {
-            skipBlank();
-            char c = (char) next;
-            next = read();
-            return c;
-        }
-
         public void flush() {
             try {
                 os.write(cache.toString().getBytes(charset));
@@ -246,10 +299,6 @@ public class OJCodeTemplate {
 
     public static class Debug {
         private boolean allowDebug;
-
-        public Debug(boolean allowDebug) {
-            this.allowDebug = allowDebug;
-        }
 
         public void assertTrue(boolean flag) {
             if (!allowDebug) {
@@ -271,6 +320,10 @@ public class OJCodeTemplate {
             if (flag) {
                 fail();
             }
+        }
+
+        public Debug(boolean allowDebug) {
+            this.allowDebug = allowDebug;
         }
 
         private void outputName(String name) {

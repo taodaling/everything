@@ -1,13 +1,16 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
-public class OJCodeTemplate {
+public class BZOJ3295 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -37,6 +40,21 @@ public class OJCodeTemplate {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
+        Segment segment;
+        int n;
+
+        Comparator<Node> sortByI = new Comparator<Node>() {
+            @Override
+            public int compare(Node o1, Node o2) {
+                return o1.i - o2.i;
+            }
+        };
+        Comparator<Node> sortByT = new Comparator<Node>() {
+            @Override
+            public int compare(Node o1, Node o2) {
+                return o1.t - o2.t;
+            }
+        };
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -49,6 +67,177 @@ public class OJCodeTemplate {
         }
 
         public void solve() {
+            n = io.readInt();
+            int m = io.readInt();
+            Node[] original = new Node[n + 1];
+            Node[] nodes = new Node[n + 1];
+            segment = Segment.build(1, n);
+            List<Node> result = new ArrayList(m);
+            for (int i = 1; i <= n; i++) {
+                original[i] = new Node();
+                original[i].id = i;
+                original[i].v = n + 1 - i;
+            }
+            for (int i = 1; i <= n; i++) {
+                nodes[i] = original[io.readInt()];
+                nodes[i].i = i;
+                nodes[i].t = 0;
+            }
+            for (int i = 1; i <= m; i++) {
+                Node node = original[io.readInt()];
+                node.t = m - i + 1;
+                result.add(node);
+            }
+
+            int total = 0;
+            for (int i = 1; i <= n; i++) {
+                total += Segment.query(1, nodes[i].v - 1, 1, n, segment);
+                Segment.update(nodes[i].v, nodes[i].v, 1, n, segment);
+            }
+
+            Arrays.sort(nodes, 1, n, sortByI);
+            cdq(nodes, 1, n);
+            for (Node node : result) {
+                io.cache.append(total).append(' ');
+                total -= node.count;
+            }
+        }
+
+        public void cdq(Node[] nodes, int f, int t) {
+            if (f == t) {
+                return;
+            }
+            int m = (f + t) >> 1;
+            cdq(nodes, f, m);
+            cdq(nodes, m + 1, t);
+            Arrays.sort(nodes, f, m + 1, sortByT);
+            Arrays.sort(nodes, m + 1, t + 1, sortByT);
+            count1(nodes, f, m, m + 1, t);
+            count2(nodes, m + 1, t, f, m);
+        }
+
+        public void count1(Node[] nodes, int f1, int t1, int f2, int t2) {
+            segment.clear();
+            int i = f1;
+            int j = f2;
+            while (j <= t2) {
+                while (i <= t1 && nodes[i].t <= nodes[j].t) {
+                    Segment.update(nodes[i].v, nodes[i].v, 1, n, segment);
+                    i++;
+                }
+                nodes[j].count += Segment.query(1, nodes[j].v - 1, 1, n, segment);
+                j++;
+            }
+        }
+
+        public void count2(Node[] nodes, int f1, int t1, int f2, int t2) {
+            segment.clear();
+            int i = f1;
+            int j = f2;
+            while (j <= t2) {
+                while (i <= t1 && nodes[i].t <= nodes[j].t) {
+                    Segment.update(nodes[i].v, nodes[i].v, 1, n, segment);
+                    i++;
+                }
+                nodes[j].count += Segment.query(nodes[j].v + 1, n, 1, n, segment);
+                j++;
+            }
+        }
+
+    }
+
+    public static class Node {
+        int t;
+        int i;
+        int v;
+        int count;
+        int id;
+
+        @Override
+        public String toString() {
+            return "" + id;
+        }
+    }
+
+    public static class Segment implements Cloneable {
+        Segment left;
+        Segment right;
+        int sum;
+        boolean clearTag;
+
+        public void clear() {
+            clearTag = true;
+            sum = 0;
+        }
+
+        public static Segment build(int l, int r) {
+            Segment segment = new Segment();
+            if (l != r) {
+                int m = (l + r) >> 1;
+                segment.left = build(l, m);
+                segment.right = build(m + 1, r);
+                segment.pushUp();
+            }
+            return segment;
+        }
+
+        public static boolean checkOutOfRange(int ll, int rr, int l, int r) {
+            return ll > r || rr < l;
+        }
+
+        public static boolean checkCoverage(int ll, int rr, int l, int r) {
+            return ll <= l && rr >= r;
+        }
+
+        public static void update(int ll, int rr, int l, int r, Segment segment) {
+            if (checkOutOfRange(ll, rr, l, r)) {
+                return;
+            }
+            if (checkCoverage(ll, rr, l, r)) {
+                segment.sum++;
+                return;
+            }
+            int m = (l + r) >> 1;
+
+            segment.pushDown();
+            update(ll, rr, l, m, segment.left);
+            update(ll, rr, m + 1, r, segment.right);
+            segment.pushUp();
+        }
+
+
+        public static int query(int ll, int rr, int l, int r, Segment segment) {
+            if (checkOutOfRange(ll, rr, l, r)) {
+                return 0;
+            }
+            if (checkCoverage(ll, rr, l, r)) {
+                return segment.sum;
+            }
+            int m = (l + r) >> 1;
+            segment.pushDown();
+            return query(ll, rr, l, m, segment.left) +
+                    query(ll, rr, m + 1, r, segment.right);
+        }
+
+        public void pushDown() {
+            if (clearTag) {
+                clearTag = false;
+                left.clear();
+                right.clear();
+            }
+        }
+
+        public void pushUp() {
+            sum = left.sum + right.sum;
+        }
+
+        @Override
+        public Segment clone() {
+            try {
+                return (Segment) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

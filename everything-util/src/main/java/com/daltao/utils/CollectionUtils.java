@@ -1,7 +1,11 @@
 package com.daltao.utils;
 
+import com.daltao.template.Randomized;
+
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CollectionUtils {
@@ -44,5 +48,11 @@ public class CollectionUtils {
         public Map<K, V> buildLinkedHashMap() {
             return new LinkedHashMap<>(map);
         }
+    }
+
+    public static <T> List<T> shuffle(List<T> list) {
+        Object[] data = list.toArray();
+        Randomized.randomizedArray(data, 0, data.length);
+        return (List<T>) Arrays.asList(data);
     }
 }

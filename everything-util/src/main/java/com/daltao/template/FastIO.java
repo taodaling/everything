@@ -126,8 +126,7 @@ public class FastIO {
         return sign ? result : -result;
     }
 
-    public char readChar()
-    {
+    public char readChar() {
         skipBlank();
         char c = (char) next;
         next = read();
