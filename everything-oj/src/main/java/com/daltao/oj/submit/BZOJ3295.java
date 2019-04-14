@@ -40,7 +40,7 @@ public class BZOJ3295 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        Segment segment;
+        BIT bit;
         int n;
 
         Comparator<Node> sortByI = new Comparator<Node>() {
@@ -71,7 +71,7 @@ public class BZOJ3295 {
             int m = io.readInt();
             Node[] original = new Node[n + 1];
             Node[] nodes = new Node[n + 1];
-            segment = Segment.build(1, n);
+            bit = new BIT(n);
             List<Node> result = new ArrayList(m);
             for (int i = 1; i <= n; i++) {
                 original[i] = new Node();
@@ -89,16 +89,16 @@ public class BZOJ3295 {
                 result.add(node);
             }
 
-            int total = 0;
+            long total = 0;
             for (int i = 1; i <= n; i++) {
-                total += Segment.query(1, nodes[i].v - 1, 1, n, segment);
-                Segment.update(nodes[i].v, nodes[i].v, 1, n, segment);
+                total += bit.query(nodes[i].v - 1);
+                bit.update(nodes[i].v, 1);
             }
 
             Arrays.sort(nodes, 1, n, sortByI);
             cdq(nodes, 1, n);
             for (Node node : result) {
-                io.cache.append(total).append(' ');
+                io.cache.append(total).append('\n');
                 total -= node.count;
             }
         }
@@ -117,29 +117,29 @@ public class BZOJ3295 {
         }
 
         public void count1(Node[] nodes, int f1, int t1, int f2, int t2) {
-            segment.clear();
+            bit.reset();
             int i = f1;
             int j = f2;
             while (j <= t2) {
                 while (i <= t1 && nodes[i].t <= nodes[j].t) {
-                    Segment.update(nodes[i].v, nodes[i].v, 1, n, segment);
+                    bit.update(nodes[i].v, 1);
                     i++;
                 }
-                nodes[j].count += Segment.query(1, nodes[j].v - 1, 1, n, segment);
+                nodes[j].count += bit.query(nodes[j].v - 1);
                 j++;
             }
         }
 
         public void count2(Node[] nodes, int f1, int t1, int f2, int t2) {
-            segment.clear();
+            bit.reset();
             int i = f1;
             int j = f2;
             while (j <= t2) {
                 while (i <= t1 && nodes[i].t <= nodes[j].t) {
-                    Segment.update(nodes[i].v, nodes[i].v, 1, n, segment);
+                    bit.update(nodes[i].v, 1);
                     i++;
                 }
-                nodes[j].count += Segment.query(nodes[j].v + 1, n, 1, n, segment);
+                nodes[j].count += bit.query(n) - bit.query(nodes[j].v);
                 j++;
             }
         }
@@ -150,7 +150,7 @@ public class BZOJ3295 {
         int t;
         int i;
         int v;
-        int count;
+        long count;
         int id;
 
         @Override
@@ -159,87 +159,86 @@ public class BZOJ3295 {
         }
     }
 
-    public static class Segment implements Cloneable {
-        Segment left;
-        Segment right;
-        int sum;
-        boolean clearTag;
+    public static class VersionArray {
+        int[] data;
+        int[] version;
+        int now;
+
+        public VersionArray(int cap) {
+            data = new int[cap];
+            version = new int[cap];
+            now = 0;
+        }
 
         public void clear() {
-            clearTag = true;
-            sum = 0;
+            now++;
         }
 
-        public static Segment build(int l, int r) {
-            Segment segment = new Segment();
-            if (l != r) {
-                int m = (l + r) >> 1;
-                segment.left = build(l, m);
-                segment.right = build(m + 1, r);
-                segment.pushUp();
-            }
-            return segment;
-        }
-
-        public static boolean checkOutOfRange(int ll, int rr, int l, int r) {
-            return ll > r || rr < l;
-        }
-
-        public static boolean checkCoverage(int ll, int rr, int l, int r) {
-            return ll <= l && rr >= r;
-        }
-
-        public static void update(int ll, int rr, int l, int r, Segment segment) {
-            if (checkOutOfRange(ll, rr, l, r)) {
-                return;
-            }
-            if (checkCoverage(ll, rr, l, r)) {
-                segment.sum++;
-                return;
-            }
-            int m = (l + r) >> 1;
-
-            segment.pushDown();
-            update(ll, rr, l, m, segment.left);
-            update(ll, rr, m + 1, r, segment.right);
-            segment.pushUp();
-        }
-
-
-        public static int query(int ll, int rr, int l, int r, Segment segment) {
-            if (checkOutOfRange(ll, rr, l, r)) {
-                return 0;
-            }
-            if (checkCoverage(ll, rr, l, r)) {
-                return segment.sum;
-            }
-            int m = (l + r) >> 1;
-            segment.pushDown();
-            return query(ll, rr, l, m, segment.left) +
-                    query(ll, rr, m + 1, r, segment.right);
-        }
-
-        public void pushDown() {
-            if (clearTag) {
-                clearTag = false;
-                left.clear();
-                right.clear();
+        public void visit(int i) {
+            if (version[i] < now) {
+                version[i] = now;
+                data[i] = 0;
             }
         }
 
-        public void pushUp() {
-            sum = left.sum + right.sum;
+        public void set(int i, int v) {
+            version[i] = now;
+            data[i] = v;
         }
 
-        @Override
-        public Segment clone() {
-            try {
-                return (Segment) super.clone();
-            } catch (CloneNotSupportedException e) {
-                throw new RuntimeException(e);
-            }
+        public void inc(int i, int v) {
+            visit(i);
+            data[i] += v;
+        }
+
+        public int get(int i) {
+            visit(i);
+            return data[i];
+        }
+
+        public int inc(int i) {
+            visit(i);
+            return ++data[i];
         }
     }
+
+    public static class BIT {
+        private VersionArray data;
+        private int n;
+
+        /**
+         * 创建大小A[1...n]
+         */
+        public BIT(int n) {
+            this.n = n;
+            data = new VersionArray(n + 1);
+        }
+
+        /**
+         * 查询A[1]+A[2]+...+A[i]
+         */
+        public int query(int i) {
+            int sum = 0;
+            for (; i > 0; i -= i & -i) {
+                sum += data.get(i);
+            }
+            return sum;
+        }
+
+        /**
+         * 将A[i]更新为A[i]+mod
+         */
+        public void update(int i, int mod) {
+            for (; i <= n; i += i & -i) {
+                data.inc(i, mod);
+            }
+        }
+
+        public void reset() {
+            data.clear();
+        }
+    }
+
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder();

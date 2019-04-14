@@ -65,7 +65,7 @@ public class BZOJ3295Test {
         @Override
         public Input newInstance() {
             QueueInput input = new QueueInput();
-            int n = nextInt(1, 40);
+            int n = nextInt(1, 1000);
             int m = nextInt(1, n);
             input.add(n).add(m);
             List<Integer> data = new ArrayList<>();
