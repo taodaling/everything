@@ -6,6 +6,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Random;
+import java.util.TreeMap;
 
 public class CF1119D {
     public static void main(String[] args) throws Exception {
@@ -54,14 +57,92 @@ public class CF1119D {
             for (int i = 1; i <= n; i++) {
                 strings[i] = io.readLong();
             }
-
+            Randomized.randomizedArray(strings, 1, n + 1);
+            Arrays.sort(strings, 1, n + 1);
+            TreeMap<Long, Integer> map = new TreeMap<>();
+            for (int i = 2; i <= n; i++) {
+                long d = strings[i] - strings[i - 1];
+                map.put(d, map.getOrDefault(d, 0) + 1);
+            }
+            TreeMap<Long, long[]> prefixSummary = new TreeMap<>();
+            prefixSummary.put(0L, new long[]{0, n});
+            for (Map.Entry<Long, Integer> entry : map.entrySet()) {
+                long[] vals = prefixSummary.lastEntry().getValue().clone();
+                vals[0] += entry.getKey() * entry.getValue();
+                vals[1] -= entry.getValue();
+                prefixSummary.put(entry.getKey(), vals);
+            }
 
             int m = io.readInt();
-            for (int i = 0; i < m; i++) {
-                int l = io.readInt();
-                int r = io.readInt();
-                //io.cache.append(max - min + r - l + 1).append('\n');
+            for (int i = 1; i <= m; i++) {
+                long l = io.readLong();
+                long r = io.readLong();
+                long d = r - l + 1;
+                long[] summary = prefixSummary.floorEntry(d).getValue();
+                io.cache.append(summary[0] + summary[1] * d).append('\n');
             }
+        }
+    }
+
+    public static class Randomized {
+        static Random random = new Random();
+
+        public static double nextDouble(double min, double max) {
+            return random.nextDouble() * (max - min) + min;
+        }
+
+        public static void randomizedArray(int[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                int tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(long[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                long tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(double[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                double tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(float[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                float tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static <T> void randomizedArray(T[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                T tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static int nextInt(int l, int r) {
+            return random.nextInt(r - l + 1) + l;
         }
     }
 

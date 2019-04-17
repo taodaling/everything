@@ -5,15 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 public class CF1119F {
     public static void main(String[] args) throws Exception {
@@ -104,20 +96,16 @@ public class CF1119F {
                         la.virtualEdges.remove(node);
                         last.virtualEdges.put(node, last.edgeSet.getOrDefault(node, lInf));
                         if (last.edgeSet.containsKey(node)) {
-                            reuse.node = node;
-                            reuse.fee = last.edgeSet.get(node).intValue();
-                            last.remainEdges.remove(reuse);
-                            reuse.node = last;
-                            node.remainEdges.remove(reuse);
+                            int fee = last.edgeSet.get(node).intValue();
+                            last.remainEdges = Treap.remove(last.remainEdges, fee);
+                            node.remainEdges = Treap.remove(node.remainEdges, fee);
                         }
                     }
                     la.virtualEdges.put(last, la.edgeSet.getOrDefault(last, lInf));
                     if (la.edgeSet.containsKey(last)) {
-                        reuse.node = last;
-                        reuse.fee = la.edgeSet.get(last).intValue();
-                        la.remainEdges.remove(reuse);
-                        reuse.node = la;
-                        last.remainEdges.remove(reuse);
+                        int fee = la.edgeSet.get(last).intValue();
+                        la.remainEdges = Treap.remove(la.remainEdges, fee);
+                        last.remainEdges = Treap.remove(last.remainEdges, fee);
                     }
 
                     Segment.update(last.enter, last.leave, 1, n, last, root);
@@ -133,59 +121,55 @@ public class CF1119F {
             }
         }
 
-        static List<Node> sortedList = new ArrayList<>(250000);
 
         public static void dp(Node root, int degreeLimit) {
             long total = 0;
+            int degree = root.degree;
             for (Map.Entry<Node, Long> entry : root.virtualEdges.entrySet()) {
                 Node node = entry.getKey();
                 dp(node, degreeLimit);
                 node.fixedFee = entry.getValue() + (node.dp0 - node.dp1);
                 total += node.dp1;
             }
-            sortedList.clear();
-            sortedList.addAll(root.virtualEdges.keySet());
-            sortedList.sort(Node.compareByFixedFee);
 
-            Iterator<Node> fixedFeeIterator = sortedList.iterator();
-            Iterator<Edge> remainEdgeIterator = root.remainEdges.iterator();
-            Node fixedFeeNext = fixedFeeIterator.hasNext() ? fixedFeeIterator.next() : null;
-            Edge remainEdgeNext = remainEdgeIterator.hasNext() ? remainEdgeIterator.next() : null;
-            int currentDegree = root.degree;
-            while (fixedFeeNext != null && fixedFeeNext.fixedFee < 0) {
-                total += fixedFeeNext.fixedFee;
-                fixedFeeNext = fixedFeeIterator.hasNext() ? fixedFeeIterator.next() : null;
-                currentDegree--;
-            }
-            while (currentDegree > degreeLimit) {
-                if (fixedFeeNext == null || (remainEdgeNext != null && fixedFeeNext.fixedFee > remainEdgeNext.fee)) {
-                    total += remainEdgeNext.fee;
-                    remainEdgeNext = remainEdgeIterator.hasNext() ? remainEdgeIterator.next() : null;
+            for (Node node : root.virtualEdges.keySet()) {
+                if (node.fixedFee < 0) {
+                    total += node.fixedFee;
+                    degree--;
                 } else {
-                    total += fixedFeeNext.fixedFee;
-                    fixedFeeNext = fixedFeeIterator.hasNext() ? fixedFeeIterator.next() : null;
+                    root.remainEdges = Treap.insert(root.remainEdges, node.fixedFee);
                 }
-                currentDegree--;
             }
-            root.dp0 = total;
-            while (currentDegree > degreeLimit - 1) {
-                if (fixedFeeNext == null || (remainEdgeNext != null && fixedFeeNext.fixedFee > remainEdgeNext.fee)) {
-                    total += remainEdgeNext.fee;
-                    remainEdgeNext = remainEdgeIterator.hasNext() ? remainEdgeIterator.next() : null;
+
+            if (degree > degreeLimit) {
+                Treap[] p = Treap.splitByRank(root.remainEdges, degree - degreeLimit);
+                root.dp0 = total + p[0].sum;
+                root.remainEdges = Treap.merge(p[0], p[1]);
+            } else {
+                root.dp0 = total;
+            }
+
+            if (degree > degreeLimit - 1) {
+                Treap[] p = Treap.splitByRank(root.remainEdges, degree - degreeLimit + 1);
+                root.dp1 = total + p[0].sum;
+                root.remainEdges = Treap.merge(p[0], p[1]);
+            } else {
+                root.dp1 = root.dp0;
+            }
+
+            for (Node node : root.virtualEdges.keySet()) {
+                if (node.fixedFee < 0) {
                 } else {
-                    total += fixedFeeNext.fixedFee;
-                    fixedFeeNext = fixedFeeIterator.hasNext() ? fixedFeeIterator.next() : null;
+                    root.remainEdges = Treap.remove(root.remainEdges, node.fixedFee);
                 }
-                currentDegree--;
             }
-            root.dp1 = total;
         }
 
         void dfs(Node root, Node father) {
             root.enter = order();
             for (Map.Entry<Node, Long> entry : root.edgeSet.entrySet()) {
                 Node node = entry.getKey();
-                root.remainEdges = Treap.merge(root.remainEdges, new Treap(entry.getValue()));
+                root.remainEdges = Treap.insert(root.remainEdges, entry.getValue());
                 if (node == father) {
                     continue;
                 }
@@ -231,6 +215,7 @@ public class CF1119F {
             this.size = 1;
         }
 
+
         @Override
         public Treap clone() {
             try {
@@ -245,7 +230,7 @@ public class CF1119F {
 
         public void pushUp() {
             size = left.size + right.size + 1;
-            sum = left.sum + right.sum;
+            sum = left.sum + right.sum + key;
         }
 
         public static Treap[] splitByRank(Treap root, int rank) {
@@ -285,6 +270,13 @@ public class CF1119F {
                 b.pushUp();
                 return b;
             }
+        }
+
+        public static Treap insert(Treap a, long k) {
+            Treap node = new Treap(k);
+            Treap[] p = splitByKey(a, k);
+            p[0] = Treap.merge(p[0], node);
+            return Treap.merge(p[0], p[1]);
         }
 
         public static void toString(Treap root, StringBuilder builder) {
@@ -332,11 +324,12 @@ public class CF1119F {
             root.pushUp();
             return result;
         }
+
+
     }
 
 
     public static class Node {
-        static Comparator<Node> compareByFixedFee = (a, b) -> a.fixedFee == b.fixedFee ? a.id - b.id : Long.compare(a.fixedFee, b.fixedFee);
         static Comparator<Node> compareById = (a, b) -> a.id - b.id;
         static Comparator<Node> compareByEnter = (a, b) -> a.enter - b.enter;
         TreeMap<Node, Long> virtualEdges = new TreeMap<>(compareByEnter);
