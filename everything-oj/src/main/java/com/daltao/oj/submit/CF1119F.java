@@ -97,15 +97,15 @@ public class CF1119F {
                         last.virtualEdges.put(node, last.edgeSet.getOrDefault(node, lInf));
                         if (last.edgeSet.containsKey(node)) {
                             int fee = last.edgeSet.get(node).intValue();
-                            last.remainEdges = Treap.remove(last.remainEdges, fee);
-                            node.remainEdges = Treap.remove(node.remainEdges, fee);
+                            last.remainEdges = removeSplay(last.remainEdges, fee);
+                            node.remainEdges = removeSplay(node.remainEdges, fee);
                         }
                     }
                     la.virtualEdges.put(last, la.edgeSet.getOrDefault(last, lInf));
                     if (la.edgeSet.containsKey(last)) {
                         int fee = la.edgeSet.get(last).intValue();
-                        la.remainEdges = Treap.remove(la.remainEdges, fee);
-                        last.remainEdges = Treap.remove(last.remainEdges, fee);
+                        la.remainEdges = removeSplay(la.remainEdges, fee);
+                        last.remainEdges = removeSplay(last.remainEdges, fee);
                     }
 
                     Segment.update(last.enter, last.leave, 1, n, last, root);
@@ -121,6 +121,19 @@ public class CF1119F {
             }
         }
 
+        public static Splay addSplay(Splay root, long key) {
+            Splay node = new Splay();
+            node.key = node.sum = key;
+            return Splay.add(root, node);
+        }
+
+        public static Splay removeSplay(Splay root, long key) {
+            root = Splay.selectKeyAsRoot(root, key);
+            if (root.key == key) {
+                root = Splay.deleteRoot(root);
+            }
+            return root;
+        }
 
         public static void dp(Node root, int degreeLimit) {
             long total = 0;
@@ -137,22 +150,20 @@ public class CF1119F {
                     total += node.fixedFee;
                     degree--;
                 } else {
-                    root.remainEdges = Treap.insert(root.remainEdges, node.fixedFee);
+                    root.remainEdges = addSplay(root.remainEdges, node.fixedFee);
                 }
             }
 
             if (degree > degreeLimit) {
-                Treap[] p = Treap.splitByRank(root.remainEdges, degree - degreeLimit);
-                root.dp0 = total + p[0].sum;
-                root.remainEdges = Treap.merge(p[0], p[1]);
+                root.remainEdges = Splay.selectKthAsRoot(root.remainEdges, degree - degreeLimit);
+                root.dp0 = total + root.remainEdges.sum - root.remainEdges.right.sum;
             } else {
                 root.dp0 = total;
             }
 
             if (degree > degreeLimit - 1) {
-                Treap[] p = Treap.splitByRank(root.remainEdges, degree - degreeLimit + 1);
-                root.dp1 = total + p[0].sum;
-                root.remainEdges = Treap.merge(p[0], p[1]);
+                root.remainEdges = Splay.selectKthAsRoot(root.remainEdges, degree - degreeLimit + 1);
+                root.dp1 = total + root.remainEdges.sum - root.remainEdges.right.sum;
             } else {
                 root.dp1 = root.dp0;
             }
@@ -160,7 +171,7 @@ public class CF1119F {
             for (Node node : root.virtualEdges.keySet()) {
                 if (node.fixedFee < 0) {
                 } else {
-                    root.remainEdges = Treap.remove(root.remainEdges, node.fixedFee);
+                    root.remainEdges = removeSplay(root.remainEdges, node.fixedFee);
                 }
             }
         }
@@ -169,7 +180,7 @@ public class CF1119F {
             root.enter = order();
             for (Map.Entry<Node, Long> entry : root.edgeSet.entrySet()) {
                 Node node = entry.getKey();
-                root.remainEdges = Treap.insert(root.remainEdges, entry.getValue());
+                root.remainEdges = addSplay(root.remainEdges, entry.getValue());
                 if (node == father) {
                     continue;
                 }
@@ -185,47 +196,105 @@ public class CF1119F {
         }
     }
 
-    public static class Treap implements Cloneable {
-        private static Random random = new Random();
-
-        private static Treap NIL = new Treap(0);
+    public static class Splay implements Cloneable {
+        public static final Splay NIL = new Splay();
 
         static {
-            NIL.left = NIL.right = NIL;
+            NIL.left = NIL;
+            NIL.right = NIL;
+            NIL.father = NIL;
             NIL.size = 0;
         }
 
-        Treap left = NIL;
-        Treap right = NIL;
-        int size;
+        Splay left = NIL;
+        Splay right = NIL;
+        Splay father = NIL;
+        int size = 1;
         long key;
         long sum;
 
-        public static Treap remove(Treap treap, long key) {
-            Treap[] p = splitByKey(treap, key - 1);
-            Treap[] r = splitByRank(p[1], 1);
-            if (r[0].key != key) {
-                r[1] = merge(r[0], r[1]);
+        public static void splay(Splay x) {
+            if (x == NIL) {
+                return;
             }
-            return merge(p[0], r[1]);
-        }
-
-        public Treap(long key) {
-            this.key = this.sum = key;
-            this.size = 1;
-        }
-
-
-        @Override
-        public Treap clone() {
-            try {
-                return (Treap) super.clone();
-            } catch (CloneNotSupportedException e) {
-                throw new RuntimeException(e);
+            Splay y, z;
+            while ((y = x.father) != NIL) {
+                if ((z = y.father) == NIL) {
+                    y.pushDown();
+                    x.pushDown();
+                    if (x == y.left) {
+                        zig(x);
+                    } else {
+                        zag(x);
+                    }
+                } else {
+                    z.pushDown();
+                    y.pushDown();
+                    x.pushDown();
+                    if (x == y.left) {
+                        if (y == z.left) {
+                            zig(y);
+                            zig(x);
+                        } else {
+                            zig(x);
+                            zag(x);
+                        }
+                    } else {
+                        if (y == z.left) {
+                            zag(x);
+                            zig(x);
+                        } else {
+                            zag(y);
+                            zag(x);
+                        }
+                    }
+                }
             }
+
+            x.pushDown();
+            x.pushUp();
         }
 
-        public void pushDown() {
+        public static void zig(Splay x) {
+            Splay y = x.father;
+            Splay z = y.father;
+            Splay b = x.right;
+
+            y.setLeft(b);
+            x.setRight(y);
+            z.changeChild(y, x);
+
+            y.pushUp();
+        }
+
+        public static void zag(Splay x) {
+            Splay y = x.father;
+            Splay z = y.father;
+            Splay b = x.left;
+
+            y.setRight(b);
+            x.setLeft(y);
+            z.changeChild(y, x);
+
+            y.pushUp();
+        }
+
+        public void setLeft(Splay x) {
+            left = x;
+            x.father = this;
+        }
+
+        public void setRight(Splay x) {
+            right = x;
+            x.father = this;
+        }
+
+        public void changeChild(Splay y, Splay x) {
+            if (left == y) {
+                setLeft(x);
+            } else {
+                setRight(x);
+            }
         }
 
         public void pushUp() {
@@ -233,99 +302,218 @@ public class CF1119F {
             sum = left.sum + right.sum + key;
         }
 
-        public static Treap[] splitByRank(Treap root, int rank) {
-            if (root == NIL) {
-                return new Treap[]{NIL, NIL};
-            }
-            root.pushDown();
-            Treap[] result;
-            if (root.left.size >= rank) {
-                result = splitByRank(root.left, rank);
-                root.left = result[1];
-                result[1] = root;
-            } else {
-                result = splitByRank(root.right, rank - (root.size - root.right.size));
-                root.right = result[0];
-                result[0] = root;
-            }
-            root.pushUp();
-            return result;
+        public void pushDown() {
         }
 
-        public static Treap merge(Treap a, Treap b) {
+
+        public static void toString(Splay root, StringBuilder builder) {
+            if (root == NIL) {
+                return;
+            }
+            toString(root.left, builder);
+            builder.append(root.key).append(',');
+            toString(root.right, builder);
+        }
+
+        public Splay clone() {
+            try {
+                return (Splay) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public static Splay cloneTree(Splay splay) {
+            if (splay == NIL) {
+                return NIL;
+            }
+            splay = splay.clone();
+            splay.left = splay.left.clone();
+            splay.right = splay.right.clone();
+            return splay;
+        }
+
+        public static Splay add(Splay root, Splay node) {
+            if (root == NIL) {
+                return node;
+            }
+            Splay p = root;
+            while (root != NIL) {
+                p = root;
+                root.pushDown();
+                if (root.key < node.key) {
+                    root = root.right;
+                } else {
+                    root = root.left;
+                }
+            }
+
+            if (p.key < node.key) {
+                p.setRight(node);
+            } else {
+                p.setLeft(node);
+            }
+            p.pushUp();
+            splay(node);
+            return node;
+        }
+
+        /**
+         * Make the node with the minimum key as the root of tree
+         */
+        public static Splay selectMinAsRoot(Splay root) {
+            if (root == NIL) {
+                return root;
+            }
+            root.pushDown();
+            while (root.left != NIL) {
+                root = root.left;
+                root.pushDown();
+            }
+            splay(root);
+            return root;
+        }
+
+        /**
+         * Make the node with the maximum key as the root of tree
+         */
+        public static Splay selectMaxAsRoot(Splay root) {
+            if (root == NIL) {
+                return root;
+            }
+            root.pushDown();
+            while (root.right != NIL) {
+                root = root.right;
+                root.pushDown();
+            }
+            splay(root);
+            return root;
+        }
+
+        /**
+         * delete root of tree, then merge remain nodes into a new tree, and return the new root
+         */
+        public static Splay deleteRoot(Splay root) {
+            root.pushDown();
+            Splay left = splitLeft(root);
+            Splay right = splitRight(root);
+            return merge(left, right);
+        }
+
+        /**
+         * detach the left subtree from root and return the root of left subtree
+         */
+        public static Splay splitLeft(Splay root) {
+            root.pushDown();
+            Splay left = root.left;
+            left.father = NIL;
+            root.setLeft(NIL);
+            root.pushUp();
+            return left;
+        }
+
+        /**
+         * detach the right subtree from root and return the root of right subtree
+         */
+        public static Splay splitRight(Splay root) {
+            root.pushDown();
+            Splay right = root.right;
+            right.father = NIL;
+            root.setRight(NIL);
+            root.pushUp();
+            return right;
+        }
+
+
+        public static Splay merge(Splay a, Splay b) {
             if (a == NIL) {
                 return b;
             }
             if (b == NIL) {
                 return a;
             }
-            if (random.nextBoolean()) {
-                a.pushDown();
-                a.right = merge(a.right, b);
-                a.pushUp();
-                return a;
-            } else {
-                b.pushDown();
-                b.left = merge(a, b.left);
-                b.pushUp();
-                return b;
-            }
+            a = selectMaxAsRoot(a);
+            a.setRight(b);
+            a.pushUp();
+            return a;
         }
 
-        public static Treap insert(Treap a, long k) {
-            Treap node = new Treap(k);
-            Treap[] p = splitByKey(a, k);
-            p[0] = Treap.merge(p[0], node);
-            return Treap.merge(p[0], p[1]);
-        }
-
-        public static void toString(Treap root, StringBuilder builder) {
-            if (root == NIL) {
-                return;
-            }
-            root.pushDown();
-            toString(root.left, builder);
-            builder.append(root.key).append(',');
-            toString(root.right, builder);
-        }
-
-        public static Treap clone(Treap root) {
+        public static Splay selectKthAsRoot(Splay root, int k) {
             if (root == NIL) {
                 return NIL;
             }
-            Treap clone = root.clone();
-            clone.left = clone(root.left);
-            clone.right = clone(root.right);
-            return clone;
+            Splay trace = root;
+            Splay father = NIL;
+            while (trace != NIL) {
+                father = trace;
+                trace.pushDown();
+                if (trace.left.size >= k) {
+                    trace = trace.left;
+                } else {
+                    k -= trace.left.size + 1;
+                    if (k == 0) {
+                        break;
+                    } else {
+                        trace = trace.right;
+                    }
+                }
+            }
+            splay(father);
+            return father;
+        }
+
+        public static Splay selectKeyAsRoot(Splay root, long k) {
+            if (root == NIL) {
+                return NIL;
+            }
+            Splay trace = root;
+            Splay father = NIL;
+            while (trace != NIL) {
+                father = trace;
+                trace.pushDown();
+                if (trace.key > k) {
+                    trace = trace.left;
+                } else {
+                    if (trace.key == k) {
+                        break;
+                    } else {
+                        trace = trace.right;
+                    }
+                }
+            }
+            splay(father);
+            return father;
+        }
+
+        public static Splay[] split(Splay root, long key) {
+            if (root == NIL) {
+                return new Splay[]{NIL, NIL};
+            }
+            Splay p = root;
+            while (root != NIL) {
+                p = root;
+                root.pushDown();
+                if (root.key > key) {
+                    root = root.left;
+                } else {
+                    root = root.right;
+                }
+            }
+
+            splay(p);
+            if (p.key <= key) {
+                return new Splay[]{p, splitRight(p)};
+            } else {
+                return new Splay[]{splitLeft(p), p};
+            }
         }
 
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder().append(key).append(":");
-            toString(clone(this), builder);
+            toString(cloneTree(this), builder);
             return builder.toString();
         }
-
-        public static Treap[] splitByKey(Treap root, long key) {
-            if (root == NIL) {
-                return new Treap[]{NIL, NIL};
-            }
-            root.pushDown();
-            Treap[] result;
-            if (root.key > key) {
-                result = splitByKey(root.left, key);
-                root.left = result[1];
-                result[1] = root;
-            } else {
-                result = splitByKey(root.right, key);
-                root.right = result[0];
-                result[0] = root;
-            }
-            root.pushUp();
-            return result;
-        }
-
-
     }
 
 
@@ -334,7 +522,7 @@ public class CF1119F {
         static Comparator<Node> compareByEnter = (a, b) -> a.enter - b.enter;
         TreeMap<Node, Long> virtualEdges = new TreeMap<>(compareByEnter);
         TreeMap<Node, Long> edgeSet = new TreeMap<>(compareById);
-        Treap remainEdges = Treap.NIL;
+        Splay remainEdges = Splay.NIL;
 
         int id;
         long dp0;

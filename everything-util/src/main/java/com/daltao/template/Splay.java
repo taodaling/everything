@@ -10,11 +10,13 @@ public class Splay implements Cloneable {
         NIL.left = NIL;
         NIL.right = NIL;
         NIL.father = NIL;
+        NIL.size = 0;
     }
 
     Splay left = NIL;
     Splay right = NIL;
     Splay father = NIL;
+    int size = 1;
     int key;
 
     public static void splay(Splay x) {
@@ -102,6 +104,7 @@ public class Splay implements Cloneable {
     }
 
     public void pushUp() {
+        size = left.size + right.size + 1;
     }
 
     public void pushDown() {
@@ -247,6 +250,53 @@ public class Splay implements Cloneable {
         a.setRight(b);
         a.pushUp();
         return a;
+    }
+
+    public static Splay selectKthAsRoot(Splay root, int k) {
+        if (root == NIL) {
+            return NIL;
+        }
+        Splay trace = root;
+        Splay father = NIL;
+        while (trace != NIL) {
+            father = trace;
+            trace.pushDown();
+            if (trace.left.size >= k) {
+                trace = trace.left;
+            } else {
+                k -= trace.left.size + 1;
+                if (k == 0) {
+                    break;
+                } else {
+                    trace = trace.right;
+                }
+            }
+        }
+        splay(father);
+        return father;
+    }
+
+    public static Splay selectKeyAsRoot(Splay root, int k) {
+        if (root == NIL) {
+            return NIL;
+        }
+        Splay trace = root;
+        Splay father = NIL;
+        while (trace != NIL) {
+            father = trace;
+            trace.pushDown();
+            if (trace.key > k) {
+                trace = trace.left;
+            } else {
+                if (trace.key == k) {
+                    break;
+                } else {
+                    trace = trace.right;
+                }
+            }
+        }
+        splay(father);
+        return father;
     }
 
     public static Splay bruteForceMerge(Splay a, Splay b) {
