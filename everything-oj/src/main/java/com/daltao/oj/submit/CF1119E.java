@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-public class CF1119D {
+public class CF1119E {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -50,21 +50,26 @@ public class CF1119D {
 
         public void solve() {
             int n = io.readInt();
-            long[] strings = new long[n + 1];
+            int[] data = new int[n + 1];
             for (int i = 1; i <= n; i++) {
-                strings[i] = io.readLong();
+                data[i] = io.readInt();
+            }
+            long[] dp = new long[n + 1];
+            long sum = 0;
+            for (int i = 1; i <= n; i++) {
+                dp[i] = dp[i - 1];
+                long remain = sum - dp[i - 1] * 3;
+                int count = data[i];
+                long k = Math.min(remain, count / 2);
+                dp[i] += k;
+                count -= 2 * k;
+                dp[i] += count / 3;
+                sum += data[i];
             }
 
-
-            int m = io.readInt();
-            for (int i = 0; i < m; i++) {
-                int l = io.readInt();
-                int r = io.readInt();
-                //io.cache.append(max - min + r - l + 1).append('\n');
-            }
+            io.cache.append(dp[n]);
         }
     }
-
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder();
