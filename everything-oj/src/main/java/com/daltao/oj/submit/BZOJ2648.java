@@ -1,6 +1,7 @@
 package com.daltao.oj.submit;
 
-import com.daltao.template.Randomized;
+
+import com.sun.org.apache.regexp.internal.RE;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -9,6 +10,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Random;
 
 public class BZOJ2648 {
     public static void main(String[] args) throws Exception {
@@ -39,7 +41,7 @@ public class BZOJ2648 {
     public static class Task implements Runnable {
         final FastIO io;
         final Debug debug;
-        int inf = (int) 1e8;
+        int inf = (int) 1e9;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -52,55 +54,81 @@ public class BZOJ2648 {
         }
 
         public void solve() {
+            int n = io.readInt();
+            int m = io.readInt();
+            KDNode root = KDNode.NIL;
+            KDNode.RECORD_LENGTH = 0;
+            for (int i = 0; i < n; i++) {
+                int x = io.readInt();
+                int y = io.readInt();
+                KDNode node = new KDNode();
+                node.position[0] = x;
+                node.position[1] = y;
+                KDNode.RECORD[KDNode.RECORD_LENGTH++] = node;
+            }
+            root = KDNode.rebuild(0, KDNode.RECORD_LENGTH - 1, 0);
+            for (int i = 0; i < m; i++) {
+                int t = io.readInt();
+                int x = io.readInt();
+                int y = io.readInt();
+                if (t == 1) {
+                    KDNode node = new KDNode();
+                    node.position[0] = x;
+                    node.position[1] = y;
+                    root = root.insert(node, 0);
+                } else {
+                    int dist = root.query(new int[]{x, y}, inf, 0);
+                    io.cache.append(dist).append('\n');
+                }
+            }
         }
     }
 
-    public static class Rect {
-        int xMin;
-        int xMax;
-        int yMin;
-        int yMax;
 
-        public void maxRectContain(Rect left, Rect right, int[] position) {
-            xMax = Math.max(left.xMax, right.xMax);
-            xMax = Math.max(xMax, position[0]);
-
-            xMin = Math.min(left.xMin, right.xMin);
-            xMin = Math.min(xMin, position[0]);
-
-            yMax = Math.max(left.yMax, right.yMax);
-            yMax = Math.max(yMax, position[1]);
-
-            yMin = Math.min(left.yMin, right.yMin);
-            yMin = Math.min(yMin, position[1]);
-        }
-
-        public static boolean intersect(Rect a, Rect b) {
-            return a.xMin < b.xMax && b.xMin < a.xMax &&
-                    a.yMin < b.yMax && b.yMin < a.yMax;
-        }
-    }
-
-    public static class KDNode {
+    public static class KDNode implements Cloneable {
         public static final KDNode[] RECORD = new KDNode[1000000];
         public static final Comparator<KDNode>[] COMPARATORS = new Comparator[2];
         public static final KDNode NIL = new KDNode();
         public static final double FACTOR = 0.75;
+        public static final Random RANDOM = new Random(123456789);
+        public static final int INF = (int) 1e9;
+        public static final int DIMENSION = 2;
 
-        public static final int INF = (int) 1e8;
+        public static class Rect {
+            int[] min = new int[DIMENSION];
+            int[] max = new int[DIMENSION];
+
+            public void maxRectContain(Rect left, Rect right, int[] position) {
+                for (int i = 0; i < DIMENSION; i++) {
+                    min[i] = Math.min(left.min[i], right.min[i]);
+                    min[i] = Math.min(min[i], position[i]);
+                    max[i] = Math.max(left.max[i], right.max[i]);
+                    max[i] = Math.max(max[i], position[i]);
+                }
+            }
+
+            public static boolean intersect(Rect a, Rect b) {
+                for (int i = 0; i < DIMENSION; i++) {
+                    if (a.max[i] <= b.min[i] || a.min[i] >= b.max[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
 
         static {
             NIL.position = null;
             NIL.left = NIL.right = NIL;
             NIL.size = 0;
-            NIL.rect.xMax = (int) -INF;
-            NIL.rect.xMin = (int) INF;
-            NIL.rect.yMax = (int) -INF;
-            NIL.rect.yMin = (int) INF;
+            for (int i = 0; i < DIMENSION; i++) {
+                NIL.rect.max[i] = -INF;
+                NIL.rect.min[i] = INF;
+            }
         }
 
         static {
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < DIMENSION; i++) {
                 final int j = i;
                 COMPARATORS[i] = new Comparator<KDNode>() {
                     @Override
@@ -115,7 +143,7 @@ public class BZOJ2648 {
 
         KDNode left = NIL;
         KDNode right = NIL;
-        int[] position = new int[2];
+        int[] position = new int[DIMENSION];
         int size = 1;
         Rect rect = new Rect();
 
@@ -124,36 +152,55 @@ public class BZOJ2648 {
             rect.maxRectContain(left.rect, right.rect, position);
         }
 
-        public void pushDown() {
-        }
-
-        public void query(int[] pos, Rect range, int depth) {
-            if (!Rect.intersect(rect, range)) {
-                return;
-            }
-            pushDown();
+        public void pushDown(int depth) {
             left = check(left, depth + 1);
             right = check(right, depth + 1);
-            int distance = Math.abs(position[0] - pos[0]) + Math.abs(position[1] - pos[1]);
-            if (distance < pos[0] - range.xMin) {
-                range.yMin = pos[1] - distance;
-                range.yMax = pos[1] + distance;
-                range.xMin = pos[0] - distance;
-                range.xMax = pos[0] + distance;
-            }
+        }
 
-            if(left.)
-            left.query(pos, range, depth + 1);
-            right.query(pos, range, depth + 1);
+        public static int distance(int[] a, int[] b) {
+            int dis = 0;
+            for (int i = 0; i < DIMENSION; i++) {
+                dis += Math.abs(a[i] - b[i]);
+            }
+            return dis;
+        }
+
+        public int expectDistance(int[] pos, Rect rect) {
+            int total = 0;
+            total += Math.max(rect.min[0] - pos[0], 0);
+            total += Math.max(rect.min[1] - pos[1], 0);
+            total += Math.max(pos[0] - rect.max[0], 0);
+            total += Math.max(pos[1] - rect.max[1], 0);
+            return total;
+        }
+
+        public int query(int[] pos, int dist, int depth) {
+            if (this == NIL) {
+                return dist;
+            }
+            pushDown(depth);
+            dist = Math.min(dist, distance(pos, position));
+            int d1 = expectDistance(pos, left.rect);
+            int d2 = expectDistance(pos, right.rect);
+
+            if (d1 < d2 && d1 < dist) {
+                dist = Math.min(dist, left.query(pos, dist, depth + 1));
+            }
+            if (d2 < dist) {
+                dist = Math.min(dist, right.query(pos, dist, depth + 1));
+            }
+            if (d1 >= d2 && d1 < dist) {
+                dist = Math.min(dist, left.query(pos, dist, depth + 1));
+            }
+            return dist;
         }
 
         public KDNode insert(KDNode node, int depth) {
             if (this == NIL) {
+                node.pushUp();
                 return node;
             }
-            pushDown();
-            left = check(left, depth + 1);
-            right = check(right, depth + 1);
+            pushDown(depth);
 
             if (COMPARATORS[depth & 1].compare(this, node) >= 0) {
                 left = left.insert(node, depth + 1);
@@ -178,7 +225,7 @@ public class BZOJ2648 {
         private static KDNode refactor(KDNode root, int depth) {
             RECORD_LENGTH = 0;
             travel(root);
-            return rebuild(0, RECORD_LENGTH, depth);
+            return rebuild(0, RECORD_LENGTH - 1, depth);
         }
 
         private static void travel(KDNode root) {
@@ -195,7 +242,8 @@ public class BZOJ2648 {
                 return NIL;
             }
             int m = (l + r) >> 1;
-            Sortable.theKthSmallestElement(RECORD, COMPARATORS[depth & 1], l, r, m - l + 1);
+            Sortable.theKthSmallestElement(RECORD, COMPARATORS[depth & 1], l, r + 1, m - l + 1);
+            //Arrays.sort(RECORD, l, r + 1, COMPARATORS[depth & 1]);
             KDNode root = RECORD[m];
             root.init();
             root.left = rebuild(l, m - 1, depth + 1);
@@ -203,12 +251,128 @@ public class BZOJ2648 {
             root.pushUp();
             return root;
         }
+
+        @Override
+        protected KDNode clone() {
+            if (this == NIL) {
+                return NIL;
+            }
+            try {
+                KDNode node = (KDNode) super.clone();
+                node.rect = new Rect();
+                node.left = node.left.clone();
+                node.right = node.right.clone();
+                node.pushUp();
+                return node;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private void toString(StringBuilder builder) {
+            if (this == NIL) {
+                return;
+            }
+            //pushDown(0);
+            left.toString(builder);
+            builder.append(String.format("(%d,%d),", position[0], position[1]));
+            right.toString(builder);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            clone().toString(builder);
+            if (builder.length() > 0) {
+                builder.setLength(builder.length() - 1);
+            }
+            return builder.toString();
+        }
     }
 
+    public static class Randomized {
+        static Random random = new Random(123456789);
+
+        public static double nextDouble(double min, double max) {
+            return random.nextDouble() * (max - min) + min;
+        }
+
+        public static void randomizedArray(int[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                int tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(long[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                long tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(double[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                double tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(float[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                float tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static <T> void randomizedArray(T[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                T tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static int nextInt(int l, int r) {
+            return random.nextInt(r - l + 1) + l;
+        }
+    }
+
+
     public static class Sortable {
-        private static final int THRESHOLD = 4;
+        private static final int THRESHOLD = 0;
+
+        public static <T> void insertSort(T[] data, Comparator<T> cmp, int f, int t) {
+            for (int i = f + 1; i < t; i++) {
+                int j = i;
+                T val = data[i];
+                while (j > f && cmp.compare(data[j - 1], val) > 0) {
+                    data[j] = data[j - 1];
+                    j--;
+                }
+                data[j] = val;
+            }
+        }
 
         public static <T> T theKthSmallestElement(T[] data, Comparator<T> cmp, int f, int t, int k) {
+            if (t - f == THRESHOLD) {
+                insertSort(data, cmp, f, t);
+                return data[f + k - 1];
+            }
             Memory.swap(data, f, Randomized.nextInt(f, t - 1));
             int l = f;
             int r = t;
