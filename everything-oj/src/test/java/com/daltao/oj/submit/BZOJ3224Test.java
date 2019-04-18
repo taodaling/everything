@@ -15,10 +15,10 @@ public class BZOJ3224Test {
     @Test
     public void test() {
         Assertions.assertTrue(new TestCaseExecutor.Builder()
-                .setActualSolution(new OJMainSolution(BZOJ3224V2.class))
+                .setActualSolution(new OJMainSolution(BZOJ3224V3.class))
                 .setExpectedSolution(new OJMainSolution(BZOJ3224.class))
                 .setInputFactory(new InputGenerator())
-                .setTestTime(10000)
+                .setTestTime(1000)
                 .setTimeLimitForEachTestCase(1000)
                 .build().call());
     }
@@ -27,7 +27,7 @@ public class BZOJ3224Test {
         @Override
         public Input newInstance() {
             QueueInput input = new QueueInput();
-            int n = 80;
+            int n = 50;
             int valRange = 100;
 
             RankArray array = new RankArray(Comparator.naturalOrder());
@@ -83,7 +83,7 @@ public class BZOJ3224Test {
                 break;
                 case 6: {
                     // post
-                    int rank = nextInt(0, array.size() - array.countOf(array.elementWithRank(array.size() - 1)));
+                    int rank = nextInt(0, array.size() - array.countOf(array.elementWithRank(array.size() - 1)) - 1);
                     Object element = array.elementWithRank(rank);
                     input.add(cmd + " " + element);
                 }
