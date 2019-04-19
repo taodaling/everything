@@ -1,8 +1,5 @@
 package com.daltao.oj.submit;
 
-
-import com.sun.org.apache.regexp.internal.RE;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,7 +9,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
 
-public class BZOJ2648 {
+public class BZOJ4066 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -55,44 +52,53 @@ public class BZOJ2648 {
 
         public void solve() {
             int n = io.readInt();
-            int m = io.readInt();
+            int lastAns = 0;
             KDNode root = KDNode.NIL;
-            KDNode.RECORD_LENGTH = 0;
-            for (int i = 0; i < n; i++) {
-                int x = io.readInt();
-                int y = io.readInt();
-                KDNode node = new KDNode();
-                node.position[0] = x;
-                node.position[1] = y;
-                KDNode.RECORD[KDNode.RECORD_LENGTH++] = node;
-            }
-            root = KDNode.rebuild(0, KDNode.RECORD_LENGTH - 1, 0);
-            for (int i = 0; i < m; i++) {
-                int t = io.readInt();
-                int x = io.readInt();
-                int y = io.readInt();
-                if (t == 1) {
-                    KDNode node = new KDNode();
-                    node.position[0] = x;
-                    node.position[1] = y;
-                    root = root.insert(node, 0);
+            while (true) {
+                int c = io.readInt();
+                if (c == 1) {
+                    int x = lastAns ^ io.readInt();
+                    int y = lastAns ^ io.readInt();
+                    int a = lastAns ^ io.readInt();
+                    root = root.insert(new KDNode(a, x, y), 0);
+                } else if (c == 2) {
+                    KDNode.Rect rect = new KDNode.Rect();
+                    rect.min[0] = lastAns ^ io.readInt();
+                    rect.min[1] = lastAns ^ io.readInt();
+                    rect.max[0] = lastAns ^ io.readInt();
+                    rect.max[1] = lastAns ^ io.readInt();
+                    int ans = root.query(rect, 0);
+                    //lastAns = ans;
+                    io.cache.append(ans).append('\n');
                 } else {
-                    int dist = root.query(new int[]{x, y}, inf, 0);
-                    io.cache.append(dist).append('\n');
+                    break;
                 }
+
             }
         }
     }
 
 
     public static class KDNode implements Cloneable {
-        public static final KDNode[] RECORD = new KDNode[1000000];
+        public static final KDNode[] RECORD = new KDNode[600000];
         public static final Comparator<KDNode>[] COMPARATORS = new Comparator[2];
         public static final KDNode NIL = new KDNode();
         public static final double FACTOR = 0.75;
         public static final Random RANDOM = new Random(123456789);
         public static final int INF = (int) 1e9;
         public static final int DIMENSION = 2;
+
+        private KDNode() {
+        }
+
+        public KDNode(int val, int x, int y) {
+            this.val = val;
+            this.sum = this.val;
+            size = 1;
+            position[0] = x;
+            position[1] = y;
+            pushUp();
+        }
 
         public static class Rect {
             int[] min = new int[DIMENSION];
@@ -109,7 +115,25 @@ public class BZOJ2648 {
 
             public static boolean intersect(Rect a, Rect b) {
                 for (int i = 0; i < DIMENSION; i++) {
-                    if (a.max[i] <= b.min[i] || a.min[i] >= b.max[i]) {
+                    if (a.max[i] < b.min[i] || a.min[i] > b.max[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            public static boolean contain(Rect a, Rect b) {
+                for (int i = 0; i < DIMENSION; i++) {
+                    if (a.max[i] < b.max[i] || a.min[i] > b.min[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            public static boolean contain(Rect a, int[] pos) {
+                for (int i = 0; i < DIMENSION; i++) {
+                    if (a.max[i] < pos[i] || a.min[i] > pos[i]) {
                         return false;
                     }
                 }
@@ -145,10 +169,13 @@ public class BZOJ2648 {
         KDNode right = NIL;
         int[] position = new int[DIMENSION];
         int size = 1;
+        int sum;
+        int val;
         Rect rect = new Rect();
 
         public void pushUp() {
             size = left.size + right.size + 1;
+            sum = left.sum + right.sum + val;
             rect.maxRectContain(left.rect, right.rect, position);
         }
 
@@ -174,25 +201,24 @@ public class BZOJ2648 {
             return total;
         }
 
-        public int query(int[] pos, int dist, int depth) {
+        public int query(Rect range, int depth) {
             if (this == NIL) {
-                return dist;
+                return 0;
             }
-            pushDown(depth);
-            dist = Math.min(dist, distance(pos, position));
-            int d1 = expectDistance(pos, left.rect);
-            int d2 = expectDistance(pos, right.rect);
+            if (!Rect.intersect(range, rect)) {
+                return 0;
+            }
+            if (Rect.contain(range, rect)) {
+                return sum;
+            }
 
-            if (d1 < d2 && d1 < dist) {
-                dist = Math.min(dist, left.query(pos, dist, depth + 1));
+            pushDown(depth);
+            int r = left.query(range, depth + 1)
+                    + right.query(range, depth + 1);
+            if (Rect.contain(range, position)) {
+                r += val;
             }
-            if (d2 < dist) {
-                dist = Math.min(dist, right.query(pos, dist, depth + 1));
-            }
-            if (d1 >= d2 && d1 < dist) {
-                dist = Math.min(dist, left.query(pos, dist, depth + 1));
-            }
-            return dist;
+            return r;
         }
 
         public KDNode insert(KDNode node, int depth) {
@@ -201,7 +227,6 @@ public class BZOJ2648 {
                 return node;
             }
             pushDown(depth);
-
             if (COMPARATORS[depth & 1].compare(this, node) >= 0) {
                 left = left.insert(node, depth + 1);
             } else {

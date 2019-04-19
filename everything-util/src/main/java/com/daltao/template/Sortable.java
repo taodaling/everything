@@ -9,8 +9,23 @@ import java.util.Random;
  */
 public class Sortable {
     private static final int THRESHOLD = 4;
+    public static <T> void insertSort(T[] data, Comparator<T> cmp, int f, int t) {
+        for (int i = f + 1; i < t; i++) {
+            int j = i;
+            T val = data[i];
+            while (j > f && cmp.compare(data[j - 1], val) > 0) {
+                data[j] = data[j - 1];
+                j--;
+            }
+            data[j] = val;
+        }
+    }
 
     public static <T> T theKthSmallestElement(T[] data, Comparator<T> cmp, int f, int t, int k) {
+        if (t - f == THRESHOLD) {
+            insertSort(data, cmp, f, t);
+            return data[f + k - 1];
+        }
         Memory.swap(data, f, Randomized.nextInt(f, t - 1));
         int l = f;
         int r = t;

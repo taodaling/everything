@@ -23,6 +23,10 @@ public class FastIO {
         this.charset = charset;
     }
 
+    public FastIO(){
+        this(System.in, System.out);
+    }
+
     public FastIO(InputStream is, OutputStream os) {
         this(is, os, Charset.forName("ascii"));
     }
