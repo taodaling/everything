@@ -79,7 +79,7 @@ public class BZOJ2648Test {
             int limit = (int) 1e8;
             for (int i = 0; i < n; i++) {
                 /*input.add(String.format("%d %d", nextInt(-limit, limit), nextInt(-limit, limit)));*/
-                input.add(String.format("%d %d", 1, i));
+                input.add(String.format("%d %d", nextInt(-limit, limit), nextInt(-limit, limit)));
             }
             for (int i = 0; i < m; i++) {
                 input.add(String.format("%d %d %d", 2, nextInt(-limit, limit), nextInt(-limit, limit)));

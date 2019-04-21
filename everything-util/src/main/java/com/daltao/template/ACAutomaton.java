@@ -15,7 +15,7 @@ public class ACAutomaton {
     Node buildLast;
     Node matchLast;
 
-    public ACAutomaton(int cap) {
+    public ACAutomaton() {
         root = new Node();
         size = 1;
     }

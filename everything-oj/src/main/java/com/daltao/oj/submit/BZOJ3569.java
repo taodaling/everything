@@ -12,7 +12,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Random;
 
-public class BZOJ4569 {
+public class BZOJ3569 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -42,7 +42,7 @@ public class BZOJ4569 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        Random random = new Random(123456789);
+        Random random = new Random();
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -61,13 +61,14 @@ public class BZOJ4569 {
             Edge[] edges = new Edge[m + 1];
             for (int i = 0; i <= n; i++) {
                 nodes[i] = new Node();
+                nodes[i].id = i;
             }
 
             for (int i = 1; i <= m; i++) {
                 edges[i] = new Edge();
                 edges[i].a = nodes[io.readInt()];
                 edges[i].b = nodes[io.readInt()];
-                edges[i].xor = random.nextInt();
+                edges[i].xor = random.nextLong();
                 edges[i].a.edgeList.add(edges[i]);
                 edges[i].b.edgeList.add(edges[i]);
             }
@@ -77,7 +78,24 @@ public class BZOJ4569 {
             nodes[0].edgeList.add(edges[0]);
 
             Deque<Node> deque = new ArrayDeque(n);
-            dfsForBuildTree(nodes[1], edges[0], deque);
+            Deque<Node> dfsStack = new ArrayDeque(n);
+            dfsStack.addLast(nodes[0]);
+            while (!dfsStack.isEmpty()) {
+                Node head = dfsStack.removeFirst();
+                deque.addLast(head);
+                for (Edge edge : head.edgeList) {
+                    Node node = edge.another(head);
+                    if(node.visited)
+                    {
+                        continue;
+                    }
+                    node.visited = true;
+                    dfsStack.addLast(node);
+                    node.toFather = edge;
+                    edge.inTree = true;
+                }
+            }
+
             for (int i = 1; i <= m; i++) {
                 if (edges[i].inTree) {
                     continue;
@@ -85,6 +103,7 @@ public class BZOJ4569 {
                 edges[i].a.xor ^= edges[i].xor;
                 edges[i].b.xor ^= edges[i].xor;
             }
+            deque.removeFirst();
             boolean connected = deque.size() == n;
             while (!deque.isEmpty()) {
                 Node last = deque.removeLast();
@@ -100,32 +119,63 @@ public class BZOJ4569 {
             }
             int q = io.readInt();
             int lastAns = 0;
+            LinearBasis linearBasis = new LinearBasis();
             for (int i = 0; i < q; i++) {
                 int k = io.readInt();
-                int xor = 0;
+                linearBasis.clear();
                 for (int j = 0; j < k; j++) {
-                    xor ^= edges[lastAns ^ io.readInt()].xor;
+                    linearBasis.add(edges[lastAns ^ io.readInt()].xor);
                 }
-                boolean ans = xor != 0 && connected;
-                //lastAns += ans ? 1 : 0;
+                boolean ans = linearBasis.size() == k && connected;
+                lastAns += ans ? 1 : 0;
                 io.cache.append(ans ? "Connected" : "Disconnected").append('\n');
             }
         }
+    }
 
-        public static void dfsForBuildTree(Node root, Edge toFather, Deque<Node> deque) {
-            if (root.visited) {
-                return;
-            }
-            root.visited = true;
-            root.toFather = toFather;
-            root.toFather.inTree = true;
-            deque.addLast(root);
-            for (Edge edge : root.edgeList) {
-                if (edge == toFather) {
+    public static class LinearBasis {
+        private long[] map = new long[64];
+        private int size;
+
+        public int size() {
+            return size;
+        }
+
+        public void clear() {
+            size = 0;
+            Arrays.fill(map, 0);
+        }
+
+        public boolean add(long val) {
+            for (int i = 0; i < 64 && val != 0; i++) {
+                if (bitAt(val, i) == 0) {
                     continue;
                 }
-                dfsForBuildTree(edge.another(root), edge, deque);
+                if (map[i] == 0) {
+                    map[i] = val;
+                    size++;
+                    return true;
+                }
+                val ^= map[i];
             }
+            return false;
+        }
+
+        private long bitAt(long val, int i) {
+            return (val >>> i) & 1;
+        }
+
+        public long eliminate(long val) {
+            for (int i = 0; i < 64 && val != 0; i++) {
+                if (bitAt(val, i) == 0) {
+                    continue;
+                }
+                if (map[i] == 0) {
+                    break;
+                }
+                val ^= map[i];
+            }
+            return val;
         }
     }
 
@@ -133,13 +183,19 @@ public class BZOJ4569 {
         List<Edge> edgeList = new ArrayList();
         Edge toFather;
         boolean visited;
-        int xor;
+        long xor;
+        int id;
+
+        @Override
+        public String toString() {
+            return "" + id;
+        }
     }
 
     public static class Edge {
         Node a;
         Node b;
-        int xor;
+        long xor;
         boolean inTree;
 
         public Node another(Node x) {
