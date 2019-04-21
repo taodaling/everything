@@ -13,7 +13,7 @@ public class BZOJ3811Test {
         Assertions.assertTrue(
                 new TestCaseExecutor.Builder()
                         .setExpectedSolution(() -> new Runnable2OJSolution(new Process2Runnable("C:\\Users\\daltao\\Documents\\oj-c\\online_judge\\BZOJ3811.exe")))
-                        .setActualSolution(() -> new Runnable2OJSolution(new Process2Runnable("C:\\Users\\daltao\\Documents\\oj-c\\online_judge\\_BZOJ3811.exe")))
+                        .setActualSolution(() -> new Runnable2OJSolution(new MainMethod2Runnable(BZOJ3811.class)))
                         .setInputFactory(new Generator())
                         .setCheckerFactory(Checker::new)
                         .setTestTime(1000)
@@ -36,12 +36,12 @@ public class BZOJ3811Test {
         @Override
         public Input newInstance() {
             QueueInput input = new QueueInput();
-            int n = nextInt(1, 1000);
-            int k = nextInt(1, 2);
+            int n = nextInt(1, 3);
+            int k = nextInt(1, 5);
 
             input.add(n).add(k);
             for (int i = 0; i < n; i++) {
-                input.add(nextLong(1, 1L << 32));
+                input.add(nextLong(1, 1L << 10));
             }
 
             return input.end();
