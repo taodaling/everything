@@ -1,16 +1,24 @@
 package com.daltao.oj.submit;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class LTSolution {
 
     public static void main(String[] args) {
 
-        System.out.println(new Solution()
-                .mergeStones(new int[]{3, 2, 4, 1}, 2));
+        Solution streamChecker = new Solution(new String[]{"cd", "f", "kl"}); // init the dictionary.
+        streamChecker.query('a');          // return false
+        streamChecker.query('b');          // return false
+        streamChecker.query('c');          // return false
+        streamChecker.query('d');          // return true, because 'cd' is in the wordlist
+        streamChecker.query('e');          // return false
+        streamChecker.query('f');          // return true, because 'f' is in the wordlist
+        streamChecker.query('g');          // return false
+        streamChecker.query('h');          // return false
+        streamChecker.query('i');          // return false
+        streamChecker.query('j');          // return false
+        streamChecker.query('k');          // return false
+        streamChecker.query('l');          // return true, because 'kl' is in the wordlist
     }
 
 
@@ -25,90 +33,117 @@ public class LTSolution {
     }
 
     static class Solution {
-        public static class Helper{
-            int[][][] mem;
-            int[] fee;
-            boolean[][][] visited;
-            int[] stones;
-            int k;
-            int n;
-            static int inf = 100000000;
-            public Helper(int[] stones, int k){
-                this.stones = stones;
-                this.k = k;
-                n = stones.length;
-                mem = new int[n][n][k + 1];
-                visited = new boolean[n][n][k + 1];
-                fee = new int[n + 1];
-                fee[0] = 0;
-                for(int i = 1; i <= n; i++)
-                {
-                    fee[i] = fee[i - 1] + stones[i - 1];
+        ACAutomaton acm = new ACAutomaton();
+
+        public Solution(String[] words) {
+            for (String s : words) {
+                acm.beginBuild();
+                for (int i = 0, until = s.length(); i < until; i++) {
+                    acm.build(s.charAt(i));
                 }
+                acm.buildLast.word = true;
+            }
+            acm.endBuild();
+            acm.beginMatch();
+        }
+
+        public boolean query(char letter) {
+            acm.match(letter);
+            return acm.matchLast.word;
+        }
+
+        public static class ACAutomaton {
+            static final int MIN_CHARACTER = 'a';
+            static final int MAX_CHARACTER = 'z';
+            static final int RANGE_SIZE = MAX_CHARACTER - MIN_CHARACTER + 1;
+            int size;
+            Node root;
+            Node buildLast;
+            Node matchLast;
+
+            public ACAutomaton() {
+                root = new Node();
+                size = 1;
             }
 
-            public int getTotal(int l, int r)
-            {
-                return fee[r + 1] - fee[l];
+            public void beginBuild() {
+                buildLast = root;
             }
 
-            public int dp(int l, int r, int p)
-            {
-                if(visited[l][r][p])
-                {
-                    return mem[l][r][p];
+            public void endBuild() {
+                Deque<Node> deque = new ArrayDeque<>(size);
+
+                for (Node next : root.next) {
+                    if (next == null) {
+                        continue;
+                    }
+                    deque.addLast(next);
                 }
-                visited[l][r][p] = true;
-                int len = r - l + 1;
-                if(p == 0)
-                {
-                    mem[l][r][p] = inf;
-                    return mem[l][r][p];
-                }
-                //unable to fetch
-                if(len < p)
-                {
-                    mem[l][r][p] = inf;
-                    return mem[l][r][p];
-                }
-                //equal case
-                if(len == p)
-                {
-                    mem[l][r][p] = 0;
-                    return mem[l][r][p];
-                }
-                //unable to merge
-                if(len < k && p != len)
-                {
-                    mem[l][r][p] = inf;
-                    return mem[l][r][p];
-                }
-                if(len == k && p == 1)
-                {
-                    mem[l][r][p] = getTotal(l, r);
-                    return mem[l][r][p];
-                }
-                if(p == 1)
-                {
-                    mem[l][r][p] = getTotal(l, r) + dp(l, r, k);
-                    return mem[l][r][p];
-                }
-                mem[l][r][p] = inf;
-                for(int i = l; i <= r - 1; i++)
-                {
-                    for(int j = 1; j < p; j++)
-                    {
-                        mem[l][r][p] = Math.min(mem[l][r][p], dp(l, i, j) + dp(i + 1, r, p - j));
+
+                while (!deque.isEmpty()) {
+                    Node head = deque.removeFirst();
+                    Node fail = visit(head.father.fail, head.index);
+                    if (fail == null) {
+                        head.fail = root;
+                    } else {
+                        head.fail = fail.next[head.index];
+                    }
+                    head.word = head.word || head.fail.word;
+
+                    for (Node next : head.next) {
+                        if (next == null) {
+                            continue;
+                        }
+                        deque.addLast(next);
                     }
                 }
-                return mem[l][r][p];
             }
-        }
-        public int mergeStones(int[] stones, int K) {
-            Helper helper = new Helper(stones, K);
-            helper.dp(0, stones.length - 1, 2);
-            int v = helper.dp(0, stones.length - 1, 1);
-            return v == Helper.inf ? -1 : v;
+
+            public Node visit(Node trace, int index) {
+                while (trace != null && trace.next[index] == null) {
+                    trace = trace.fail;
+                }
+                return trace;
+            }
+
+            public void build(char c) {
+                int index = c - MIN_CHARACTER;
+                if (buildLast.next[index] == null) {
+                    Node node = new Node();
+                    node.father = buildLast;
+                    node.index = index;
+                    buildLast.next[index] = node;
+                    size++;
+                }
+                buildLast = buildLast.next[index];
+            }
+
+            public void beginMatch() {
+                matchLast = root;
+            }
+
+            public void match(char c) {
+                int index = c - MIN_CHARACTER;
+                Node fail = visit(matchLast, index);
+                if (fail == null) {
+                    matchLast = root;
+                } else {
+                    matchLast = fail.next[index];
+                }
+            }
+
+            public static class Node {
+                Node[] next = new Node[RANGE_SIZE];
+                Node fail;
+                Node father;
+                int index;
+                boolean word;
+
+                @Override
+                public String toString() {
+                    return father == null ? "" : (father.toString() + (char) (MIN_CHARACTER + index));
+                }
+            }
         }
     }
 }

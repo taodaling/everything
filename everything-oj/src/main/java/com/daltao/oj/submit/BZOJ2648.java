@@ -178,18 +178,17 @@ public class BZOJ2648 {
             if (this == NIL) {
                 return dist;
             }
+            if (expectDistance(pos, rect) >= dist) {
+                return dist;
+            }
             pushDown(depth);
             dist = Math.min(dist, distance(pos, position));
-            int d1 = expectDistance(pos, left.rect);
-            int d2 = expectDistance(pos, right.rect);
 
-            if (d1 < d2 && d1 < dist) {
+            if (RANDOM.nextInt() % 2 == 0) {
                 dist = Math.min(dist, left.query(pos, dist, depth + 1));
-            }
-            if (d2 < dist) {
                 dist = Math.min(dist, right.query(pos, dist, depth + 1));
-            }
-            if (d1 >= d2 && d1 < dist) {
+            } else {
+                dist = Math.min(dist, right.query(pos, dist, depth + 1));
                 dist = Math.min(dist, left.query(pos, dist, depth + 1));
             }
             return dist;
