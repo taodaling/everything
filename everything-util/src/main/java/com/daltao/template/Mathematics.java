@@ -102,8 +102,6 @@ public class Mathematics {
      * Get x^n(% mod)
      */
     public static int pow(int x, int n, int mod) {
-        n = mod(n, mod - 1);
-        x = mod(x, mod);
         int bit = 31 - Integer.numberOfLeadingZeros(n);
         long product = 1;
         for (; bit >= 0; bit--) {
@@ -131,7 +129,19 @@ public class Mathematics {
      * Get x % mod
      */
     public static int mod(int x, int mod) {
-        return x >= 0 ? x % mod : (((x % mod) + mod) % mod);
+        x %= mod;
+        if (x < 0) {
+            x += mod;
+        }
+        return x;
+    }
+
+    public static int mod(long x, int mod) {
+        x %= mod;
+        if (x < 0) {
+            x += mod;
+        }
+        return (int) x;
     }
 
     /**
