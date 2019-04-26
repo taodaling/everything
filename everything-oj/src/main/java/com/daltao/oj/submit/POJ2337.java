@@ -1,13 +1,19 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.List;
 
-public class OJCodeTemplate {
+public class POJ2337 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -37,22 +43,14 @@ public class OJCodeTemplate {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        int mod = (int) 1e9 + 7;
 
-        public int mod(int val) {
-            val %= mod;
-            if (val < 0) {
-                val += mod;
-            }
-            return val;
-        }
+        Node[] nodes = new Node[128];
+        Deque<String> trace = new ArrayDeque();
 
-        public int mod(long val) {
-            val %= mod;
-            if (val < 0) {
-                val += mod;
+        {
+            for (int i = 'a'; i <= 'z'; i++) {
+                nodes[i] = new Node();
             }
-            return (int)val;
         }
 
         public Task(FastIO io, Debug debug) {
@@ -62,12 +60,137 @@ public class OJCodeTemplate {
 
         @Override
         public void run() {
-            solve();
+            int n = io.readInt();
+            while (n-- > 0) {
+                solve();
+            }
         }
 
+        public void dfs(Node root, String edge) {
+            while (!root.edges.isEmpty()) {
+                String tail = root.edges.remove(root.edges.size() - 1);
+                dfs(nodes[tail.charAt(tail.length() - 1)], tail);
+            }
+            trace.addLast(edge);
+        }
+
+        Comparator<String> inverseComparator = new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+                return o2.compareTo(o1);
+            }
+        };
+
+        List<String> strings = new ArrayList();
+
         public void solve() {
+            for (int i = 'a'; i <= 'z'; i++) {
+                nodes[i].rank = 0;
+                nodes[i].p = nodes[i];
+                nodes[i].edges.clear();
+                nodes[i].inDegree = 0;
+            }
+            trace.clear();
+            strings.clear();
+
+            int n = io.readInt();
+            for (int i = 0; i < n; i++) {
+                String s = io.readString();
+                strings.add(s);
+            }
+            Collections.sort(strings, inverseComparator);
+
+            for (String s : strings) {
+                char head = s.charAt(0);
+                char tail = s.charAt(s.length() - 1);
+                nodes[head].edges.add(s);
+                Node.union(nodes[head], nodes[tail]);
+                nodes[tail].inDegree++;
+            }
+
+            Node set = null;
+            int g1 = 0;
+            int l1 = 0;
+            boolean exist = true;
+            for (int i = 'a'; i <= 'z'; i++) {
+                if (nodes[i].edges.size() + nodes[i].inDegree == 0) {
+                    continue;
+                }
+                if (set == null) {
+                    set = nodes[i].find();
+                }
+                if (set != nodes[i].find()) {
+                    exist = false;
+                    break;
+                }
+                int d = nodes[i].edges.size() - nodes[i].inDegree;
+                if (d == 1) {
+                    g1++;
+                } else if (d == -1) {
+                    l1++;
+                } else if (d != 0) {
+                    exist = false;
+                    break;
+                }
+            }
+
+            exist = exist && g1 == l1 && g1 <= 1;
+            if (!exist) {
+                io.cache.append("***\n");
+                return;
+            }
+
+            Node start = null;
+            for (int i = 'a'; i <= 'z'; i++) {
+                if (nodes[i].edges.size() > 0) {
+                    start = nodes[i];
+                    break;
+                }
+            }
+            for (int i = 'a'; i <= 'z'; i++) {
+                if (nodes[i].edges.size() > nodes[i].inDegree) {
+                    start = nodes[i];
+                    break;
+                }
+            }
+
+            dfs(start, "");
+            trace.removeLast();
+            io.cache.append(trace.removeLast());
+            while (!trace.isEmpty()) {
+                io.cache.append('.').append(trace.removeLast());
+            }
+            io.cache.append('\n');
         }
     }
+
+    public static class Node {
+        Node p;
+        int rank;
+        List<String> edges = new ArrayList();
+        int inDegree;
+
+        Node find() {
+            return p == p.p ? p : (p = p.find());
+        }
+
+        static void union(Node a, Node b) {
+            a = a.find();
+            b = b.find();
+            if (a == b) {
+                return;
+            }
+            if (a.rank == b.rank) {
+                a.rank++;
+            }
+            if (a.rank > b.rank) {
+                b.p = a;
+            } else {
+                a.p = b;
+            }
+        }
+    }
+
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder();

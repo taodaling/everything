@@ -1,13 +1,18 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
 
-public class OJCodeTemplate {
+public class CF1152E {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -37,23 +42,7 @@ public class OJCodeTemplate {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        int mod = (int) 1e9 + 7;
-
-        public int mod(int val) {
-            val %= mod;
-            if (val < 0) {
-                val += mod;
-            }
-            return val;
-        }
-
-        public int mod(long val) {
-            val %= mod;
-            if (val < 0) {
-                val += mod;
-            }
-            return (int)val;
-        }
+        HashMap<Integer, Node> nodeMap = new HashMap<>();
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -65,7 +54,130 @@ public class OJCodeTemplate {
             solve();
         }
 
+        private Deque<Node> trace = new ArrayDeque<>();
+
+        private void dfs(Node root) {
+            while (!root.next.isEmpty()) {
+                Edge head = root.next.remove(root.next.size() - 1);
+                if (head.deleted) {
+                    continue;
+                }
+                head.deleted = true;
+                dfs(head.another(root));
+            }
+            trace.addLast(root);
+        }
+
         public void solve() {
+            int n = io.readInt();
+            int[] bv = new int[n];
+            int[] cv = new int[n];
+            for (int i = 1; i < n; i++) {
+                bv[i] = io.readInt();
+            }
+            for (int i = 1; i < n; i++) {
+                cv[i] = io.readInt();
+            }
+            for (int i = 1; i < n; i++) {
+                Node b = getNode(bv[i]);
+                Node c = getNode(cv[i]);
+
+                if (b.id > c.id) {
+                    io.cache.append(-1);
+                    return;
+                }
+
+                Edge edge = new Edge();
+                edge.a = b;
+                edge.b = c;
+                b.next.add(edge);
+                c.next.add(edge);
+                Node.union(b, c);
+            }
+
+            Node start = null;
+            int g = 0;
+            for (Node node : nodeMap.values()) {
+                if (start == null) {
+                    start = node;
+                }
+                if (node.find() != start.find()) {
+                    io.cache.append(-1);
+                    return;
+                }
+                g += node.next.size() % 2;
+            }
+            if (g != 0 && g != 2) {
+                io.cache.append(-1);
+                return;
+            }
+            for (Node node : nodeMap.values()) {
+                start = node;
+                break;
+            }
+            for (Node node : nodeMap.values()) {
+                if (node.next.size() % 2 == 1) {
+                    start = node;
+                    break;
+                }
+            }
+            dfs(start);
+            while (!trace.isEmpty()) {
+                Node tail = trace.removeLast();
+                io.cache.append(tail.id).append(' ');
+            }
+        }
+
+        public Node getNode(int i) {
+            Node node = nodeMap.get(i);
+            if (node == null) {
+                node = new Node();
+                node.id = i;
+                nodeMap.put(i, node);
+            }
+            return node;
+        }
+    }
+
+    public static class Edge {
+        Node a;
+        Node b;
+        boolean deleted;
+
+        Node another(Node me) {
+            return a == me ? b : a;
+        }
+    }
+
+    public static class Node {
+        List<Edge> next = new ArrayList<>();
+        Node p = this;
+        int rank;
+        int id;
+
+        Node find() {
+            return p.p == p ? p : (p = p.find());
+        }
+
+        static void union(Node a, Node b) {
+            a = a.find();
+            b = b.find();
+            if (a == b) {
+                return;
+            }
+            if (a.rank == b.rank) {
+                a.rank++;
+            }
+            if (a.rank > b.rank) {
+                b.p = a;
+            } else {
+                a.p = b;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "" + id;
         }
     }
 

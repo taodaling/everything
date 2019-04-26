@@ -1,4 +1,4 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-public class OJCodeTemplate {
+public class CF1152F1 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -52,7 +52,7 @@ public class OJCodeTemplate {
             if (val < 0) {
                 val += mod;
             }
-            return (int)val;
+            return (int) val;
         }
 
         public Task(FastIO io, Debug debug) {
@@ -60,12 +60,48 @@ public class OJCodeTemplate {
             this.debug = debug;
         }
 
+
         @Override
         public void run() {
             solve();
         }
 
         public void solve() {
+            int n = io.readInt();
+            int k = io.readInt();
+            int m = io.readInt();
+            int bitmask = (1 << (m + 1));
+            int highestBit = bitmask >> 1;
+
+            int[][][] dp = new int[n + 2][k + 1][bitmask];
+            int[] bitCount = new int[bitmask];
+            bitCount[0] = 0;
+            for (int i = 1; i < bitmask; i++) {
+                bitCount[i] = bitCount[i & (i - 1)] + 1;
+            }
+
+
+            dp[n + 1][0][0] = 1;
+            for (int i = n; i >= 1; i--) {
+                for (int j = 0; j <= k; j++) {
+                    for (int bit = 0; bit < bitmask; bit++) {
+                        if (bitCount[bit] > j) {
+                            continue;
+                        }
+                        if (bit % 2 == 0) {
+                            dp[i][j][bit] = mod(dp[i + 1][j][bit >> 1] + dp[i + 1][j][(bit >> 1) | highestBit]);
+                        } else {
+                            dp[i][j][bit] = mod((long) dp[i][j - 1][bit ^ 1] * bitCount[bit]);
+                        }
+                    }
+                }
+            }
+
+            int sum = 0;
+            for (int i = 0; i < bitmask; i++) {
+                sum = mod(sum + dp[1][k][i]);
+            }
+            io.cache.append(sum);
         }
     }
 
