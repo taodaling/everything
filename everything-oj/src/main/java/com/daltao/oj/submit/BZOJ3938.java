@@ -1,6 +1,5 @@
 package com.daltao.oj.submit;
 
-import com.daltao.template.Randomized;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -8,8 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.TreeSet;
+import java.util.Random;
 
 public class BZOJ3938 {
     public static void main(String[] args) throws Exception {
@@ -41,6 +39,7 @@ public class BZOJ3938 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
+        DiscreteMap map;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -82,22 +81,105 @@ public class BZOJ3938 {
                 times[wpos++] = time;
             }
 
-            DiscreteMap map = new DiscreteMap(times, 0, wpos);
+            map = new DiscreteMap(times, 0, wpos);
             Segment pos = Segment.build(map.minRank(), map.maxRank());
             Segment neg = Segment.build(map.minRank(), map.maxRank());
             for (int i = 0; i < m; i++) {
-                if (query[0][i] == 1) {
-                    int time = query[1][i];
-                    int id = query[2][i];
-                    int speed = query[3][i];
-                    Segment.update(robots[id].time, map.rankOf(time) - 1, map.minRank(), map.maxRank(), new Segment.Line(robots[id].a, robots[id].b), map, pos);
-                    Segment.update(robots[id].time, map.rankOf(time) - 1, map.minRank(), map.maxRank(), new Segment.Line(-robots[id].a, -robots[id].b), map, pos);
+                if (query[0][i] == 0) {
+                    continue;
                 }
+                int time = query[1][i];
+                int id = query[2][i];
+                int speed = query[3][i];
+                Segment.update(robots[id].time, map.rankOf(time) - 1, map.minRank(), map.maxRank(), new Segment.Line(robots[id].a, robots[id].b), map, pos);
+                Segment.update(robots[id].time, map.rankOf(time) - 1, map.minRank(), map.maxRank(), new Segment.Line(-robots[id].a, -robots[id].b), map, neg);
+                robots[id].b = (robots[id].a - speed) * time + robots[id].b;
+                robots[id].a = speed;
+                robots[id].time = map.rankOf(time);
+            }
+
+            for (int i = 1; i <= n; i++) {
+                Segment.update(robots[i].time, map.maxRank(), map.minRank(), map.maxRank(), new Segment.Line(robots[i].a, robots[i].b), map, pos);
+                Segment.update(robots[i].time, map.maxRank(), map.minRank(), map.maxRank(), new Segment.Line(-robots[i].a, -robots[i].b), map, neg);
+            }
+
+            for (int i = 0; i < m; i++) {
+                if (query[0][i] == 1) {
+                    continue;
+                }
+                int time = map.rankOf(query[1][i]);
+                long max = (long) (Math.max(
+                        Segment.query(time, map.minRank(), map.maxRank(), map, pos),
+                        Segment.query(time, map.minRank(), map.maxRank(), map, neg)
+                ) + 0.5);
+                io.cache.append(max).append('\n');
+
             }
         }
 
     }
 
+    public static class Randomized {
+        static Random random = new Random();
+
+        public static double nextDouble(double min, double max) {
+            return random.nextDouble() * (max - min) + min;
+        }
+
+        public static void randomizedArray(int[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                int tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(long[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                long tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(double[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                double tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(float[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                float tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static<T> void randomizedArray(T[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                T tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static int nextInt(int l, int r) {
+            return random.nextInt(r - l + 1) + l;
+        }
+    }
 
     public static class DiscreteMap {
         int[] val;
@@ -129,6 +211,11 @@ public class BZOJ3938 {
 
         public int rankOf(int x) {
             return Arrays.binarySearch(val, f, t, x);
+        }
+
+        @Override
+        public String toString() {
+            return Arrays.toString(Arrays.copyOfRange(val, f, t));
         }
     }
 
@@ -278,20 +365,22 @@ public class BZOJ3938 {
             return segment;
         }
 
+        public double eval(double x) {
+            return line == null ? Double.MIN_VALUE : line.y(x);
+        }
+
         public static double query(int x, int l, int r, DiscreteMap map, Segment segment) {
-            if (segment.line == null) {
-                return Double.MIN_VALUE;
-            }
             if (checkOutOfRange(x, x, l, r)) {
                 return Double.MIN_VALUE;
             }
-            if (checkCoverage(x, x, l, r)) {
-                return segment.line.y(map.val[x]);
+            if (l == r) {
+                return segment.eval(map.val[x]);
             }
             int m = (l + r) >> 1;
             return Math.max(Math.max(
                     query(x, l, m, map, segment.left),
-                    query(x, m + 1, r, map, segment.right)), segment.line.y(x));
+                    query(x, m + 1, r, map, segment.right)),
+                    segment.eval(map.val[x]));
         }
 
 
