@@ -82,8 +82,8 @@ public class BZOJ3938 {
             }
 
             map = new DiscreteMap(times, 0, wpos);
-            Segment pos = Segment.build(map.minRank(), map.maxRank());
-            Segment neg = Segment.build(map.minRank(), map.maxRank());
+            LiChaoSegment pos = LiChaoSegment.build(map.minRank(), map.maxRank(), map.val);
+            LiChaoSegment neg = LiChaoSegment.build(map.minRank(), map.maxRank(), map.val);
             for (int i = 0; i < m; i++) {
                 if (query[0][i] == 0) {
                     continue;
@@ -91,16 +91,16 @@ public class BZOJ3938 {
                 int time = query[1][i];
                 int id = query[2][i];
                 int speed = query[3][i];
-                Segment.update(robots[id].time, map.rankOf(time) - 1, map.minRank(), map.maxRank(), new Segment.Line(robots[id].a, robots[id].b), map, pos);
-                Segment.update(robots[id].time, map.rankOf(time) - 1, map.minRank(), map.maxRank(), new Segment.Line(-robots[id].a, -robots[id].b), map, neg);
+                LiChaoSegment.update(robots[id].time, map.rankOf(time) - 1, map.minRank(), map.maxRank(), new LiChaoSegment.Line(robots[id].a, robots[id].b), pos);
+                LiChaoSegment.update(robots[id].time, map.rankOf(time) - 1, map.minRank(), map.maxRank(), new LiChaoSegment.Line(-robots[id].a, -robots[id].b), neg);
                 robots[id].b = (robots[id].a - speed) * time + robots[id].b;
                 robots[id].a = speed;
                 robots[id].time = map.rankOf(time);
             }
 
             for (int i = 1; i <= n; i++) {
-                Segment.update(robots[i].time, map.maxRank(), map.minRank(), map.maxRank(), new Segment.Line(robots[i].a, robots[i].b), map, pos);
-                Segment.update(robots[i].time, map.maxRank(), map.minRank(), map.maxRank(), new Segment.Line(-robots[i].a, -robots[i].b), map, neg);
+                LiChaoSegment.update(robots[i].time, map.maxRank(), map.minRank(), map.maxRank(), new LiChaoSegment.Line(robots[i].a, robots[i].b), pos);
+                LiChaoSegment.update(robots[i].time, map.maxRank(), map.minRank(), map.maxRank(), new LiChaoSegment.Line(-robots[i].a, -robots[i].b), neg);
             }
 
             for (int i = 0; i < m; i++) {
@@ -109,8 +109,8 @@ public class BZOJ3938 {
                 }
                 int time = map.rankOf(query[1][i]);
                 long max = (long) (Math.max(
-                        Segment.query(time, map.minRank(), map.maxRank(), map, pos),
-                        Segment.query(time, map.minRank(), map.maxRank(), map, neg)
+                        LiChaoSegment.query(time, map.minRank(), map.maxRank(), map, pos),
+                        LiChaoSegment.query(time, map.minRank(), map.maxRank(), map, neg)
                 ) + 0.5);
                 io.cache.append(max).append('\n');
 
@@ -166,7 +166,7 @@ public class BZOJ3938 {
             }
         }
 
-        public static<T> void randomizedArray(T[] data, int from, int to) {
+        public static <T> void randomizedArray(T[] data, int from, int to) {
             to--;
             for (int i = from; i <= to; i++) {
                 int s = nextInt(i, to);
@@ -219,10 +219,13 @@ public class BZOJ3938 {
         }
     }
 
-    public static class Segment implements Cloneable {
-        Segment left;
-        Segment right;
+    public static class LiChaoSegment implements Cloneable {
+        LiChaoSegment left;
+        LiChaoSegment right;
         Line line;
+        double l;
+        double r;
+        double m;
 
         public static class Line {
             // y = ax + b
@@ -249,12 +252,15 @@ public class BZOJ3938 {
             }
         }
 
-        public static Segment build(int l, int r) {
-            Segment segment = new Segment();
+        public static LiChaoSegment build(int l, int r, int[] vals) {
+            LiChaoSegment segment = new LiChaoSegment();
             int m = (l + r) >> 1;
+            segment.l = vals[l];
+            segment.r = vals[r];
+            segment.m = vals[m];
             if (l != r) {
-                segment.left = build(l, m);
-                segment.right = build(m + 1, r);
+                segment.left = build(l, m, vals);
+                segment.right = build(m + 1, r, vals);
             }
             return segment;
         }
@@ -267,7 +273,7 @@ public class BZOJ3938 {
             return ll <= l && rr >= r;
         }
 
-        public static void update(int ll, int rr, int l, int r, Line line, DiscreteMap map, Segment segment) {
+        public static void update(int ll, int rr, int l, int r, Line line, LiChaoSegment segment) {
             if (checkOutOfRange(ll, rr, l, r)) {
                 return;
             }
@@ -294,28 +300,28 @@ public class BZOJ3938 {
                     return;
                 }
                 double x = Line.intersectAt(smallerA, largerA);
-                if (x <= map.val[l]) {
+                if (x <= segment.l) {
                     segment.line = largerA;
                     return;
                 }
-                if (x >= map.val[r]) {
+                if (x >= segment.r) {
                     segment.line = smallerA;
                     return;
                 }
-                if (x <= map.val[m]) {
+                if (x <= segment.m) {
                     segment.line = largerA;
-                    update(ll, rr, l, m, smallerA, map, segment.left);
+                    update(ll, rr, l, m, smallerA, segment.left);
                 } else {
                     segment.line = smallerA;
-                    update(ll, rr, m + 1, r, largerA, map, segment.right);
+                    update(ll, rr, m + 1, r, largerA, segment.right);
                 }
                 return;
             }
-            update(ll, rr, l, m, line, map, segment.left);
-            update(ll, rr, m + 1, r, line, map, segment.right);
+            update(ll, rr, l, m, line, segment.left);
+            update(ll, rr, m + 1, r, line, segment.right);
         }
 
-        public static Segment updatePersistently(int ll, int rr, int l, int r, Line line, DiscreteMap map, Segment segment) {
+        public static LiChaoSegment updatePersistently(int ll, int rr, int l, int r, Line line, LiChaoSegment segment) {
             if (checkOutOfRange(ll, rr, l, r)) {
                 return segment;
             }
@@ -343,25 +349,25 @@ public class BZOJ3938 {
                     return segment;
                 }
                 double x = Line.intersectAt(smallerA, largerA);
-                if (x <= map.val[l]) {
+                if (x <= segment.l) {
                     segment.line = largerA;
                     return segment;
                 }
-                if (x >= map.val[r]) {
+                if (x >= segment.r) {
                     segment.line = smallerA;
                     return segment;
                 }
-                if (x <= map.val[m]) {
+                if (x <= segment.m) {
                     segment.line = largerA;
-                    update(ll, rr, l, m, smallerA, map, segment.left);
+                    segment.left = updatePersistently(ll, rr, l, m, smallerA, segment.left);
                 } else {
                     segment.line = smallerA;
-                    update(ll, rr, m + 1, r, largerA, map, segment.right);
+                    segment.right = updatePersistently(ll, rr, m + 1, r, largerA, segment.right);
                 }
                 return segment;
             }
-            update(ll, rr, l, m, line, map, segment.left);
-            update(ll, rr, m + 1, r, line, map, segment.right);
+            segment.left = updatePersistently(ll, rr, l, m, line, segment.left);
+            segment.right = updatePersistently(ll, rr, m + 1, r, line, segment.right);
             return segment;
         }
 
@@ -369,7 +375,7 @@ public class BZOJ3938 {
             return line == null ? Double.MIN_VALUE : line.y(x);
         }
 
-        public static double query(int x, int l, int r, DiscreteMap map, Segment segment) {
+        public static double query(int x, int l, int r, DiscreteMap map, LiChaoSegment segment) {
             if (checkOutOfRange(x, x, l, r)) {
                 return Double.MIN_VALUE;
             }
@@ -385,9 +391,9 @@ public class BZOJ3938 {
 
 
         @Override
-        public Segment clone() {
+        public LiChaoSegment clone() {
             try {
-                return (Segment) super.clone();
+                return (LiChaoSegment) super.clone();
             } catch (CloneNotSupportedException e) {
                 throw new RuntimeException(e);
             }
