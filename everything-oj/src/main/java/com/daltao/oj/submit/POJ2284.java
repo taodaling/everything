@@ -49,13 +49,10 @@ public class POJ2284 {
         }
 
         public void solve() {
-            int n;
-            while ((n = io.readInt()) != 0) {
-
-            }
 
         }
     }
+
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder();

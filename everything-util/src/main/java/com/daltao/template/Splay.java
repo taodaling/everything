@@ -18,6 +18,13 @@ public class Splay implements Cloneable {
     Splay father = NIL;
     int size = 1;
     int key;
+    int id;
+    boolean neg;
+
+    public void setNeg() {
+        neg = !neg;
+        key = -key;
+    }
 
     public static void splay(Splay x) {
         if (x == NIL) {
@@ -108,6 +115,15 @@ public class Splay implements Cloneable {
     }
 
     public void pushDown() {
+        if (neg) {
+            Splay tmp = left;
+            left = right;
+            right = tmp;
+
+            left.setNeg();
+            right.setNeg();
+            neg = false;
+        }
     }
 
     public static int toArray(Splay root, int[] data, int offset) {
@@ -124,6 +140,7 @@ public class Splay implements Cloneable {
         if (root == NIL) {
             return;
         }
+        root.pushDown();
         toString(root.left, builder);
         builder.append(root.key).append(',');
         toString(root.right, builder);
@@ -142,8 +159,8 @@ public class Splay implements Cloneable {
             return NIL;
         }
         splay = splay.clone();
-        splay.left = splay.left.clone();
-        splay.right = splay.right.clone();
+        splay.left = cloneTree(splay.left);
+        splay.right = cloneTree(splay.right);
         return splay;
     }
 
@@ -282,6 +299,7 @@ public class Splay implements Cloneable {
         }
         Splay trace = root;
         Splay father = NIL;
+        Splay find = NIL;
         while (trace != NIL) {
             father = trace;
             trace.pushDown();
@@ -289,13 +307,19 @@ public class Splay implements Cloneable {
                 trace = trace.left;
             } else {
                 if (trace.key == k) {
-                    break;
+                    find = trace;
+                    trace = trace.left;
                 } else {
                     trace = trace.right;
                 }
             }
         }
+
         splay(father);
+        if (find != NIL) {
+            splay(find);
+            return find;
+        }
         return father;
     }
 
@@ -312,7 +336,7 @@ public class Splay implements Cloneable {
             }
             Splay kickedOut = b;
             b = deleteRoot(b);
-            add(a, kickedOut);
+            a = add(a, kickedOut);
         }
         return merge(a, b);
     }

@@ -6,7 +6,7 @@ import java.util.Random;
  * Created by dalt on 2018/6/1.
  */
 public class Randomized {
-    static Random random = new Random();
+    static Random random = new Random(12345678);
 
     public static double nextDouble(double min, double max) {
         return random.nextDouble() * (max - min) + min;
