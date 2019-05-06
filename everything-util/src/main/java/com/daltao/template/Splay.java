@@ -18,13 +18,6 @@ public class Splay implements Cloneable {
     Splay father = NIL;
     int size = 1;
     int key;
-    int id;
-    boolean neg;
-
-    public void setNeg() {
-        neg = !neg;
-        key = -key;
-    }
 
     public static void splay(Splay x) {
         if (x == NIL) {
@@ -115,15 +108,6 @@ public class Splay implements Cloneable {
     }
 
     public void pushDown() {
-        if (neg) {
-            Splay tmp = left;
-            left = right;
-            right = tmp;
-
-            left.setNeg();
-            right.setNeg();
-            neg = false;
-        }
     }
 
     public static int toArray(Splay root, int[] data, int offset) {
