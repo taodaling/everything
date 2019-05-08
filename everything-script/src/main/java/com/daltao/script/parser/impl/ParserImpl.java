@@ -1,7 +1,11 @@
 package com.daltao.script.parser.impl;
 
 import com.daltao.collection.PredictableIterator;
-import com.daltao.script.ast.*;
+import com.daltao.script.ast.ASTContext;
+import com.daltao.script.ast.ASTLeaf;
+import com.daltao.script.ast.ASTList;
+import com.daltao.script.ast.ASTNode;
+import com.daltao.script.ast.Constants;
 import com.daltao.script.ast.impl.NativeASTContextImpl;
 import com.daltao.script.bnf.ForwardingRuleImpl;
 import com.daltao.script.bnf.Rule;

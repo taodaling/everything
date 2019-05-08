@@ -1,9 +1,10 @@
 package com.daltao.template;
 
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.TreeSet;
 
-public class ConvexHullTrick {
+public class ConvexHullTrick implements Iterable<ConvexHullTrick.Line>{
     public static class Line {
         // y = ax + b
         double a;
@@ -112,5 +113,10 @@ public class ConvexHullTrick {
             setOrderByA.add(newLine);
             setOrderByLx.add(newLine);
         }
+    }
+
+    @Override
+    public Iterator<Line> iterator() {
+        return setOrderByA.iterator();
     }
 }
