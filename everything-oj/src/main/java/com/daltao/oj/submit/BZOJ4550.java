@@ -62,39 +62,24 @@ public class BZOJ4550 {
 
         @Override
         public void run() {
-            int id = 1;
-            for(int i = 1; i <= 10; i++)
-            {
-                for(int j = 1; j <= 10; j++)
-                {
-                    for(int k = 1; k <= 10; k++)
-                    {
-                        for(int t = 1; t <= 10; t++)
-                        {
-                            if(i < j && j < k && k < t &&
-                                    (j - i - 1) % 2 == 0 && (t - k - 1) % 2 == 0)
-                            {
-                                io.cache.append(String.format("%d: %d %d %d %d", id++, i, j, k, t)).append('\n');
-                            }
-                        }
-                    }
-                }
-            }
-
-            //solve();
+            solve();
         }
 
         int[] fact;
         int[] inv;
         int[] invFact;
 
-        int[][] f;
-        int[][] g;
+        int[][] dp;
+
+        int k;
+        int n;
+        int m;
+        int r;
 
         public void solve() {
-            int n = io.readInt();
-            int k = io.readInt() / 2;
-            int m = io.readInt();
+            n = io.readInt();
+            k = io.readInt() / 2;
+            m = io.readInt();
 
             fact = new int[n + 1];
             inv = new int[n + 1];
@@ -111,46 +96,37 @@ public class BZOJ4550 {
                 invFact[i] = mod((long) invFact[i - 1] * inv[i]);
             }
 
-            f = new int[n + 1][k + 1];
-            g = new int[n + 1][k + 1];
+            dp = new int[n + 1][20];
             for (int i = 0; i <= n; i++) {
-                for (int j = 0; j <= k; j++) {
-                    f[i][j] = -1;
-                    g[i][j] = -1;
+                for (int j = 0; j < 20; j++) {
+                    dp[i][j] = -1;
                 }
             }
 
-            int r = n - 2 * k;
 
-            int sum = 0;
-            for (int t = 0; t * (m + 1) <= Math.min(k, r); t++) {
-                int a = f(r - t * (m + 1), k);
-                int b = composite(k, t * (m + 1));
-                sum = mod(sum + mod((long)a * b));
-            }
+            r = n - 2 * k;
 
-            sum = mod(composite(n, 2 * k) - sum);
+
+            int sum = mod(composite(n, 2 * k) - dp(r, 19));
             io.cache.append(sum);
         }
 
-        int f(int i, int j) {
-            if (i == 0 || j == 0) {
+        //The highest bit is j and use out of i stones
+        int dp(int i, int j) {
+            if (j < 0) {
+                return composite(i + k, k);
+            }
+            if (i <= 0) {
                 return 1;
             }
-            if (f[i][j] == -1) {
-                f[i][j] = mod(f(i - 1, j) + g(i, j));
+            if (dp[i][j] == -1) {
+                dp[i][j] = 0;
+                for (int t = 0; t <= k && t <= (i >> j); t += m + 1) {
+                    int plus = mod((long) dp(i - (1 << j) * t, j - 1) * composite(k, t));
+                    dp[i][j] = mod(dp[i][j] + plus);
+                }
             }
-            return f[i][j];
-        }
-
-        int g(int i, int j) {
-            if (i < 0) {
-                return 0;
-            }
-            if (g[i][j] == -1) {
-                g[i][j] = mod(f(i, j - 1) + g(i - 2, j));
-            }
-            return g[i][j];
+            return dp[i][j];
         }
 
         public int composite(int n, int k) {
