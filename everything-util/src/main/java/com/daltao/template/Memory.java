@@ -1,5 +1,6 @@
 package com.daltao.template;
 
+import java.util.Arrays;
 import java.util.Comparator;
 
 public class Memory {
@@ -72,6 +73,18 @@ public class Memory {
             }
         } else {
             System.arraycopy(src, srcf, dst, dstf, len);
+        }
+    }
+
+    public static void fill(int[][] x, int val) {
+        for (int[] v : x) {
+            Arrays.fill(v, val);
+        }
+    }
+
+    public static void fill(int[][][] x, int val) {
+        for (int[][] v : x) {
+            fill(v, val);
         }
     }
 }

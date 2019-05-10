@@ -1,4 +1,4 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -6,8 +6,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Comparator;
 
-public class OJCodeTemplate {
+public class CF1163D {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -52,15 +53,7 @@ public class OJCodeTemplate {
             if (val < 0) {
                 val += mod;
             }
-            return (int)val;
-        }
-
-        int bitAt(int x, int i) {
-            return (x >> i) & 1;
-        }
-
-        int bitAt(long x, int i) {
-            return (int)((x >> i) & 1);
+            return (int) val;
         }
 
         public Task(FastIO io, Debug debug) {
@@ -73,9 +66,249 @@ public class OJCodeTemplate {
             solve();
         }
 
+        int[][] f;
+        int[][] g;
+        int[][][] h;
+        String like;
+        String dislike;
+        String s;
+        int n;
+        int likeLen;
+        int dislikeLen;
+        KMPAutomaton likeKAM;
+        KMPAutomaton dislikeKAM;
+
         public void solve() {
+            s = io.readString();
+            like = io.readString();
+            dislike = io.readString();
+
+            n = s.length();
+            likeLen = like.length();
+            dislikeLen = dislike.length();
+            f = new int[like.length() + 1][128];
+            g = new int[dislike.length() + 1][128];
+            h = new int[s.length() + 1][like.length() + 1][dislike.length() + 1];
+
+
+            Memory.fill(f, -inf);
+            Memory.fill(g, -inf);
+            Memory.fill(h, -inf);
+
+            likeKAM = new KMPAutomaton(like.length());
+            for (int i = 0; i < likeLen; i++) {
+                likeKAM.build(like.charAt(i));
+            }
+
+            dislikeKAM = new KMPAutomaton(dislike.length());
+            for (int i = 0; i < dislikeLen; i++) {
+                dislikeKAM.build(dislike.charAt(i));
+            }
+
+            h[0][0][0] = 0;
+            for (int i = 0; i < n; i++) {
+                char c = s.charAt(i);
+                for (int j = 0; j <= likeLen; j++) {
+                    for (int k = 0; k <= dislikeLen; k++) {
+                        if (c == '*') {
+                            for (char t = 'a'; t <= 'z'; t++) {
+                                contribute(i, j, k, t);
+                            }
+                        } else {
+                            contribute(i, j, k, c);
+                        }
+                    }
+                }
+            }
+
+            int max = -inf;
+            for (int i = 0; i <= likeLen; i++) {
+                for (int j = 0; j <= dislikeLen; j++) {
+                    max = Math.max(max, h[n][i][j]);
+                }
+            }
+
+            io.cache.append(max);
+        }
+
+
+        public void contribute(int i, int j, int k, char c) {
+            if (i >= n) {
+                return;
+            }
+            int val = h[i][j][k];
+
+            i++;
+            j = f(j, c);
+            k = g(k, c);
+
+            if (j == likeLen) {
+                val++;
+            }
+            if (k == dislikeLen) {
+                val--;
+            }
+            h[i][j][k] = Math.max(h[i][j][k], val);
+        }
+
+        public int f(int i, int j) {
+            if (f[i][j] == -inf) {
+                likeKAM.matchLast = i;
+                likeKAM.match((char) j);
+                f[i][j] = likeKAM.matchLast;
+            }
+            return f[i][j];
+        }
+
+        public int g(int i, int j) {
+            if (g[i][j] == -inf) {
+                dislikeKAM.matchLast = i;
+                dislikeKAM.match((char) j);
+                g[i][j] = dislikeKAM.matchLast;
+            }
+            return g[i][j];
         }
     }
+
+    public static class Memory {
+        public static <T> void swap(T[] data, int i, int j) {
+            T tmp = data[i];
+            data[i] = data[j];
+            data[j] = tmp;
+        }
+
+        public static void swap(char[] data, int i, int j) {
+            char tmp = data[i];
+            data[i] = data[j];
+            data[j] = tmp;
+        }
+
+        public static void swap(int[] data, int i, int j) {
+            int tmp = data[i];
+            data[i] = data[j];
+            data[j] = tmp;
+        }
+
+        public static void swap(long[] data, int i, int j) {
+            long tmp = data[i];
+            data[i] = data[j];
+            data[j] = tmp;
+        }
+
+        public static <T> int min(T[] data, int from, int to, Comparator<T> cmp) {
+            int m = from;
+            for (int i = from + 1; i < to; i++) {
+                if (cmp.compare(data[m], data[i]) > 0) {
+                    m = i;
+                }
+            }
+            return m;
+        }
+
+        public static <T> void move(T[] data, int from, int to, int step) {
+            int len = to - from;
+            step = len - (step % len + len) % len;
+            Object[] buf = new Object[len];
+            for (int i = 0; i < len; i++) {
+                buf[i] = data[(i + step) % len + from];
+            }
+            System.arraycopy(buf, 0, data, from, len);
+        }
+
+        public static <T> void reverse(T[] data, int f, int t) {
+            int l = f, r = t - 1;
+            while (l < r) {
+                swap(data, l, r);
+                l++;
+                r--;
+            }
+        }
+
+        public static void reverse(int[] data, int f, int t) {
+            int l = f, r = t - 1;
+            while (l < r) {
+                swap(data, l, r);
+                l++;
+                r--;
+            }
+        }
+
+        public static void copy(Object[] src, Object[] dst, int srcf, int dstf, int len) {
+            if (len < 8) {
+                for (int i = 0; i < len; i++) {
+                    dst[dstf + i] = src[srcf + i];
+                }
+            } else {
+                System.arraycopy(src, srcf, dst, dstf, len);
+            }
+        }
+
+        public static void fill(int[][] x, int val) {
+            for (int[] v : x) {
+                Arrays.fill(v, val);
+            }
+        }
+
+        public static void fill(int[][][] x, int val) {
+            for (int[][] v : x) {
+                fill(v, val);
+            }
+        }
+    }
+
+    public static class KMPAutomaton {
+        char[] data;
+        int[] fail;
+        int buildLast;
+        int matchLast = 0;
+        int length;
+
+        public KMPAutomaton(int cap) {
+            data = new char[cap + 2];
+            fail = new int[cap + 2];
+            fail[0] = -1;
+            buildLast = 0;
+            length = cap;
+        }
+
+        public KMPAutomaton(KMPAutomaton automaton) {
+            data = automaton.data;
+            fail = automaton.fail;
+            buildLast = automaton.buildLast;
+            length = automaton.length;
+        }
+
+        public boolean isMatch() {
+            return matchLast == length;
+        }
+
+        public int length() {
+            return length;
+        }
+
+        public void beginMatch() {
+            matchLast = 0;
+        }
+
+        public void match(char c) {
+            matchLast = visit(c, matchLast) + 1;
+        }
+
+        public int visit(char c, int trace) {
+            while (trace >= 0 && data[trace + 1] != c) {
+                trace = fail[trace];
+            }
+            return trace;
+        }
+
+        public void build(char c) {
+            buildLast++;
+            fail[buildLast] = visit(c, fail[buildLast - 1]) + 1;
+            data[buildLast] = c;
+        }
+
+    }
+
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder();
