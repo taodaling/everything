@@ -137,6 +137,7 @@ public class BZOJ4550 {
         }
     }
 
+
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder();
         private final InputStream is;

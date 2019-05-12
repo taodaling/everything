@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Random;
 
 public class OJCodeTemplate {
     public static void main(String[] args) throws Exception {
@@ -52,7 +53,7 @@ public class OJCodeTemplate {
             if (val < 0) {
                 val += mod;
             }
-            return (int)val;
+            return (int) val;
         }
 
         int bitAt(int x, int i) {
@@ -60,7 +61,7 @@ public class OJCodeTemplate {
         }
 
         int bitAt(long x, int i) {
-            return (int)((x >> i) & 1);
+            return (int) ((x >> i) & 1);
         }
 
         public Task(FastIO io, Debug debug) {
@@ -367,4 +368,5 @@ public class OJCodeTemplate {
             System.out.println(Arrays.deepToString(x));
         }
     }
+
 }
