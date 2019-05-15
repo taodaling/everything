@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class CF1146F {
+public class CF1139D {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -39,7 +39,42 @@ public class CF1146F {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        int mod = (int) 998244353;
+        int mod = (int) 1e9 + 7;
+        int[] mu = new int[100001];
+
+        void init() {
+            int limit = 100000;
+            int[] primes = new int[limit + 1];
+            boolean[] isComp = new boolean[limit + 1];
+            int wpos = 0;
+            mu[1] = 1;
+            int[] smallestFactor = new int[limit + 1];
+            int[] smallestFactorExp = new int[limit + 1];
+            for (int i = 2; i <= limit; i++) {
+                if (!isComp[i]) {
+                    primes[wpos++] = i;
+                    mu[i] = -1;
+                    smallestFactor[i] = i;
+                    smallestFactorExp[i] = 1;
+                } else {
+                    if (smallestFactorExp[i] > 1) {
+                        mu[i] = 0;
+                    } else {
+                        mu[i] = -mu[i / smallestFactor[i]];
+                    }
+                }
+                for (int j = 0, until = limit / i; j < wpos && primes[j] <= until; j++) {
+                    int pi = primes[j] * i;
+                    smallestFactor[pi] = primes[j];
+                    smallestFactorExp[pi] = i % primes[j] == 0 ?
+                            smallestFactorExp[i] + 1 : 1;
+                    isComp[pi] = true;
+                    if (i % primes[j] == 0) {
+                        break;
+                    }
+                }
+            }
+        }
 
         public int mod(int val) {
             val %= mod;
@@ -57,9 +92,18 @@ public class CF1146F {
             return (int) val;
         }
 
+        int bitAt(int x, int i) {
+            return (x >> i) & 1;
+        }
+
+        int bitAt(long x, int i) {
+            return (int) ((x >> i) & 1);
+        }
+
         public Task(FastIO io, Debug debug) {
             this.io = io;
             this.debug = debug;
+            init();
         }
 
         @Override
@@ -67,47 +111,79 @@ public class CF1146F {
             solve();
         }
 
+        public void bruteForce() {
+            int m = io.readInt();
+            long[] dp = new long[m + 1];
+            dp[1] = 0;
+            int[] count = new int[m + 1];
+            long inv = Mathematics.inverse(m, mod);
+            long sum = 0;
+            for (int i = 2; i <= m; i++) {
+                long total = 0;
+                long coe = 0;
+                Arrays.fill(count, 0);
+                for (int j = 1; j <= m; j++) {
+                    int g = Mathematics.gcd(i, j);
+
+                    count[g]++;
+                    if (g == i) {
+                        coe = mod(coe + inv);
+                    } else {
+                        total = mod(total + dp[g] * inv);
+                    }
+                }
+                total = mod(total + 1);
+                coe = mod(1 - coe);
+                dp[i] = mod(total * Mathematics.inverse((int) coe, mod));
+                sum = mod(sum + dp[i] * inv);
+            }
+
+            sum = mod(sum + 1);
+            io.cache.append(sum).append('\n');
+
+        }
+
+
         public void solve() {
-            int n = io.readInt();
-            Node[] nodes = new Node[n + 1];
-            for (int i = 1; i <= n; i++) {
-                nodes[i] = new Node();
+            int m = io.readInt();
+            List<Integer>[] factors = new List[m + 1];
+            for (int i = 1; i <= m; i++) {
+                factors[i] = new ArrayList<>();
             }
-            for (int i = 2; i <= n; i++) {
-                Node p = nodes[io.readInt()];
-                p.nodes.add(nodes[i]);
+            for (int i = 1; i <= m; i++) {
+                for (int j = i; j <= m; j += i) {
+                    factors[j].add(i);
+                }
             }
 
-            dfs(nodes[1]);
-            io.cache.append(mod(nodes[1].dp[0] + nodes[1].dp[2]));
+            int[] dp1 = new int[m + 1];
+            dp1[1] = 0;
+            long inv = Mathematics.inverse(m, mod);
+            long expect = 0;
+            for (int i = 2; i <= m; i++) {
+                dp1[i] = 0;
+                long total = 0;
+                long coe = 0;
+                for (int x : factors[i]) {
+                    long count = 0;
+                    for (int d : factors[i / x]) {
+                        count = mod(count + mu[d] * ((m / x) / d));
+                    }
+                    if (x < i) {
+                        total = mod(total + count * dp1[x]);
+                    } else {
+                        coe = mod(1 - inv * count);
+                    }
+                }
+                dp1[i] = mod((long) total * inv + 1);
+                dp1[i] = mod((long) dp1[i] * Mathematics.inverse((int) coe, mod));
+                expect = mod(expect + dp1[i]);
+            }
+
+            expect = mod(expect * inv + 1);
+
+            io.cache.append(expect);
         }
-
-        public void dfs(Node root) {
-            if (root.nodes.size() == 0) {
-                root.dp[2] = 1;
-                return;
-            }
-            int prod = 1;
-            root.dp[0] = 1;
-            for (Node node : root.nodes) {
-                dfs(node);
-                int dp0 = mod((long) root.dp[0] * mod(node.dp[0] + node.dp[2]));
-                int dp1 = mod((long) root.dp[1] * (node.dp[0] + node.dp[2])
-                        + (long) root.dp[0] * (node.dp[1] + node.dp[2]));
-                int dp2 = mod((long) (root.dp[1] + root.dp[2]) * (node.dp[1] + node.dp[2]) + (long) root.dp[2] * (node.dp[0] + node.dp[2]));
-                root.dp[0] = dp0;
-                root.dp[1] = dp1;
-                root.dp[2] = dp2;
-            }
-        }
-    }
-
-    public static class Node {
-        List<Node> nodes = new ArrayList<>();
-        //dp1[0] is not used
-        //dp1[1] is link to one node
-        //dp1[2] is link to two or more nodes
-        int[] dp = new int[3];
     }
 
     public static class Mathematics {

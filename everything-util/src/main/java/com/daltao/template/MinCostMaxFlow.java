@@ -30,10 +30,10 @@ public class MinCostMaxFlow {
         sink = nodes[id];
     }
 
-    public DirectFeeChannel buildChannel(int src, int dst, int cap, int fee, int id)
-    {
+    public DirectFeeChannel buildChannel(int src, int dst, int cap, int fee, int id) {
         return Node.buildChannel(nodes[src], nodes[dst], cap, fee, id);
     }
+
     /**
      * reuslt[0] store how much flow could be sent and result[1] represents the fee
      */

@@ -5,11 +5,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.List;
 
-public class CF1146F {
+public class CF1139E {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -39,7 +41,7 @@ public class CF1146F {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        int mod = (int) 998244353;
+        int mod = (int) 1e9 + 7;
 
         public int mod(int val) {
             val %= mod;
@@ -57,6 +59,14 @@ public class CF1146F {
             return (int) val;
         }
 
+        int bitAt(int x, int i) {
+            return (x >> i) & 1;
+        }
+
+        int bitAt(long x, int i) {
+            return (int) ((x >> i) & 1);
+        }
+
         public Task(FastIO io, Debug debug) {
             this.io = io;
             this.debug = debug;
@@ -67,236 +77,181 @@ public class CF1146F {
             solve();
         }
 
+
+        int n;
+        int m;
+        int src;
+        KMAlgo mcmf;
+
         public void solve() {
-            int n = io.readInt();
-            Node[] nodes = new Node[n + 1];
+            n = io.readInt();
+            m = io.readInt();
+            Student[] students = new Student[n + 1];
             for (int i = 1; i <= n; i++) {
-                nodes[i] = new Node();
-            }
-            for (int i = 2; i <= n; i++) {
-                Node p = nodes[io.readInt()];
-                p.nodes.add(nodes[i]);
+                students[i] = new Student();
+                students[i].p = io.readInt();
             }
 
-            dfs(nodes[1]);
-            io.cache.append(mod(nodes[1].dp[0] + nodes[1].dp[2]));
+            for (int i = 1; i <= n; i++) {
+                students[i].c = io.readInt();
+            }
+
+            int d = io.readInt();
+            Deque<Student> deque = new ArrayDeque<>();
+            for (int i = 1; i <= d; i++) {
+                Student student = students[io.readInt()];
+                deque.addLast(student);
+                student.left = true;
+            }
+
+
+            //left 1 ~ m + 1
+            //right m + 2 ~ 2m + 1
+            //target 2m + 2
+            mcmf = new KMAlgo(m + 1, m);
+
+            for (int i = 1; i <= n; i++) {
+                if (!students[i].left) {
+                    addStudent(students[i]);
+                }
+            }
+
+            src = 1;
+            Deque<Integer> result = new ArrayDeque<>();
+            for (int i = d; i >= 1; i--) {
+                tryOptimize();
+                result.addFirst(src);
+                addStudent(deque.removeLast());
+            }
+
+            while (!result.isEmpty()) {
+                io.cache.append(result.removeFirst() - 1).append('\n');
+            }
         }
 
-        public void dfs(Node root) {
-            if (root.nodes.size() == 0) {
-                root.dp[2] = 1;
+        int order = 1;
+
+        public int order() {
+            return order++;
+        }
+
+        public void addStudent(Student student) {
+            if (student.p >= m) {
                 return;
             }
-            int prod = 1;
-            root.dp[0] = 1;
-            for (Node node : root.nodes) {
-                dfs(node);
-                int dp0 = mod((long) root.dp[0] * mod(node.dp[0] + node.dp[2]));
-                int dp1 = mod((long) root.dp[1] * (node.dp[0] + node.dp[2])
-                        + (long) root.dp[0] * (node.dp[1] + node.dp[2]));
-                int dp2 = mod((long) (root.dp[1] + root.dp[2]) * (node.dp[1] + node.dp[2]) + (long) root.dp[2] * (node.dp[0] + node.dp[2]));
-                root.dp[0] = dp0;
-                root.dp[1] = dp1;
-                root.dp[2] = dp2;
+            mcmf.addEdge(student.p + 1, student.c);
+        }
+
+        public void tryOptimize() {
+            while (mcmf.matchLeft(src)) {
+                src++;
             }
         }
     }
 
-    public static class Node {
-        List<Node> nodes = new ArrayList<>();
-        //dp1[0] is not used
-        //dp1[1] is link to one node
-        //dp1[2] is link to two or more nodes
-        int[] dp = new int[3];
+    public static class Student {
+        int p;
+        int c;
+        boolean left;
     }
 
-    public static class Mathematics {
+    public static class KMAlgo {
+        public static class Node {
+            List<Node> nodes = new ArrayList<>();
+            boolean visited;
+            Node partner;
+            int id;
 
-        public static int ceilPowerOf2(int x) {
-            return 32 - Integer.numberOfLeadingZeros(x - 1);
-        }
-
-        public static int floorPowerOf2(int x) {
-            return 31 - Integer.numberOfLeadingZeros(x);
-        }
-
-        public static long modmul(long a, long b, long mod) {
-            return b == 0 ? 0 : ((modmul(a, b >> 1, mod) << 1) % mod + a * (b & 1)) % mod;
-        }
-
-        /**
-         * Get the greatest common divisor of a and b
-         */
-        public static int gcd(int a, int b) {
-            return a >= b ? gcd0(a, b) : gcd0(b, a);
-        }
-
-        private static int gcd0(int a, int b) {
-            return b == 0 ? a : gcd0(b, a % b);
-        }
-
-        public static int extgcd(int a, int b, int[] coe) {
-            if (a >= b) {
-                return extgcd0(a, b, coe);
-            } else {
-                int g = extgcd0(b, a, coe);
-                int tmp = coe[0];
-                coe[0] = coe[1];
-                coe[1] = tmp;
-                return g;
+            @Override
+            public String toString() {
+                return "" + id;
             }
         }
 
-        private static int extgcd0(int a, int b, int[] coe) {
-            if (b == 0) {
-                coe[0] = 1;
-                coe[1] = 0;
-                return a;
+        Node[] leftSides;
+        Node[] rightSides;
+
+        public KMAlgo(int l, int r) {
+            leftSides = new Node[l + 1];
+            for (int i = 1; i <= l; i++) {
+                leftSides[i] = new Node();
+                leftSides[i].id = i;
             }
-            int g = extgcd0(b, a % b, coe);
-            int n = coe[0];
-            int m = coe[1];
-            coe[0] = m;
-            coe[1] = n - m * (a / b);
-            return g;
-        }
-
-        /**
-         * Get the greatest common divisor of a and b
-         */
-        public static long gcd(long a, long b) {
-            return a >= b ? gcd0(a, b) : gcd0(b, a);
-        }
-
-        private static long gcd0(long a, long b) {
-            return b == 0 ? a : gcd0(b, a % b);
-        }
-
-        public static long extgcd(long a, long b, long[] coe) {
-            if (a >= b) {
-                return extgcd0(a, b, coe);
-            } else {
-                long g = extgcd0(b, a, coe);
-                long tmp = coe[0];
-                coe[0] = coe[1];
-                coe[1] = tmp;
-                return g;
+            rightSides = new Node[r + 1];
+            for (int i = 1; i <= r; i++) {
+                rightSides[i] = new Node();
+                rightSides[i].id = i;
             }
         }
 
-        private static long extgcd0(long a, long b, long[] coe) {
-            if (b == 0) {
-                coe[0] = 1;
-                coe[1] = 0;
-                return a;
+        public void addEdge(int lId, int rId) {
+            leftSides[lId].nodes.add(rightSides[rId]);
+            rightSides[rId].nodes.add(leftSides[lId]);
+        }
+
+        private void init() {
+            for (int i = 1, until = leftSides.length; i < until; i++) {
+                leftSides[i].visited = false;
             }
-            long g = extgcd0(b, a % b, coe);
-            long n = coe[0];
-            long m = coe[1];
-            coe[0] = m;
-            coe[1] = n - m * (a / b);
-            return g;
+            for (int i = 1, until = rightSides.length; i < until; i++) {
+                rightSides[i].visited = false;
+            }
         }
 
-        /**
-         * Get y where x * y = 1 (% mod)
-         */
-        public static int inverse(int x, int mod) {
-            return pow(x, mod - 2, mod);
+        public boolean matchLeft(int id) {
+            init();
+            return findPartner(leftSides[id]);
         }
 
-        /**
-         * Get x^n(% mod)
-         */
-        public static int pow(int x, int n, int mod) {
-            int bit = 31 - Integer.numberOfLeadingZeros(n);
-            long product = 1;
-            for (; bit >= 0; bit--) {
-                product = product * product % mod;
-                if (((1 << bit) & n) != 0) {
-                    product = product * x % mod;
+        public boolean matchRight(int id) {
+            init();
+            return findPartner(rightSides[id]);
+        }
+
+        private boolean findPartner(Node src) {
+            if (src.visited) {
+                return false;
+            }
+            src.visited = true;
+            for (Node node : src.nodes) {
+                if (!tryRelease(node)) {
+                    continue;
                 }
+                node.partner = src;
+                src.partner = node;
+                return true;
             }
-            return (int) product;
+            return false;
         }
 
-        public static long longpow(long x, long n, long mod) {
-            if (n == 0) {
-                return 1;
+        private boolean tryRelease(Node src) {
+            if (src.visited) {
+                return false;
             }
-            long prod = longpow(x, n >> 1, mod);
-            prod = modmul(prod, prod, mod);
-            if ((n & 1) == 1) {
-                prod = modmul(prod, x, mod);
+            src.visited = true;
+            if (src.partner == null) {
+                return true;
             }
-            return prod;
+            if (findPartner(src.partner)) {
+                src.partner = null;
+                return true;
+            }
+            return false;
         }
 
-        /**
-         * Get x % mod
-         */
-        public static int mod(int x, int mod) {
-            x %= mod;
-            if (x < 0) {
-                x += mod;
-            }
-            return x;
-        }
-
-        public static int mod(long x, int mod) {
-            x %= mod;
-            if (x < 0) {
-                x += mod;
-            }
-            return (int) x;
-        }
-
-        /**
-         * Get n!/(n-m)!
-         */
-        public static long permute(int n, int m) {
-            return m == 0 ? 1 : n * permute(n - 1, m - 1);
-        }
-
-        /**
-         * Put all primes less or equal to limit into primes after offset
-         */
-        public static int eulerSieve(int limit, int[] primes, int offset) {
-            boolean[] isComp = new boolean[limit + 1];
-            int wpos = offset;
-            for (int i = 2; i <= limit; i++) {
-                if (!isComp[i]) {
-                    primes[wpos++] = i;
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 1; i < leftSides.length; i++) {
+                if (leftSides[i].partner == null) {
+                    continue;
                 }
-                for (int j = offset, until = limit / i; j < wpos && primes[j] <= until; j++) {
-                    int pi = primes[j] * i;
-                    isComp[pi] = true;
-                    if (i % primes[j] == 0) {
-                        break;
-                    }
-                }
+                builder.append(leftSides[i].id).append(" - ").append(leftSides[i].partner.id).append(" || ");
             }
-            return wpos - offset;
-        }
-
-        /**
-         * Round x into integer
-         */
-        public static int intRound(double x) {
-            if (x < 0) {
-                return -(int) (-x + 0.5);
+            if (builder.length() > 0) {
+                builder.setLength(builder.length() - 4);
             }
-            return (int) (x + 0.5);
-        }
-
-        /**
-         * Round x into long
-         */
-        public static long longRound(double x) {
-            if (x < 0) {
-                return -(long) (-x + 0.5);
-            }
-            return (long) (x + 0.5);
+            return builder.toString();
         }
     }
 
