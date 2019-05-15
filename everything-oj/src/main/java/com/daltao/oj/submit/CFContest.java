@@ -5,10 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class CFContest {
     public static void main(String[] args) throws Exception {
@@ -78,48 +75,84 @@ public class CFContest {
 
         public void solve() {
             int n = io.readInt();
-            int k = io.readInt();
-            Node[] nodes = new Node[n + 1];
+            TreeMap<Integer, Integer> map = new TreeMap<>();
+            BIT bit = new BIT(n + 1);
             for (int i = 1; i <= n; i++) {
-                nodes[i] = new Node();
+                bit.update(i, 1);
+                map.put(io.readInt(), i);
             }
 
-            for (int i = 1; i < n; i++) {
-                Node a = nodes[io.readInt()];
-                Node b = nodes[io.readInt()];
-                int c = io.readInt();
-                if (c == 0) {
-                    a.edges.add(b);
-                    b.edges.add(a);
-                }
+            while (!map.isEmpty()) {
+                int m = map.size();
+                Map.Entry<Integer, Integer> e = map.pollLastEntry();
+                int v = e.getKey();
+                int i = e.getValue();
+                int front = bit.query(i);
+                bit.update(i, -1);
             }
-
-            int total = Mathematics.pow(n, k, mod);
-            for(int i = 1; i <= n; i++)
-            {
-                int count = dfs(nodes[i]);
-                total = mod(total - Mathematics.pow(count, k, mod));
-            }
-
-            io.cache.append(total);
-        }
-
-        public int dfs(Node root) {
-            if (root.visited) {
-                return 0;
-            }
-            root.visited = true;
-            int count = 1;
-            for (Node node : root.edges) {
-                count += dfs(node);
-            }
-            return count;
         }
     }
 
+    public static class BIT {
+        private int[] data;
+        private int n;
+
+        /**
+         * 创建大小A[1...n]
+         */
+        public BIT(int n) {
+            this.n = n;
+            data = new int[n + 1];
+        }
+
+        /**
+         * 查询A[1]+A[2]+...+A[i]
+         */
+        public int query(int i) {
+            int sum = 0;
+            for (; i > 0; i -= i & -i) {
+                sum += data[i];
+            }
+            return sum;
+        }
+
+        /**
+         * 将A[i]更新为A[i]+mod
+         */
+        public void update(int i, int mod) {
+            for (; i <= n; i += i & -i) {
+                data[i] += mod;
+            }
+        }
+    }
+
+
     public static class Node {
-        List<Node> edges = new ArrayList<>();
-        boolean visited;
+        Node p = this;
+        int rank = 0;
+        int size = 1;
+
+        public Node find() {
+            return p.p == p ? p : (p = p.find());
+        }
+
+        static void union(Node a, Node b) {
+            a = a.find();
+            b = b.find();
+            if (a == b) {
+                return;
+            }
+            if (a.rank == b.rank) {
+                a.rank++;
+            }
+            if (a.rank > b.rank) {
+                b.p = a;
+                a.size += b.size;
+            } else {
+                a.p = b;
+                b.size += a.size;
+            }
+        }
     }
 
     public static class FastIO {
