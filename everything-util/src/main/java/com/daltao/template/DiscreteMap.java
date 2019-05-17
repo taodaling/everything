@@ -22,7 +22,17 @@ public class DiscreteMap {
         this.t = wpos;
     }
 
+    /**
+     * Return 0, 1, so on
+     */
     public int rankOf(int x) {
-        return Arrays.binarySearch(val, f, t, x);
+        return Arrays.binarySearch(val, f, t, x) - f;
+    }
+
+    /**
+     * Get the i-th smallest element
+     */
+    public int iThElement(int i) {
+        return val[f + i];
     }
 }
