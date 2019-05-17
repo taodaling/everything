@@ -6,7 +6,7 @@ import java.util.List;
 public class KMAlgo {
     public static class Node {
         List<Node> nodes = new ArrayList<>();
-        boolean visited;
+        int visited;
         Node partner;
         int id;
 
@@ -18,6 +18,7 @@ public class KMAlgo {
 
     Node[] leftSides;
     Node[] rightSides;
+    int version;
 
     public KMAlgo(int l, int r) {
         leftSides = new Node[l + 1];
@@ -38,12 +39,7 @@ public class KMAlgo {
     }
 
     private void init() {
-        for (int i = 1, until = leftSides.length; i < until; i++) {
-            leftSides[i].visited = false;
-        }
-        for (int i = 1, until = rightSides.length; i < until; i++) {
-            rightSides[i].visited = false;
-        }
+        version++;
     }
 
     /**
@@ -69,10 +65,10 @@ public class KMAlgo {
     }
 
     private boolean findPartner(Node src) {
-        if (src.visited) {
+        if (src.visited != version) {
             return false;
         }
-        src.visited = true;
+        src.visited = version;
         for (Node node : src.nodes) {
             if (!tryRelease(node)) {
                 continue;
@@ -85,10 +81,10 @@ public class KMAlgo {
     }
 
     private boolean tryRelease(Node src) {
-        if (src.visited) {
+        if (src.visited != version) {
             return false;
         }
-        src.visited = true;
+        src.visited = version;
         if (src.partner == null) {
             return true;
         }
