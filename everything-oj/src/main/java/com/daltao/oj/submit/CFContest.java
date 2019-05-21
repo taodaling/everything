@@ -5,7 +5,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
 public class CFContest {
     public static void main(String[] args) throws Exception {
@@ -74,58 +77,38 @@ public class CFContest {
         }
 
         public void solve() {
+            int m = io.readInt();
             int n = io.readInt();
-            TreeMap<Integer, Integer> map = new TreeMap<>();
-            BIT bit = new BIT(n + 1);
-            for (int i = 1; i <= n; i++) {
-                bit.update(i, 1);
-                map.put(io.readInt(), i);
+            Set<Integer>[] sets = new Set[m];
+            for (int i = 0; i < m; i++) {
+                sets[i] = new HashSet<>();
+                int k = io.readInt();
+                for (int j = 0; j < k; j++) {
+                    sets[i].add(io.readInt());
+                }
             }
 
-            while (!map.isEmpty()) {
-                int m = map.size();
-                Map.Entry<Integer, Integer> e = map.pollLastEntry();
-                int v = e.getKey();
-                int i = e.getValue();
-                int front = bit.query(i);
-                bit.update(i, -1);
+            for (int i = 0; i < m; i++) {
+                for (int j = i + 1; j < m; j++) {
+                    if (!intersect(sets[i], sets[j])) {
+                        io.cache.append("impossible");
+                        return;
+                    }
+                }
             }
+
+            io.cache.append("possible");
+        }
+
+        public boolean intersect(Set<Integer> a, Set<Integer> b) {
+            for (Integer x : a) {
+                if (b.contains(x)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
-
-    public static class BIT {
-        private int[] data;
-        private int n;
-
-        /**
-         * 创建大小A[1...n]
-         */
-        public BIT(int n) {
-            this.n = n;
-            data = new int[n + 1];
-        }
-
-        /**
-         * 查询A[1]+A[2]+...+A[i]
-         */
-        public int query(int i) {
-            int sum = 0;
-            for (; i > 0; i -= i & -i) {
-                sum += data[i];
-            }
-            return sum;
-        }
-
-        /**
-         * 将A[i]更新为A[i]+mod
-         */
-        public void update(int i, int mod) {
-            for (; i <= n; i += i & -i) {
-                data[i] += mod;
-            }
-        }
-    }
-
 
     public static class Node {
         Node p = this;
