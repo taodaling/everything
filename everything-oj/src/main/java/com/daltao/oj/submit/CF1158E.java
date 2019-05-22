@@ -81,6 +81,10 @@ public class CF1158E {
         int n;
         TreeSet<Integer> activeDepth = new TreeSet<>();
         TreeMap<Integer, Integer> queryDepth = new TreeMap<>();
+        TreeSet<Integer> extra = new TreeSet<>();
+        int m;
+        int remain;
+        int max = 0;
 
         public void solve() {
             //step 1
@@ -88,6 +92,7 @@ public class CF1158E {
             nodes = new Node[n + 1];
             for (int i = 1; i <= n; i++) {
                 nodes[i] = new Node();
+                nodes[i].id = i;
                 nodes[i].depthLeq = n;
                 nodes[i].depthGeq = 1;
                 nodes[i].depth = -1;
@@ -95,28 +100,21 @@ public class CF1158E {
 
             nodes[1].depthLeq = nodes[1].depthGeq = nodes[1].depth = 0;
             activeDepth.add(nodes[1].depth);
+            remain = n - 1;
 
-            int m = n;
-            while (m > 1) {
-                queryDepth.clear();
-                Iterator<Integer> iter = activeDepth.iterator();
-                while (iter.hasNext()) {
-                    int next = iter.next();
-                    int dist = iter.hasNext() ? iter.next() : n;
-                    queryDepth.put(next, dist);
-                }
 
-                for (int i = 0; i <= n; i += 2 * m) {
-                    activeDepth.add(i);
-                }
-                activeDepth.add(inf);
-
+            while (remain > 0) {
+                max = 0;
+                addQuery(0, 0);
                 ask();
+                addQuery(0, -1);
                 ask();
+                addQuery(1, 0);
                 ask();
+                addQuery(1, -1);
                 ask();
-
-                m /= 3;
+                activeDepth.addAll(extra);
+                extra.clear();
             }
 
             //step 2
@@ -127,6 +125,27 @@ public class CF1158E {
             io.cache.append("!\n");
             for (int i = 2; i <= n; i++) {
                 io.cache.append(i).append(' ').append(nodes[i].fatherId).append('\n');
+            }
+        }
+
+        public void addQuery(int skip, int fix) {
+            for (int i = 1; i <= n; i++) {
+                max = Math.max(max, nodes[i].depthLeq);
+            }
+
+            queryDepth.clear();
+            Iterator<Integer> iter = activeDepth.iterator();
+            for (int i = 0; i < skip && iter.hasNext(); i++) {
+                iter.next();
+            }
+            while (iter.hasNext()) {
+                int next = iter.next();
+                int dist = iter.hasNext() ? iter.next() : max;
+                dist = (dist - next) / 2;
+                dist += fix;
+                if (dist > 0) {
+                    queryDepth.put(next, dist);
+                }
             }
         }
 
@@ -171,8 +190,8 @@ public class CF1158E {
                 if (node.depth != -1) {
                     continue;
                 }
-                Integer floor = activeDepth.floor(node.depthGeq);
-                if (!queryDepth.containsKey(floor)) {
+                Integer floor = queryDepth.floorKey(node.depthGeq);
+                if (floor == null || floor + queryDepth.get(floor) < node.depthGeq) {
                     continue;
                 }
                 if (lights[i] == '1') {
@@ -183,11 +202,12 @@ public class CF1158E {
 
                 if (node.depthLeq == node.depthGeq) {
                     node.depth = node.depthLeq;
-                    activeDepth.add(node.depth);
+                    extra.add(node.depth);
+                    remain--;
                 }
             }
 
-            debug.allowDebug = true;
+            //debug.allowDebug = true;
             debug.debug("nodes", nodes);
         }
     }

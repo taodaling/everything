@@ -1,13 +1,14 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
+
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.Arrays;
+import java.util.*;
 
-public class OJCodeTemplate {
+public class CF1166F {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -74,6 +75,110 @@ public class OJCodeTemplate {
         }
 
         public void solve() {
+            int n = io.readInt();
+            int m = io.readInt();
+            int c = io.readInt();
+            int q = io.readInt();
+
+            Node[] nodes = new Node[n + 1];
+            for (int i = 1; i <= n; i++) {
+                nodes[i] = new Node();
+                nodes[i].id = i;
+            }
+            for (int i = 1; i <= m; i++) {
+                Node a = nodes[io.readInt()];
+                Node b = nodes[io.readInt()];
+                int z = io.readInt();
+                addEdge(a, b, z);
+            }
+
+            for (int i = 0; i < q; i++) {
+                char cmd = io.readChar();
+                Node a = nodes[io.readInt()];
+                Node b = nodes[io.readInt()];
+                if (cmd == '+') {
+                    int z = io.readInt();
+                    addEdge(a, b, z);
+                } else {
+                    if (b.find() == a.find() || a.find().nearby.contains(b)) {
+                        io.cache.append("Yes\n");
+                    } else {
+                        io.cache.append("No\n");
+                    }
+                }
+            }
+        }
+
+        static void addEdge(Node a, Node b, Integer c) {
+            Node ac = a.edges.get(c);
+            Node bc = b.edges.get(c);
+
+            a.edges.put(c, b);
+            b.edges.put(c, a);
+
+            Node af = a.find();
+            Node bf = b.find();
+
+            af.nearby.add(b);
+            bf.nearby.add(a);
+
+            Node.union(ac, bf);
+            Node.union(bc, af);
+        }
+    }
+
+    public static class Node {
+        Map<Integer, Node> edges = new HashMap<>();
+        Set<Node> nearby = new HashSet<>();
+
+        Node p = this;
+        int rank = 1;
+
+        int id;
+
+        Node find() {
+            Node root = p;
+            while (root.p != root) {
+                root = root.p;
+            }
+            return root;
+        }
+
+        static void union(Node a, Node b) {
+            if (a == null || b == null) {
+                return;
+            }
+            a = a.find();
+            b = b.find();
+            if (a == b) {
+                return;
+            }
+            if (a.rank <= b.rank) {
+                Node tmp = a;
+                a = b;
+                b = tmp;
+            }
+
+            a.rank += b.rank;
+            b.p = a;
+            a.nearby = CollectionUtils.mergeHeuristically(a.nearby, b.nearby);
+        }
+
+        @Override
+        public String toString() {
+            return "" + id;
+        }
+    }
+
+    public static class CollectionUtils {
+        public static <E, T extends Collection<E>> T mergeHeuristically(T a, T b) {
+            if (a.size() >= b.size()) {
+                a.addAll(b);
+                return a;
+            } else {
+                b.addAll(a);
+                return b;
+            }
         }
     }
 

@@ -149,17 +149,12 @@ public class CF1158ETest {
         @Override
         public Input newInstance() {
             QueueInput input = new QueueInput();
-            int n = nextInt(2, 6);
+            int n = nextInt(2, 60);
             input.add(n);
             for (int i = 2; i <= n; i++) {
                 input.add(String.format("%d %d", i, nextInt(1, i - 1)));
             }
-            input = new QueueInput().add("6\n" +
-                    "2 1\n" +
-                    "3 2\n" +
-                    "4 3\n" +
-                    "5 4\n" +
-                    "6 5\n");
+
             return input.end();
         }
     }
