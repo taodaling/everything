@@ -1,7 +1,5 @@
 package com.daltao.oj.tool;
 
-import java.lang.reflect.InvocationTargetException;
-
 public class MainMethod2Runnable implements Runnable {
     private Class cls;
 
