@@ -1,9 +1,13 @@
 package com.daltao.template;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ISAP {
     Node[] nodes;
@@ -11,10 +15,54 @@ public class ISAP {
     Node source;
     Node target;
     int nodeNum;
-    boolean bfsFlag;
+    Map<Long, DirectChannel> channelMap = new HashMap();
+    Deque<Node> deque;
+    boolean bfsFlag = false;
+
+    public List<Node> getComponentS() {
+        List<Node> result = new ArrayList();
+        for (int i = 1; i <= nodeNum; i++) {
+            nodes[i].visited = false;
+        }
+        deque.addLast(source);
+        source.visited = true;
+        while (!deque.isEmpty()) {
+            Node head = deque.removeFirst();
+            result.add(head);
+            for (Channel channel : head.channelList) {
+                if (channel.getFlow() == channel.getCapacity()) {
+                    continue;
+                }
+                Node node = channel.getDst();
+                if (node.visited) {
+                    continue;
+                }
+                node.visited = true;
+                deque.addLast(node);
+            }
+        }
+        return result;
+    }
+
+    public Collection<DirectChannel> getChannels() {
+        return channelMap.values();
+    }
+
+    public DirectChannel getChannel(int src, int dst) {
+        Long id = (((long) src) << 32) | dst;
+        DirectChannel channel = channelMap.get(id);
+        if (channel == null) {
+            channel = new DirectChannel(nodes[src], nodes[dst], 0, id.hashCode());
+            nodes[src].channelList.add(channel);
+            nodes[dst].channelList.add(channel.getInverse());
+            channelMap.put(id, channel);
+        }
+        return channel;
+    }
 
     public ISAP(int nodeNum) {
         this.nodeNum = nodeNum;
+        deque = new ArrayDeque(nodeNum);
         nodes = new Node[nodeNum + 1];
         distanceCnt = new int[nodeNum + 2];
         for (int i = 1; i <= nodeNum; i++) {
@@ -24,28 +72,29 @@ public class ISAP {
         }
     }
 
-    public int sendFlow(int flow) {
-        int flowSnapshot = flow;
+    public double sendFlow(double flow) {
+        bfs();
+        double flowSnapshot = flow;
         while (flow > 0 && source.distance < nodeNum) {
             flow -= send(source, flow);
         }
         return flowSnapshot - flow;
     }
 
-    public int send(Node node, int flowRemain) {
+    public double send(Node node, double flowRemain) {
         if (node == target) {
             return flowRemain;
         }
 
-        int flowSnapshot = flowRemain;
+        double flowSnapshot = flowRemain;
         int nextDistance = node.distance - 1;
         for (Channel channel : node.channelList) {
-            int channelRemain = channel.getCapacity() - channel.getFlow();
+            double channelRemain = channel.getCapacity() - channel.getFlow();
             Node dst = channel.getDst();
             if (channelRemain == 0 || dst.distance != nextDistance) {
                 continue;
             }
-            int actuallySend = send(channel.getDst(), Math.min(flowRemain, channelRemain));
+            double actuallySend = send(channel.getDst(), Math.min(flowRemain, channelRemain));
             channel.sendFlow(actuallySend);
             flowRemain -= actuallySend;
             if (flowRemain == 0) {
@@ -77,23 +126,23 @@ public class ISAP {
         target = nodes[id];
     }
 
-    public DirectChannel buildChannel(int a, int b, int flow, int id) {
-        return Node.buildChannel(nodes[a], nodes[b], flow, id);
-    }
-
-    public void bfs(Deque<Node> queue) {
+    public void bfs() {
+        if (bfsFlag) {
+            return;
+        }
+        bfsFlag = true;
         Arrays.fill(distanceCnt, 0);
-        queue.clear();
+        deque.clear();
 
         for (int i = 1; i <= nodeNum; i++) {
             nodes[i].distance = nodeNum;
         }
 
         target.distance = 0;
-        queue.addLast(target);
+        deque.addLast(target);
 
-        while (!queue.isEmpty()) {
-            Node head = queue.removeFirst();
+        while (!deque.isEmpty()) {
+            Node head = deque.removeFirst();
             distanceCnt[head.distance]++;
             for (Channel channel : head.channelList) {
                 Channel inverse = channel.getInverse();
@@ -105,7 +154,7 @@ public class ISAP {
                     continue;
                 }
                 dst.distance = head.distance + 1;
-                queue.addLast(dst);
+                deque.addLast(dst);
             }
         }
     }
@@ -115,11 +164,11 @@ public class ISAP {
 
         public Node getDst();
 
-        public int getCapacity();
+        public double getCapacity();
 
-        public int getFlow();
+        public double getFlow();
 
-        public void sendFlow(int volume);
+        public void sendFlow(double volume);
 
         public Channel getInverse();
     }
@@ -128,8 +177,8 @@ public class ISAP {
         final Node src;
         final Node dst;
         final int id;
-        int capacity;
-        int flow;
+        double capacity;
+        double flow;
         Channel inverse;
 
         public DirectChannel(Node src, Node dst, int capacity, int id) {
@@ -138,6 +187,11 @@ public class ISAP {
             this.capacity = capacity;
             this.id = id;
             inverse = new InverseChannelWrapper(this);
+        }
+
+        public void modify(double cap, double flow) {
+            this.flow = flow;
+            this.capacity = cap;
         }
 
         @Override
@@ -166,17 +220,17 @@ public class ISAP {
         }
 
         @Override
-        public int getCapacity() {
+        public double getCapacity() {
             return capacity;
         }
 
         @Override
-        public int getFlow() {
+        public double getFlow() {
             return flow;
         }
 
         @Override
-        public void sendFlow(int volume) {
+        public void sendFlow(double volume) {
             flow += volume;
         }
 
@@ -207,17 +261,17 @@ public class ISAP {
         }
 
         @Override
-        public int getCapacity() {
+        public double getCapacity() {
             return channel.getFlow();
         }
 
         @Override
-        public int getFlow() {
+        public double getFlow() {
             return 0;
         }
 
         @Override
-        public void sendFlow(int volume) {
+        public void sendFlow(double volume) {
             channel.sendFlow(-volume);
         }
 
@@ -231,18 +285,21 @@ public class ISAP {
     public static class Node {
         int id;
         int distance;
-        List<Channel> channelList = new ArrayList<>(1);
-
-        public static DirectChannel buildChannel(Node src, Node dst, int capacity, int id) {
-            DirectChannel channel = new DirectChannel(src, dst, capacity, id);
-            src.channelList.add(channel);
-            dst.channelList.add(channel.getInverse());
-            return channel;
-        }
+        boolean visited;
+        List<Channel> channelList = new ArrayList(1);
 
         @Override
         public String toString() {
             return "" + id;
         }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for (DirectChannel channel : getChannels()) {
+            builder.append(channel).append('\n');
+        }
+        return builder.toString();
     }
 }
