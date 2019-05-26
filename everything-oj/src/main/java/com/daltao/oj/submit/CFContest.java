@@ -5,10 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 public class CFContest {
     public static void main(String[] args) throws Exception {
@@ -39,7 +36,7 @@ public class CFContest {
     public static class Task implements Runnable {
         final FastIO io;
         final Debug debug;
-        int inf = (int) 1e8;
+        int inf = (int) 1e9;
         int mod = (int) 1e9 + 7;
 
         public int mod(int val) {
@@ -77,66 +74,125 @@ public class CFContest {
         }
 
         public void solve() {
-            int m = io.readInt();
-            int n = io.readInt();
-            Set<Integer>[] sets = new Set[m];
-            for (int i = 0; i < m; i++) {
-                sets[i] = new HashSet<>();
-                int k = io.readInt();
-                for (int j = 0; j < k; j++) {
-                    sets[i].add(io.readInt());
+            int t = io.readInt();
+            for (int i = 1; i <= t; i++) {
+                solveSingle(i);
+            }
+        }
+
+        public void solveSingle(int testCase) {
+            int r = io.readInt();
+            int c = io.readInt();
+            int k = io.readInt();
+            int[][] mat = new int[r][c];
+            int[][] up = new int[r][c];
+            int[][] down = new int[r][c];
+            int[][] right = new int[r][c];
+            MinQueue<Integer> minQueue = new MinQueue<Integer>(c, Comparator.naturalOrder());
+            MinQueue<Integer> maxQueue = new MinQueue<Integer>(c, Comparator.reverseOrder());
+            for (int i = 0; i < r; i++) {
+                for (int j = 0; j < c; j++) {
+                    mat[i][j] = io.readInt();
                 }
             }
 
-            for (int i = 0; i < m; i++) {
-                for (int j = i + 1; j < m; j++) {
-                    if (!intersect(sets[i], sets[j])) {
-                        io.cache.append("impossible");
-                        return;
+            for (int i = 0; i < r; i++) {
+                minQueue.clear();
+                maxQueue.clear();
+                for (int j = c - 1; j >= 0; j--) {
+                    minQueue.enqueue(mat[i][j]);
+                    maxQueue.enqueue(mat[i][j]);
+                    while (maxQueue.query() - minQueue.query() > k) {
+                        maxQueue.deque();
+                        minQueue.deque();
                     }
+                    right[i][j] = maxQueue.data.size();
                 }
             }
 
-            io.cache.append("possible");
-        }
-
-        public boolean intersect(Set<Integer> a, Set<Integer> b) {
-            for (Integer x : a) {
-                if (b.contains(x)) {
-                    return true;
+            TreeMap<Double, Integer> map = new TreeMap<>();
+            for (int i = 0; i < c; i++) {
+                map.clear();
+                for (int j = 0; j < r; j++) {
+                    Map.Entry<Double, Integer> entry = map.floorEntry((double) right[j][i] - 0.5);
+                    if (entry == null) {
+                        down[j][i] = j;
+                    } else {
+                        down[j][i] = j - entry.getValue() - 1;
+                    }
+                    while (!map.isEmpty() && map.lastKey() >= right[j][i]) {
+                        map.pollLastEntry();
+                    }
+                    map.put((double) right[j][i], j);
                 }
             }
-            return false;
+
+            for (int i = 0; i < c; i++) {
+                map.clear();
+                for (int j = r - 1; j >= 0; j--) {
+                    Map.Entry<Double, Integer> entry = map.floorEntry((double) right[j][i] - 0.5);
+                    if (entry == null) {
+                        down[j][i] = r - j - 1;
+                    } else {
+                        down[j][i] = entry.getValue() - j - 1;
+                    }
+                    while (!map.isEmpty() && map.lastKey() >= right[j][i]) {
+                        map.pollLastEntry();
+                    }
+                    map.put((double) right[j][i], j);
+                }
+            }
+
+            int max = 0;
+            for (int i = 0; i < r; i++) {
+                for (int j = 0; j < c; j++) {
+                    max = Math.max(max, right[i][j] * (up[i][j] + down[i][j] + 1));
+                }
+            }
+            io.cache.append(String.format("Case #%d: %d\n", testCase, max));
+        }
+
+
+    }
+
+
+    public static class MinQueue<T> {
+        Deque<T> data;
+        Deque<T> increasing;
+        Comparator<T> comparator;
+
+        public MinQueue(int cap, Comparator<T> comparator) {
+            data = new ArrayDeque<>(cap);
+            increasing = new ArrayDeque<>(cap);
+            this.comparator = comparator;
+        }
+
+        public void enqueue(T x) {
+            while (!increasing.isEmpty() && comparator.compare(x, increasing.peekLast()) < 0) {
+                increasing.removeLast();
+            }
+            increasing.addLast(x);
+            data.addLast(x);
+        }
+
+        public T deque() {
+            T head = data.removeFirst();
+            if (increasing.peekFirst() == head) {
+                increasing.removeFirst();
+            }
+            return head;
+        }
+
+        public void clear() {
+            data.clear();
+            increasing.clear();
+        }
+
+        public T query() {
+            return increasing.peekFirst();
         }
     }
 
-    public static class Node {
-        Node p = this;
-        int rank = 0;
-        int size = 1;
-
-        public Node find() {
-            return p.p == p ? p : (p = p.find());
-        }
-
-        static void union(Node a, Node b) {
-            a = a.find();
-            b = b.find();
-            if (a == b) {
-                return;
-            }
-            if (a.rank == b.rank) {
-                a.rank++;
-            }
-            if (a.rank > b.rank) {
-                b.p = a;
-                a.size += b.size;
-            } else {
-                a.p = b;
-                b.size += a.size;
-            }
-        }
-    }
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder();
