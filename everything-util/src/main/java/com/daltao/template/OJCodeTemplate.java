@@ -37,31 +37,6 @@ public class OJCodeTemplate {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        int mod = (int) 1e9 + 7;
-
-        public int mod(int val) {
-            val %= mod;
-            if (val < 0) {
-                val += mod;
-            }
-            return val;
-        }
-
-        public int mod(long val) {
-            val %= mod;
-            if (val < 0) {
-                val += mod;
-            }
-            return (int) val;
-        }
-
-        int bitAt(int x, int i) {
-            return (x >> i) & 1;
-        }
-
-        int bitAt(long x, int i) {
-            return (int) ((x >> i) & 1);
-        }
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -367,5 +342,4 @@ public class OJCodeTemplate {
             System.out.println(Arrays.deepToString(x));
         }
     }
-
 }

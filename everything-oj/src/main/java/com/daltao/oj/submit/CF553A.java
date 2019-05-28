@@ -1,13 +1,15 @@
 package com.daltao.oj.submit;
 
-        import java.io.FileInputStream;
-        import java.io.IOException;
-        import java.io.InputStream;
-        import java.io.OutputStream;
-        import java.nio.charset.Charset;
-        import java.util.Arrays;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Random;
 
-public class HDU5446 {
+public class CF553A {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -45,38 +47,41 @@ public class HDU5446 {
 
         @Override
         public void run() {
-            int t = io.readInt();
-            while (t-- > 0) {
-                solve();
-            }
+            solve();
         }
 
-        int limit = 100000;
-        int[] fact = new int[limit + 1];
-        int[] invFact = new int[limit + 1];
-        int[] inv = new int[limit + 1];
-
         public void solve() {
-            int n = io.readInt();
-            int m = io.readInt();
             int k = io.readInt();
-            MathUtils.ExtCRT extCRT = new MathUtils.ExtCRT();
-            for (int i = 0; i < k; i++) {
-                int p = io.readInt();
-                MathUtils.Modular modular = new MathUtils.Modular(p);
-                MathUtils.InverseNumber inverseNumber = new MathUtils.InverseNumber(inv, p - 1, modular);
-                MathUtils.Factorial factorial = new MathUtils.Factorial(fact, invFact, inverseNumber, p - 1, modular);
-                MathUtils.Composite composite = new MathUtils.Composite(factorial, modular);
-                MathUtils.Lucas lucas = new MathUtils.Lucas(composite);
-                int comp = lucas.composite(n, m);
-                extCRT.add(comp, p);
+            int[] cnt = new int[k + 1];
+            int[] prefixSum = new int[k + 1];
+            int total = 0;
+            for (int i = 1; i <= k; i++) {
+                cnt[i] = io.readInt();
+                total += cnt[i];
+                prefixSum[i] = prefixSum[i - 1] + cnt[i];
             }
-            io.cache.append(extCRT.r).append(System.lineSeparator());
+
+            MathUtils.Modular modular = new MathUtils.Modular((int) 1e9 + 7);
+            MathUtils.Composite composite = new MathUtils.Composite(total, modular);
+            int[] dp = new int[k + 1];
+            dp[1] = 1;
+            for (int i = 2; i <= k; i++) {
+                for (int j = 0; j <= cnt[i] - 1; j++) {
+                    dp[i] = modular.plus(dp[i], modular.mul(dp[i - 1], composite.composite(prefixSum[i] - j - 2, cnt[i] - j - 1)));
+                }
+            }
+
+            io.cache.append(dp[k]);
         }
     }
 
     public static class MathUtils {
-        public static class ExtGCD {
+        private static Random random = new Random(123456789);
+
+        /**
+         * 扩展欧几里得
+         */
+        public static class ExtGCD extends Gcd {
             private long x;
             private long y;
 
@@ -115,6 +120,27 @@ public class HDU5446 {
             }
         }
 
+        public static class Gcd {
+            public long gcd(long a, long b) {
+                return a >= b ? gcd0(a, b) : gcd0(b, a);
+            }
+
+            private long gcd0(long a, long b) {
+                return b == 0 ? a : gcd0(b, a % b);
+            }
+
+            public int gcd(int a, int b) {
+                return a >= b ? gcd0(a, b) : gcd0(b, a);
+            }
+
+            private int gcd0(int a, int b) {
+                return b == 0 ? a : gcd0(b, a % b);
+            }
+        }
+
+        /**
+         * 欧拉筛
+         */
         public static class EulerSieve {
             int[] primes;
             boolean[] isComp;
@@ -139,6 +165,9 @@ public class HDU5446 {
             }
         }
 
+        /**
+         * 模运算
+         */
         public static class Modular {
             final int m;
 
@@ -166,12 +195,19 @@ public class HDU5446 {
                 return valueOf((long) x * y);
             }
 
+            public int plus(int x, int y) {
+                return valueOf(x + y);
+            }
+
             @Override
             public String toString() {
                 return "mod " + m;
             }
         }
 
+        /**
+         * 位运算
+         */
         public static class BitOperator {
             public int bitAt(int x, int i) {
                 return (x >> i) & 1;
@@ -200,6 +236,9 @@ public class HDU5446 {
             }
         }
 
+        /**
+         * 幂运算
+         */
         public static class Power {
             final Modular modular;
 
@@ -236,6 +275,9 @@ public class HDU5446 {
             }
         }
 
+        /**
+         * 对数
+         */
         public static class Log2 {
             public int ceilLog(int x) {
                 return 32 - Integer.numberOfLeadingZeros(x - 1);
@@ -254,6 +296,9 @@ public class HDU5446 {
             }
         }
 
+        /**
+         * 乘法逆元
+         */
         public static class InverseNumber {
             int[] inv;
 
@@ -273,6 +318,9 @@ public class HDU5446 {
             }
         }
 
+        /**
+         * 排列
+         */
         public static class Factorial {
             int[] fact;
             int[] inv;
@@ -292,6 +340,9 @@ public class HDU5446 {
             }
         }
 
+        /**
+         * 组合
+         */
         public static class Composite {
             final Factorial factorial;
             final Modular modular;
@@ -313,10 +364,186 @@ public class HDU5446 {
             }
         }
 
+        /**
+         * 大素数测试
+         */
         public static class MillerRabin {
+            Modular modular;
+            Power power;
 
+            /**
+             * 判断n是否是素数
+             */
+            public boolean mr(int n, int s) {
+                if (n == 2) {
+                    return true;
+                }
+                if (n % 2 == 0) {
+                    return false;
+                }
+                modular = new Modular(n);
+                power = new Power(modular);
+                for (int i = 0; i < s; i++) {
+                    int x = random.nextInt(n - 2) + 2;
+                    if (!mr0(x, n)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            private boolean mr0(int x, int n) {
+                int exp = n - 1;
+                while (true) {
+                    int y = power.pow(x, exp);
+                    if (y != 1 && y != n - 1) {
+                        return false;
+                    }
+                    if (y != 1 || exp % 2 == 1) {
+                        break;
+                    }
+                    exp = exp / 2;
+                }
+                return true;
+            }
         }
 
+
+        public static class LongModular {
+            final long m;
+
+            public LongModular(long m) {
+                this.m = m;
+            }
+
+            public long mul(long a, long b) {
+                return b == 0 ? 0 : ((mul(a, b >> 1) << 1) % m + a * (b & 1)) % m;
+            }
+
+            public long plus(long a, long b) {
+                return valueOf(a + b);
+            }
+
+            public long valueOf(long a) {
+                a %= m;
+                if (a < 0) {
+                    a += m;
+                }
+                return a;
+            }
+        }
+
+        public static class LongPower {
+            final LongModular modular;
+
+            public LongPower(LongModular modular) {
+                this.modular = modular;
+            }
+
+            long pow(long x, long n) {
+                if (n == 0) {
+                    return 1;
+                }
+                long r = pow(x, n >> 1);
+                r = modular.mul(r, r);
+                if ((n & 1) == 1) {
+                    r = modular.mul(r, x);
+                }
+                return r;
+            }
+
+            long inverse(long x) {
+                return pow(x, modular.m - 2);
+            }
+        }
+
+        /**
+         * 大素数测试
+         */
+        public static class LongMillerRabin {
+            LongModular modular;
+            LongPower power;
+
+            /**
+             * 判断n是否是素数
+             */
+            public boolean mr(long n, int s) {
+                if (n == 2) {
+                    return true;
+                }
+                if (n % 2 == 0) {
+                    return false;
+                }
+                modular = new LongModular(n);
+                power = new LongPower(modular);
+                for (int i = 0; i < s; i++) {
+                    long x = (long) (random.nextDouble() * (n - 2) + 2);
+                    if (!mr0(x, n)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            private boolean mr0(long x, long n) {
+                long exp = n - 1;
+                while (true) {
+                    long y = power.pow(x, exp);
+                    if (y != 1 && y != n - 1) {
+                        return false;
+                    }
+                    if (y != 1 || exp % 2 == 1) {
+                        break;
+                    }
+                    exp = exp / 2;
+                }
+                return true;
+            }
+        }
+
+        public static class LongPollardRho {
+            LongMillerRabin mr = new LongMillerRabin();
+            Gcd gcd = new Gcd();
+            LongModular modular;
+
+
+            public long findFactor(long n) {
+                if (mr.mr(n, 3)) {
+                    return n;
+                }
+                modular = new LongModular(n);
+                while (true) {
+                    long f = findFactor0((long) (random.nextDouble() * n), (long) (random.nextDouble() * n), n);
+                    if (f != -1) {
+                        return f;
+                    }
+                }
+            }
+
+            private long findFactor0(long x, long c, long n) {
+                long xi = x;
+                long xj = x;
+                int j = 2;
+                int i = 1;
+                while (i < n) {
+                    i++;
+                    xi = modular.plus(modular.mul(xi, xi), c);
+                    long g = gcd.gcd(n, Math.abs(xi - xj));
+                    if (g != 1 && g != n) {
+                        return g;
+                    }
+                    if (i == j) {
+                        j = j << 1;
+                        xj = xi;
+                    }
+                }
+                return -1;
+            }
+        }
+
+        /**
+         * 扩展中国余数定理
+         */
         public static class ExtCRT {
             /**
              * remainder
@@ -333,18 +560,28 @@ public class HDU5446 {
                 m = 1;
             }
 
-            public boolean add(int r, int m) {
-                long g = gcd.extgcd(this.m, m);
-                if ((r - this.r) % g != 0) {
+            public boolean add(long r, long m) {
+                long m1 = this.m;
+                long x1 = this.r;
+                long m2 = m;
+                long x2 = ((r % m) + m) % m;
+                long g = gcd.extgcd(m1, m2);
+                long a = gcd.getX();
+                if ((x2 - x1) % g != 0) {
                     return false;
                 }
-                long k = gcd.getX() * ((r - this.r) / g);
-                this.r = k * this.m + this.r;
-                this.m = this.m / g * m;
+                this.m = m1 / g * m2;
+                this.r = BigInteger.valueOf(a).multiply(BigInteger.valueOf((x2 - x1) / g))
+                        .multiply(BigInteger.valueOf(m1)).add(BigInteger.valueOf(x1))
+                        .mod(BigInteger.valueOf(this.m)).longValue();
                 return true;
             }
         }
 
+
+        /**
+         * 卢卡斯定理
+         */
         public static class Lucas {
             private final Composite composite;
             private int modulus;
@@ -360,6 +597,47 @@ public class HDU5446 {
                 }
                 return composite.modular.mul(composite.composite((int) (m % modulus), (int) (n % modulus)),
                         composite(m / modulus, n / modulus));
+            }
+        }
+
+        /**
+         * 因式分解
+         */
+        public static class PollardRho {
+            MillerRabin mr = new MillerRabin();
+            Gcd gcd = new Gcd();
+            Random random = new Random(123456789);
+
+            public int findFactor(int n) {
+                if (mr.mr(n, 10)) {
+                    return n;
+                }
+                while (true) {
+                    int f = findFactor0(random.nextInt(n), random.nextInt(n), n);
+                    if (f != -1) {
+                        return f;
+                    }
+                }
+            }
+
+            private int findFactor0(int x, int c, int n) {
+                int xi = x;
+                int xj = x;
+                int j = 2;
+                int i = 1;
+                while (i < n) {
+                    i++;
+                    xi = (int) ((long) xi * xi + c) % n;
+                    int g = gcd.gcd(n, Math.abs(xi - xj));
+                    if (g != 1 && g != n) {
+                        return g;
+                    }
+                    if (i == j) {
+                        j = j << 1;
+                        xj = xi;
+                    }
+                }
+                return -1;
             }
         }
     }
