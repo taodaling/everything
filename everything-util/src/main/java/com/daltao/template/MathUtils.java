@@ -1,10 +1,134 @@
 package com.daltao.template;
 
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class MathUtils {
     private static Random random = new Random(123456789);
+
+    public static class ExtLucasFactorial {
+        int exp;
+        int fact;
+        int p;
+        int pc;
+        Modular modular;
+        Power power;
+        ExtGCD extGCD = new ExtGCD();
+        int[] g;
+
+        /**
+         * O(pc)
+         *
+         * @param p  the prime
+         * @param pc p^c
+         * @param g  buffer
+         */
+        public ExtLucasFactorial(int p, int pc, int[] g) {
+            this.p = p;
+            this.pc = pc;
+            this.g = g;
+            modular = new Modular(pc);
+            power = new Power(modular);
+            g[0] = 1;
+            g[1] = 1;
+            for (int i = 2; i <= pc; i++) {
+                if (i % p == 0) {
+                    g[i] = g[i - 1];
+                } else {
+                    g[i] = modular.mul(g[i - 1], i);
+                }
+            }
+        }
+
+        /**
+         * return m! (mod pc) without any factor which is multiple of p.
+         * <br>
+         * O(\log_2^2{m})
+         */
+        private int fact(long m) {
+            fact = 1;
+            exp = 0;
+            while (m > 1) {
+                exp += m / p;
+                fact = modular.mul(fact, power.pow(g[pc], m / pc));
+                fact = modular.mul(fact, g[(int)(m % pc)]);
+                m /= p;
+            }
+            return fact;
+        }
+
+        /**
+         * Find C(m,n), it means choose n elements from a set whose size is m.
+         * <br>
+         * O(\log_2^2{m})
+         */
+        public int composite(long m, long n) {
+            int v = fact(m);
+            int e = exp;
+            extGCD.extgcd(fact(n), pc);
+            v = modular.mul(v, modular.valueOf(extGCD.getX()));
+            e -= exp;
+            extGCD.extgcd(fact(m - n), pc);
+            v = modular.mul(v, modular.valueOf(extGCD.getX()));
+            e -= exp;
+            v = modular.mul(v, power.pow(p, e));
+            return v;
+        }
+    }
+
+    /**
+     * 扩展卢卡斯算法
+     */
+    public static class ExtLucas {
+        PollardRho pr = new PollardRho();
+        Map<Integer, ExtLucasFactorial> factorialMap = new HashMap();
+
+        public ExtLucas(int p) {
+            Map<Integer, Integer> factors = pr.findAllFactors(p);
+            for (Map.Entry<Integer, Integer> entry : factors.entrySet()) {
+                factorialMap.put(entry.getValue(), new ExtLucasFactorial(entry.getKey(), entry.getValue(), new int[entry.getValue() + 1]));
+            }
+        }
+
+        /**
+         * Get C(m, n) % p
+         */
+        public int composite(long m, long n) {
+            ExtCRT extCRT = new ExtCRT();
+            for (Map.Entry<Integer, ExtLucasFactorial> entry : factorialMap.entrySet()) {
+                extCRT.add(entry.getValue().composite(m, n), entry.getKey());
+            }
+            return (int) extCRT.r;
+        }
+    }
+
+    /**
+     * 扩展卢卡斯算法
+     */
+    public static class LongExtLucas {
+        LongPollardRho pr = new LongPollardRho();
+        Map<Integer, ExtLucasFactorial> factorialMap = new HashMap();
+
+        public LongExtLucas(long p) {
+            Map<Long, Long> factors = pr.findAllFactors(p);
+            for (Map.Entry<Long, Long> entry : factors.entrySet()) {
+                factorialMap.put(entry.getValue().intValue(), new ExtLucasFactorial(entry.getKey().intValue(), entry.getValue().intValue(), new int[entry.getValue().intValue() + 1]));
+            }
+        }
+
+        /**
+         * Get C(m, n) % p
+         */
+        public int composite(long m, long n) {
+            ExtCRT extCRT = new ExtCRT();
+            for (Map.Entry<Integer, ExtLucasFactorial> entry : factorialMap.entrySet()) {
+                extCRT.add(entry.getValue().composite(m, n), entry.getKey());
+            }
+            return (int) extCRT.r;
+        }
+    }
 
     /**
      * 扩展欧几里得
@@ -21,6 +145,9 @@ public class MathUtils {
             return y;
         }
 
+        /**
+         * Get g = Gcd(a, b) and find a way to set x and y to match ax+by=g
+         */
         public long extgcd(long a, long b) {
             if (a >= b) {
                 return extgcd0(a, b);
@@ -174,7 +301,7 @@ public class MathUtils {
             this.modular = modular;
         }
 
-        public int pow(int x, int n) {
+        public int pow(int x, long n) {
             if (n == 0) {
                 return 1;
             }
@@ -434,7 +561,9 @@ public class MathUtils {
         Gcd gcd = new Gcd();
         LongModular modular;
 
-
+        /**
+         * Find a factor of n, if n is returned, it means n is 1 or a prime
+         */
         public long findFactor(long n) {
             if (mr.mr(n, 3)) {
                 return n;
@@ -467,6 +596,35 @@ public class MathUtils {
             }
             return -1;
         }
+
+        /**
+         * Find the representation of n=p1^c1 * p2^c2 * ... * pm ^ cm.
+         * <br>
+         * The returned map contained such entries: pi -> pi^ci
+         */
+        public Map<Long, Long> findAllFactors(long n) {
+            Map<Long, Long> map = new HashMap();
+            findAllFactors(map, n);
+            return map;
+        }
+
+        private void findAllFactors(Map<Long, Long> map, long n) {
+            if (n == 1) {
+                return;
+            }
+            long f = findFactor(n);
+            if (f == n) {
+                Long value = map.get(f);
+                if (value == null) {
+                    value = 1L;
+                }
+                map.put(f, value * f);
+                return;
+            }
+            findAllFactors(map, f);
+            findAllFactors(map, n / f);
+        }
+
     }
 
     /**
@@ -488,6 +646,9 @@ public class MathUtils {
             m = 1;
         }
 
+        /**
+         * Add a new condition: x % m = r
+         */
         public boolean add(long r, long m) {
             long m1 = this.m;
             long x1 = this.r;
@@ -505,7 +666,6 @@ public class MathUtils {
             return true;
         }
     }
-
 
     /**
      * 卢卡斯定理
@@ -546,6 +706,29 @@ public class MathUtils {
                     return f;
                 }
             }
+        }
+
+        public Map<Integer, Integer> findAllFactors(int n) {
+            Map<Integer, Integer> map = new HashMap();
+            findAllFactors(map, n);
+            return map;
+        }
+
+        private void findAllFactors(Map<Integer, Integer> map, int n) {
+            if (n == 1) {
+                return;
+            }
+            int f = findFactor(n);
+            if (f == n) {
+                Integer value = map.get(f);
+                if (value == null) {
+                    value = 1;
+                }
+                map.put(f, value * f);
+                return;
+            }
+            findAllFactors(map, f);
+            findAllFactors(map, n / f);
         }
 
         private int findFactor0(int x, int c, int n) {
