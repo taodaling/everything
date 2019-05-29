@@ -15,18 +15,18 @@ public class St<T> {
 
     public St(Object[] data, int length, Comparator<T> comparator) {
         int m = floorLog2(length);
-        st = new Object[length][m + 1];
+        st = new Object[m + 1][length];
         this.comparator = comparator;
         for (int i = 0; i < length; i++) {
-            st[i][0] = data[i];
+            st[0][i] = data[i];
         }
         for (int i = 0; i < m; i++) {
             int interval = 1 << i;
             for (int j = 0; j < length; j++) {
                 if (j + interval < length) {
-                    st[j][i + 1] = min((T) st[j][i], (T) st[j + interval][i]);
+                    st[i + 1][j] = min((T) st[i][j], (T) st[i][j + interval]);
                 } else {
-                    st[j][i + 1] = st[j][i];
+                    st[i + 1][j] = st[i][j];
                 }
             }
         }
@@ -61,6 +61,6 @@ public class St<T> {
         int bit = floorLogTable[queryLen];
         //x + 2^bit == right + 1
         //So x should be right + 1 - 2^bit - left=queryLen - 2^bit
-        return min((T) st[left][bit], (T) st[right + 1 - (1 << bit)][bit]);
+        return min((T) st[bit][left], (T) st[bit][right + 1 - (1 << bit)]);
     }
 }
