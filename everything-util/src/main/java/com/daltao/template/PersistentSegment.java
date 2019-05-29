@@ -1,8 +1,8 @@
 package com.daltao.template;
 
-public class PersistentSegmentCandidate implements Cloneable{
-    private PersistentSegmentCandidate left;
-    private PersistentSegmentCandidate right;
+public class PersistentSegment implements Cloneable{
+    private PersistentSegment left;
+    private PersistentSegment right;
 
     public void pushUp() {
     }
@@ -12,7 +12,7 @@ public class PersistentSegmentCandidate implements Cloneable{
         right = right.clone();
     }
 
-    public PersistentSegmentCandidate(int l, int r) {
+    public PersistentSegment(int l, int r) {
         left = right = this;
     }
 
@@ -52,9 +52,9 @@ public class PersistentSegmentCandidate implements Cloneable{
     }
 
     @Override
-    public PersistentSegmentCandidate clone() {
+    public PersistentSegment clone() {
         try {
-            return (PersistentSegmentCandidate) super.clone();
+            return (PersistentSegment) super.clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }

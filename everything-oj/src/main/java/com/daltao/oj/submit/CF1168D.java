@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class CF593DV2 {
+public class CF1168D {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -50,241 +50,163 @@ public class CF593DV2 {
             solve();
         }
 
-
-        int n;
-
-        int edgeOf(int i) {
-            return i + n - 1;
-        }
-
-        int nodeOf(int i) {
-            return i - 1;
-        }
+        Node[] nodes;
 
         public void solve() {
-            n = io.readInt();
-            int m = io.readInt();
-            HeavyLightDecompose hld = new HeavyLightDecompose(n + n - 1, 0);
-
+            int n = io.readInt();
+            int q = io.readInt();
+            nodes = new Node[n + 1];
             for (int i = 1; i <= n; i++) {
-                hld.setInitVal(nodeOf(i), 1);
-            }
-
-            for (int i = 1; i < n; i++) {
-                int a = nodeOf(io.readInt());
-                int b = nodeOf(io.readInt());
-                int edge = edgeOf(i);
-                long x = io.readLong();
-                hld.addEdge(a, edge);
-                hld.addEdge(b, edge);
-                hld.setInitVal(edge, x);
-            }
-
-            hld.finish();
-            for (int i = 0; i < m; i++) {
-                int t = io.readInt();
-                if (t == 1) {
-                    int a = nodeOf(io.readInt());
-                    int b = nodeOf(io.readInt());
-                    long y = io.readLong();
-                    long x = hld.processPath(a, b);
-                    io.cache.append(y / x).append('\n');
-                } else {
-                    int p = io.readInt();
-                    long c = io.readLong();
-                    hld.updateVal(edgeOf(p), c);
-                }
-            }
-        }
-    }
-
-    private static final long INF = (long) 2e18;
-
-    private static long mul(long a, long b) {
-        if ((double)a * b >= INF) {
-            return INF;
-        } else {
-            return a * b;
-        }
-    }
-
-
-
-    public static class HeavyLightDecompose {
-        public static class Segment {
-            private Segment left;
-            private Segment right;
-            private long val;
-
-
-            public void pushUp() {
-                val = mul(left.val, right.val);
-            }
-
-            public void pushDown() {
-            }
-
-            public Segment(int l, int r, long[] vals) {
-                if (l < r) {
-                    int m = (l + r) >> 1;
-                    left = new Segment(l, m, vals);
-                    right = new Segment(m + 1, r, vals);
-                    pushUp();
-                } else {
-                    val = vals[l];
-                }
-            }
-
-            private boolean covered(int ll, int rr, int l, int r) {
-                return ll <= l && rr >= r;
-            }
-
-            private boolean noIntersection(int ll, int rr, int l, int r) {
-                return ll > r || rr < l;
-            }
-
-            public void update(int ll, int rr, int l, int r, long val) {
-                if (noIntersection(ll, rr, l, r)) {
-                    return;
-                }
-                if (covered(ll, rr, l, r)) {
-                    this.val = val;
-                    return;
-                }
-                pushDown();
-                int m = (l + r) >> 1;
-                left.update(ll, rr, l, m, val);
-                right.update(ll, rr, m + 1, r, val);
-                pushUp();
-            }
-
-            public long query(int ll, int rr, int l, int r) {
-                if (noIntersection(ll, rr, l, r)) {
-                    return 1;
-                }
-                if (covered(ll, rr, l, r)) {
-                    return val;
-                }
-                pushDown();
-                int m = (l + r) >> 1;
-                return mul(left.query(ll, rr, l, m),
-                        right.query(ll, rr, m + 1, r));
-            }
-        }
-
-        public static class HLDNode {
-            List<HLDNode> next = new ArrayList<>(2);
-            int id;
-            int dfsOrderFrom;
-            int dfsOrderTo;
-            int size;
-            long val;
-            HLDNode link;
-            HLDNode heavy;
-            HLDNode father;
-
-            @Override
-            public String toString() {
-                return "" + id;
-            }
-        }
-
-        public HeavyLightDecompose(int n, int rootId) {
-            this.n = n;
-            nodes = new HLDNode[n];
-            for (int i = 0; i < n; i++) {
-                nodes[i] = new HLDNode();
+                nodes[i] = new Node();
                 nodes[i].id = i;
             }
-            root = nodes[rootId];
-        }
-
-        public void addEdge(int a, int b) {
-            nodes[a].next.add(nodes[b]);
-            nodes[b].next.add(nodes[a]);
-        }
-
-        public void setInitVal(int nodeId, long val) {
-            nodes[nodeId].val = val;
-        }
-
-        public void updateVal(int nodeId, long val) {
-            HLDNode node = nodes[nodeId];
-            segment.update(node.dfsOrderFrom, node.dfsOrderFrom, 1, n, val);
-        }
-
-        public void finish() {
-            dfs(root, null);
-            dfs2(root, root);
-            long[] vals = new long[n + 1];
-            for (int i = 0; i < n; i++) {
-                vals[nodes[i].dfsOrderFrom] = nodes[i].val;
+            int[] color = new int[n + 1];
+            for (int i = 2; i <= n; i++) {
+                setFather(nodes[i], nodes[io.readInt()]);
+                color[i] = io.readChar();
+                if (color[i] != '?') {
+                    nodes[i].edges[color[i] - 'a']++;
+                }
             }
-            segment = new Segment(1, n, vals);
+            dfs(nodes[1], 1);
+            compress(nodes[1], null);
+            dpOnTree(nodes[1]);
+
+            for (int i = 0; i < q; i++) {
+                int nodeId = io.readInt();
+                Node v = nodes[nodeId];
+                int c = io.readChar();
+                int old = color[nodeId];
+                color[nodeId] = c;
+                if (old != '?') {
+                    v.edges[old - 'a']--;
+                }
+                if (c != '?') {
+                    v.edges[c - 'a']++;
+                }
+                shiftUp(v);
+
+                if (invalidCount > 0) {
+                    io.cache.append("Fou\n");
+                    continue;
+                }
+
+                int sum = 0;
+                for (int j = 0; j < Node.SIZE; j++) {
+                    sum += nodes[1].dp[j] + nodes[1].edges[j];
+                }
+                int flexible = leafDepth - 1 - sum;
+                int func = 0;
+                for (int j = 0; j < Node.SIZE; j++) {
+                    func += (j + 1) * (flexible + nodes[1].dp[j] + nodes[1].edges[j]);
+                }
+
+                io.cache.append("Shi ").append(func).append('\n');
+            }
         }
 
-        public long processPath(int uId, int vId) {
-            HLDNode u = nodes[uId];
-            HLDNode v = nodes[vId];
-            long sum = 1;
-            while (u != v) {
-                if (u.link == v.link) {
-                    if (u.size > v.size) {
-                        HLDNode tmp = u;
-                        u = v;
-                        v = tmp;
-                    }
-                    sum = mul(sum, segment.query(v.dfsOrderFrom + 1, u.dfsOrderFrom, 1, n));
-                    u = v;
+        public void dpOnNode(Node root, Node child) {
+            for (int i = 0; i < Node.SIZE; i++) {
+                root.dp[i] = Math.max(root.dp[i], child.edges[i] + child.dp[i]);
+            }
+        }
+
+        public void shiftUp(Node root) {
+            while (root != null) {
+                dpOnNode(root);
+                root = root.father;
+            }
+        }
+
+        public void dpOnNode(Node root) {
+            Arrays.fill(root.dp, 0);
+            if (root.left != null) {
+                dpOnNode(root, root.left);
+                dpOnNode(root, root.right);
+            } else {
+                return;
+            }
+            int sum = 0;
+            for (int i = 0; i < Node.SIZE; i++) {
+                sum += root.dp[i];
+            }
+            boolean valid = sum <= Math.min(leafDepth - root.left.depth + 1, leafDepth - 1);
+            if (valid != root.valid) {
+                if (valid) {
+                    invalidCount--;
                 } else {
-                    if (u.link.size > v.link.size) {
-                        HLDNode tmp = u;
-                        u = v;
-                        v = tmp;
-                    }
-                    sum = mul(sum, segment.query(u.link.dfsOrderFrom, u.dfsOrderFrom, 1, n));
-                    u = u.link.father;
+                    invalidCount++;
                 }
+                root.valid = valid;
             }
-            sum = mul(sum, segment.query(u.dfsOrderFrom, u.dfsOrderFrom, 1, n));
-            return sum;
         }
 
-        private static void dfs(HLDNode root, HLDNode father) {
-            root.size = 1;
+        public void dfs(Node root, int depth) {
+            if (root == null) {
+                return;
+            }
+            root.depth = depth;
+            dfs(root.left, depth + 1);
+            dfs(root.right, depth + 1);
+            if (root.left == null && root.right == null) {
+                if (leafDepth == -1) {
+                    leafDepth = depth;
+                }
+                if (leafDepth != depth) {
+                    invalidCount = inf;
+                }
+            }
+        }
+
+        int leafDepth = -1;
+        int invalidCount = 0;
+
+        public void dpOnTree(Node root) {
+            if (root == null) {
+                return;
+            }
+            dpOnTree(root.left);
+            dpOnTree(root.right);
+            dpOnNode(root);
+        }
+
+        public void compress(Node root, Node father) {
+            if (root == null) {
+                return;
+            }
             root.father = father;
-            for (HLDNode node : root.next) {
-                if (node == father) {
-                    continue;
+            while (root.left != null && root.right == null) {
+                for (int i = 0; i < Node.SIZE; i++) {
+                    root.edges[i] += root.left.edges[i];
                 }
-                dfs(node, root);
-                root.size += node.size;
-                if (root.heavy == null || root.heavy.size < node.size) {
-                    root.heavy = node;
-                }
+                nodes[root.left.id] = root;
+                root.right = root.left.right;
+                root.left = root.left.left;
             }
+            compress(root.left, root);
+            compress(root.right, root);
         }
 
-        private void dfs2(HLDNode root, HLDNode link) {
-            root.dfsOrderFrom = order++;
-            root.link = link;
-            if (root.heavy != null) {
-                dfs2(root.heavy, link);
+        public void setFather(Node node, Node father) {
+            node.father = father;
+            if (father.left == null) {
+                father.left = node;
+            } else if (father.right == null) {
+                father.right = node;
             }
-            for (HLDNode node : root.next) {
-                if (node == root.father || node == root.heavy) {
-                    continue;
-                }
-                dfs2(node, node);
-            }
-            root.dfsOrderTo = order - 1;
         }
+    }
 
-        int n;
-        int order = 1;
-        HLDNode root;
-        HLDNode[] nodes;
-        Segment segment;
+    public static class Node {
+        public static final int SIZE = 'z' - 'a' + 1;
+        int[] dp = new int[SIZE];
+        int[] edges = new int[SIZE];
+        Node left;
+        Node right;
+        int depth;
+        int id;
+        Node father;
+        boolean valid = true;
     }
 
     public static class FastIO {
