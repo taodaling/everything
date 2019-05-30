@@ -1,14 +1,10 @@
 package com.daltao.template;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.List;
+import java.util.*;
 
 public class GeometryUtils {
     private static final double PREC = 1e-8;
+    private static final double INF = 1e30;
 
     public static double valueOf(double x) {
         return x > -PREC && x < PREC ? 0 : x;
@@ -47,6 +43,22 @@ public class GeometryUtils {
         final Point2D a;
         final Point2D b;
         final Point2D d;
+        static final Comparator<Line2D> SORT_BY_ANGLE = new Comparator<Line2D>() {
+            @Override
+            public int compare(Line2D a, Line2D b) {
+                if (a.d.y > 0 && b.d.y > 0) {
+                    return a.onWhichSide(b);
+                }
+                if (a.d.y < 0 && b.d.y < 0) {
+                    return a.onWhichSide(b);
+                }
+                if (a.d.y == b.d.y) {
+                    return Double.compare(a.d.x, b.d.x);
+                }
+                return -Double.compare(a.d.y, b.d.y);
+            }
+        };
+
 
         public Line2D(Point2D a, Point2D b) {
             this.a = a;
@@ -58,7 +70,22 @@ public class GeometryUtils {
          * 判断a处于b的哪个方向，返回1，表示处于逆时针方向，返回-1，表示处于顺时针方向。0表示共线。
          */
         public int onWhichSide(Line2D b) {
-            return Double.compare(valueOf(cross(d.x, d.y, b.d.x, b.d.y)), 0);
+            return Double.compare(cross(d.x, d.y, b.d.x, b.d.y), 0);
+        }
+
+        /**
+         * 判断pt处于自己的哪个方向，返回1，表示处于逆时针方向，返回-1，表示处于顺时针方向。0表示共线。
+         */
+        public int whichSideIs(Point2D pt) {
+            return Double.compare(a.cross(b, pt), 0);
+        }
+
+        public double getSlope() {
+            return a.y / a.x;
+        }
+
+        public double getB() {
+            return a.y - getSlope() * a.x;
         }
 
         public Point2D intersect(Line2D another) {
@@ -96,7 +123,7 @@ public class GeometryUtils {
          * 判断p是否落在线段section上
          */
         public boolean contain(Point2D p) {
-            return valueOf(cross(p.x - a.x, p.y - a.y, d.x, d.y)) == 0
+            return cross(p.x - a.x, p.y - a.y, d.x, d.y) == 0
                     && valueOf(p.x - Math.min(a.x, b.x)) >= 0 && valueOf(p.x - Math.min(a.x, b.x)) <= 0
                     && valueOf(p.y - Math.min(a.y, b.y)) >= 0 && valueOf(p.y - Math.min(a.y, b.y)) <= 0;
         }
@@ -115,7 +142,7 @@ public class GeometryUtils {
      * 计算两个向量的叉乘
      */
     public static double cross(double x1, double y1, double x2, double y2) {
-        return x1 * y2 - y1 * x2;
+        return valueOf(x1 * y2 - y1 * x2);
     }
 
     public static int signOf(double x) {
@@ -134,7 +161,7 @@ public class GeometryUtils {
 
 
     public static class GrahamScan {
-        Convex convex;
+        ConvexHull convex;
 
         public GrahamScan(List<Point2D> point2s) {
             final Point2D[] points = point2s.toArray(new Point2D[0]);
@@ -180,21 +207,76 @@ public class GeometryUtils {
                 stack.addLast(points[i]);
             }
 
-            convex = new Convex(new ArrayList(stack));
+            convex = new ConvexHull(new ArrayList(stack));
         }
     }
 
+    public static class StaticHalfConvexHull {
+        Deque<Line2D> deque;
 
-    public static class Convex extends Polygon{
-        private Convex(List<Point2D> points) {
+        public StaticHalfConvexHull(List<Line2D> lineList) {
+            Line2D[] lines = lineList.toArray(new Line2D[0]);
+            int n = lines.length;
+            Arrays.sort(lines, new Comparator<Line2D>() {
+                @Override
+                public int compare(Line2D a, Line2D b) {
+                    return a.onWhichSide(b);
+                }
+            });
+            deque = new ArrayDeque<>(n);
+            for (int i = 0; i < n; i++) {
+                Line2D line = lines[i];
+                while (i + 1 < n && line.onWhichSide(lines[i]) == 0) {
+                    if (line.whichSideIs(lines[i].b) < 0) {
+                        line = lines[i];
+                    }
+                    i++;
+                }
+                while (deque.size() >= 2) {
+                    Line2D last = deque.removeLast();
+                    Point2D pt = last.intersect(deque.peekLast());
+                    if (line.whichSideIs(pt) > 0) {
+                        deque.addLast(last);
+                        break;
+                    }
+                }
+                deque.addLast(line);
+            }
+        }
+    }
+
+    public static class ConvexHull extends Polygon {
+        private ConvexHull(List<Point2D> points) {
             super(points);
         }
     }
 
-    public static class
+    public static class HalfPlaneIntersection {
+        ConvexHull convex;
+
+        public HalfPlaneIntersection(List<Line2D> lineList) {
+            List<Line2D> topList = new ArrayList<>(lineList.size());
+            List<Line2D> bottomList = new ArrayList<>(lineList.size());
+            for (Line2D line : lineList) {
+                if (line.d.y > 0) {
+                    topList.add(line);
+                } else if (line.d.y < 0) {
+                    bottomList.add(line);
+                } else if (line.d.x >= 0) {
+                    topList.add(line);
+                } else {
+                    bottomList.add(line);
+                }
+            }
+            StaticHalfConvexHull topConvexHull = new StaticHalfConvexHull(topList);
+            StaticHalfConvexHull bottomConvexHull = new StaticHalfConvexHull(bottomList);
+            while()
+        }
+    }
 
     public static class Polygon {
         List<Point2D> points;
+
         private Polygon(List<Point2D> points) {
             this.points = points;
         }

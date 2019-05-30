@@ -116,7 +116,9 @@ public class Matrix implements Cloneable {
     }
 
     void swapRow(int i, int j) {
-        Memory.swap(mat, i, j);
+        double[] row = mat[i];
+        mat[i] = mat[j];
+        mat[j] = row;
     }
 
     void subtractRow(int i, int j, double f) {
