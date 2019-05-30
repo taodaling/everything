@@ -28,6 +28,12 @@ public class Memory {
         data[j] = tmp;
     }
 
+    public static void swap(double[] data, int i, int j) {
+        double tmp = data[i];
+        data[i] = data[j];
+        data[j] = tmp;
+    }
+
     public static <T> int min(T[] data, int from, int to, Comparator<T> cmp) {
         int m = from;
         for (int i = from + 1; i < to; i++) {

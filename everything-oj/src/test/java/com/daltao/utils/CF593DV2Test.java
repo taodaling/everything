@@ -9,9 +9,8 @@ import com.daltao.test.Input;
 import com.daltao.test.QueueInput;
 import com.daltao.test.RandomFactory;
 import com.daltao.test.TestCaseExecutor;
-import org.junit.Assert;
-import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * CF593DV2 Tester.

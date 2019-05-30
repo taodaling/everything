@@ -1,0 +1,202 @@
+package com.daltao.template;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.List;
+
+public class GeometryUtils {
+    private static final double PREC = 1e-8;
+
+    public static double valueOf(double x) {
+        return x > -PREC && x < PREC ? 0 : x;
+    }
+
+    public static class Point2D {
+        final double x;
+        final double y;
+        static final Point2D ORIGIN = new Point2D(0, 0);
+
+        public Point2D(double x, double y) {
+            this.x = valueOf(x);
+            this.y = valueOf(y);
+        }
+
+        public double distance2Between(Point2D another) {
+            double dx = x - another.x;
+            double dy = y - another.y;
+            return valueOf(dx * dx + dy * dy);
+        }
+
+        public double distanceBetween(Point2D another) {
+            return valueOf(Math.sqrt(distance2Between(another)));
+        }
+
+        /**
+         * 以自己为起点，判断线段a和b的叉乘
+         */
+        public double cross(Point2D a, Point2D b) {
+            return GeometryUtils.cross(a.x - x, a.y - y, b.x - x, b.y - y);
+        }
+    }
+
+
+    public static class Line2D {
+        final Point2D a;
+        final Point2D b;
+        final Point2D d;
+
+        public Line2D(Point2D a, Point2D b) {
+            this.a = a;
+            this.b = b;
+            d = new Point2D(b.x - a.x, b.y - a.y);
+        }
+
+        /**
+         * 判断a处于b的哪个方向，返回1，表示处于逆时针方向，返回-1，表示处于顺时针方向。0表示共线。
+         */
+        public int onWhichSide(Line2D b) {
+            return Double.compare(valueOf(cross(d.x, d.y, b.d.x, b.d.y)), 0);
+        }
+
+        public Point2D intersect(Line2D another) {
+            double m11 = b.x - a.x;
+            double m01 = another.b.x - another.a.x;
+            double m10 = a.y - b.y;
+            double m00 = another.a.y - another.b.y;
+
+            double div = valueOf(m00 * m11 - m01 * m10);
+            if (div == 0) {
+                return null;
+            }
+
+            double v0 = (another.a.x - a.x) / div;
+            double v1 = (another.a.y - a.y) / div;
+
+            double alpha = m00 * v0 + m01 * v1;
+            return getPoint(alpha);
+        }
+
+        /**
+         * 获取与线段的交点，null表示无交点或有多个交点
+         */
+        public Point2D getPoint(double alpha) {
+            return new Point2D(a.x + d.x * alpha, a.y + d.y * alpha);
+        }
+    }
+
+    public static class Segment2D extends Line2D {
+        public Segment2D(Point2D a, Point2D b) {
+            super(a, b);
+        }
+
+        /**
+         * 判断p是否落在线段section上
+         */
+        public boolean contain(Point2D p) {
+            return valueOf(cross(p.x - a.x, p.y - a.y, d.x, d.y)) == 0
+                    && valueOf(p.x - Math.min(a.x, b.x)) >= 0 && valueOf(p.x - Math.min(a.x, b.x)) <= 0
+                    && valueOf(p.y - Math.min(a.y, b.y)) >= 0 && valueOf(p.y - Math.min(a.y, b.y)) <= 0;
+        }
+
+        /**
+         * 获取与线段的交点，null表示无交点或有多个交点
+         */
+        public Point2D intersect(Segment2D another) {
+            Point2D point = super.intersect(another);
+            return point != null && contain(point) ? point : null;
+        }
+
+    }
+
+    /**
+     * 计算两个向量的叉乘
+     */
+    public static double cross(double x1, double y1, double x2, double y2) {
+        return x1 * y2 - y1 * x2;
+    }
+
+    public static int signOf(double x) {
+        return x > 0 ? 1 : x < 0 ? -1 : 0;
+    }
+
+    public static class Area {
+        public double areaOfRect(Line2D a, Line2D b) {
+            return Math.abs(cross(a.d.x, a.d.y, b.d.x, b.d.y));
+        }
+
+        public double areaOfTriangle(Line2D a, Line2D b) {
+            return areaOfRect(a, b) / 2;
+        }
+    }
+
+
+    public static class GrahamScan {
+        Convex convex;
+
+        public GrahamScan(List<Point2D> point2s) {
+            final Point2D[] points = point2s.toArray(new Point2D[0]);
+            int n = points.length;
+            Memory.swap(points, 0, Memory.min(points, 0, n, new Comparator<Point2D>() {
+                @Override
+                public int compare(Point2D a, Point2D b) {
+                    return a.y != b.y ? Double.compare(a.y, b.y) : Double.compare(a.x, b.x);
+                }
+            }));
+
+            Comparator<Point2D> cmp = new Comparator<Point2D>() {
+                @Override
+                public int compare(Point2D o1, Point2D o2) {
+                    return signOf(valueOf(-points[0].cross(o1, o2)));
+                }
+            };
+            Arrays.sort(points, 1, n, cmp);
+
+            int shrinkSize = 2;
+            for (int i = 2; i < n; i++) {
+                if (cmp.compare(points[i], points[shrinkSize - 1]) == 0) {
+                    if (points[i].distance2Between(points[0]) > points[shrinkSize - 1].distance2Between(points[0])) {
+                        points[shrinkSize - 1] = points[i];
+                    }
+                } else {
+                    points[shrinkSize++] = points[i];
+                }
+            }
+
+            n = shrinkSize;
+            Deque<Point2D> stack = new ArrayDeque(n);
+            stack.addLast(points[0]);
+            for (int i = 1; i < n; i++) {
+                while (stack.size() >= 2) {
+                    Point2D last = stack.removeLast();
+                    Point2D second = stack.peekLast();
+                    if (valueOf(second.cross(points[i], last)) < 0) {
+                        stack.addLast(last);
+                        break;
+                    }
+                }
+                stack.addLast(points[i]);
+            }
+
+            convex = new Convex(new ArrayList(stack));
+        }
+    }
+
+
+    public static class Convex extends Polygon{
+        private Convex(List<Point2D> points) {
+            super(points);
+        }
+    }
+
+    public static class
+
+    public static class Polygon {
+        List<Point2D> points;
+        private Polygon(List<Point2D> points) {
+            this.points = points;
+        }
+    }
+}
