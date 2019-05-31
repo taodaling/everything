@@ -1,8 +1,6 @@
 package com.daltao.template;
 
-import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Random;
 
 /**
  * Created by dalt on 2018/5/20.
