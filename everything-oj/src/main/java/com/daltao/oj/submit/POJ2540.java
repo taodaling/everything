@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.*;
 
-public class POJ2187 {
+public class POJ2540 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -49,14 +49,44 @@ public class POJ2187 {
         }
 
         public void solve() {
-            int n = io.readInt();
-            GeometryUtils.Point2D[] points = new GeometryUtils.Point2D[n];
-            for (int i = 0; i < n; i++) {
-                points[i] = new GeometryUtils.Point2D(io.readInt(), io.readInt());
+            double lx = 0;
+            double ly = 0;
+            List<GeometryUtils.Line2D> lines = new ArrayList();
+            lines.add(new GeometryUtils.Line2D(new GeometryUtils.Point2D(0, 0), new GeometryUtils.Point2D(10, 0)));
+            lines.add(new GeometryUtils.Line2D(new GeometryUtils.Point2D(10, 0), new GeometryUtils.Point2D(10, 10)));
+            lines.add(new GeometryUtils.Line2D(new GeometryUtils.Point2D(10, 10), new GeometryUtils.Point2D(0, 10)));
+            lines.add(new GeometryUtils.Line2D(new GeometryUtils.Point2D(0, 10), new GeometryUtils.Point2D(0, 0)));
+
+            boolean exist = true;
+            while (io.hasMore()) {
+                double x = io.readDouble();
+                double y = io.readDouble();
+                String ans = io.readString();
+                GeometryUtils.Point2D center = new GeometryUtils.Point2D((x + lx) / 2, (y + ly) / 2);
+                GeometryUtils.Point2D vertical = new GeometryUtils.Point2D(x - lx, y - ly)
+                        .getApeak();
+                if (ans.equals("Colder")) {
+                    lines.add(new GeometryUtils.Line2D(center, center.add(vertical)));
+                } else if (ans.equals("Hotter")) {
+                    lines.add(new GeometryUtils.Line2D(center.add(vertical), center));
+                } else {
+                    exist = false;
+                }
+
+                if (exist) {
+                    GeometryUtils.HalfPlaneIntersection hpi = new GeometryUtils.HalfPlaneIntersection(new GeometryUtils.LinePolygon(lines),
+                            false);
+                    double area = hpi.hasSolution ? hpi.convex.asPoints().area() : 0;
+                    if (GeometryUtils.valueOf(area) == 0) {
+                        exist = false;
+                    }
+                    io.cache.append(String.format("%.2f", area)).append('\n');
+                } else {
+                    io.cache.append(String.format("%.2f", 0D)).append('\n');
+                }
+                lx = x;
+                ly = y;
             }
-            GeometryUtils.Segment2D pair = new GeometryUtils.GrahamScan(new GeometryUtils.PointPolygon(Arrays.asList(points)))
-                    .convex.theFarthestPointPair();
-            io.cache.append(String.format("%d", pair.a.distance2Between(pair.b)));
         }
     }
 
@@ -352,20 +382,20 @@ public class POJ2187 {
     }
 
     public static class GeometryUtils {
-        private static final int PREC = (int)1e-8;
-        private static final int INF = (int)2e9;
+        private static final double PREC = 1e-8;
+        private static final double INF = 1e30;
 
-        public static int valueOf(int x) {
+        public static double valueOf(double x) {
             return x > -PREC && x < PREC ? 0 : x;
         }
 
-        public static int pow2(int x) {
+        public static double pow2(double x) {
             return x * x;
         }
 
         public static class Point2D {
-            final int x;
-            final int y;
+            final double x;
+            final double y;
             static final Point2D ORIGIN = new Point2D(0, 0);
             static final Comparator<Point2D> SORT_BY_X_AND_Y = new Comparator<Point2D>() {
                 @Override
@@ -380,21 +410,25 @@ public class POJ2187 {
                 }
             };
 
-            public Point2D(int x, int y) {
+            public Point2D(double x, double y) {
                 this.x = x;
                 this.y = y;
             }
 
-            public int distance2Between(Point2D another) {
-                int dx = x - another.x;
-                int dy = y - another.y;
+            public double distance2Between(Point2D another) {
+                double dx = x - another.x;
+                double dy = y - another.y;
                 return valueOf(dx * dx + dy * dy);
+            }
+
+            public double distanceBetween(Point2D another) {
+                return valueOf(Math.sqrt(distance2Between(another)));
             }
 
             /**
              * 以自己为起点，判断线段a和b的叉乘
              */
-            public int cross(Point2D a, Point2D b) {
+            public double cross(Point2D a, Point2D b) {
                 return GeometryUtils.cross(a.x - x, a.y - y, b.x - x, b.y - y);
             }
 
@@ -406,8 +440,13 @@ public class POJ2187 {
                 return new Point2D(x + vector.x, y + vector.y);
             }
 
-            public Point2D add(Point2D vector, int times) {
+            public Point2D add(Point2D vector, double times) {
                 return new Point2D(x + vector.x * times, y + vector.y * times);
+            }
+
+            public Point2D normalize() {
+                double d = distanceBetween(ORIGIN);
+                return new Point2D(valueOf(x / d), valueOf(y / d));
             }
 
             @Override
@@ -415,10 +454,14 @@ public class POJ2187 {
                 return String.format("(%f, %f)", x, y);
             }
 
-            public static int cross(Point2D a, Point2D b, Point2D c, Point2D d) {
+            public static double cross(Point2D a, Point2D b, Point2D c, Point2D d) {
                 return GeometryUtils.cross(b.x - a.x, b.y - a.y, d.x - c.x, d.y - c.y);
             }
 
+            @Override
+            public int hashCode() {
+                return (int) (Double.doubleToLongBits(x) * 31 + Double.doubleToLongBits(y));
+            }
 
             @Override
             public boolean equals(Object obj) {
@@ -431,12 +474,23 @@ public class POJ2187 {
             final Point2D a;
             final Point2D b;
             final Point2D d;
+            final double theta;
+            /**
+             * 按照[0,2pi)极角对线排序
+             */
+            static final Comparator<Line2D> SORT_BY_ANGLE = new Comparator<Line2D>() {
+                @Override
+                public int compare(Line2D a, Line2D b) {
+                    return Double.compare(a.theta, b.theta);
+                }
+            };
 
 
             public Line2D(Point2D a, Point2D b) {
                 this.a = a;
                 this.b = b;
                 d = new Point2D(valueOf(b.x - a.x), valueOf(b.y - a.y));
+                theta = Math.atan2(d.y, d.x);
             }
 
             /**
@@ -453,36 +507,36 @@ public class POJ2187 {
                 return Double.compare(a.cross(b, pt), 0);
             }
 
-            public int getSlope() {
+            public double getSlope() {
                 return a.y / a.x;
             }
 
-            public int getB() {
+            public double getB() {
                 return a.y - getSlope() * a.x;
             }
 
             public Point2D intersect(Line2D another) {
-                int m11 = b.x - a.x;
-                int m01 = another.b.x - another.a.x;
-                int m10 = a.y - b.y;
-                int m00 = another.a.y - another.b.y;
+                double m11 = b.x - a.x;
+                double m01 = another.b.x - another.a.x;
+                double m10 = a.y - b.y;
+                double m00 = another.a.y - another.b.y;
 
-                int div = valueOf(m00 * m11 - m01 * m10);
+                double div = valueOf(m00 * m11 - m01 * m10);
                 if (div == 0) {
                     return null;
                 }
 
-                int v0 = (another.a.x - a.x) / div;
-                int v1 = (another.a.y - a.y) / div;
+                double v0 = (another.a.x - a.x) / div;
+                double v1 = (another.a.y - a.y) / div;
 
-                int alpha = m00 * v0 + m01 * v1;
+                double alpha = m00 * v0 + m01 * v1;
                 return getPoint(alpha);
             }
 
             /**
              * 获取与线段的交点，null表示无交点或有多个交点
              */
-            public Point2D getPoint(int alpha) {
+            public Point2D getPoint(double alpha) {
                 return new Point2D(a.x + d.x * alpha, a.y + d.y * alpha);
             }
 
@@ -490,7 +544,7 @@ public class POJ2187 {
                 return new Line2D(a.add(vector), b.add(vector));
             }
 
-            public Line2D moveAlong(Point2D vector, int times) {
+            public Line2D moveAlong(Point2D vector, double times) {
                 return new Line2D(a.add(vector, times), b.add(vector, times));
             }
 
@@ -528,82 +582,93 @@ public class POJ2187 {
         /**
          * 计算两个向量的叉乘
          */
-        public static int cross(int x1, int y1, int x2, int y2) {
+        public static double cross(double x1, double y1, double x2, double y2) {
             return valueOf(x1 * y2 - y1 * x2);
         }
 
-        public static int signOf(int x) {
+        public static int signOf(double x) {
             return x > 0 ? 1 : x < 0 ? -1 : 0;
         }
 
         public static class Area {
-            public int areaOfRect(Line2D a, Line2D b) {
+            public double areaOfRect(Line2D a, Line2D b) {
                 return Math.abs(cross(a.d.x, a.d.y, b.d.x, b.d.y));
             }
 
-            public int areaOfTriangle(Line2D a, Line2D b) {
+            public double areaOfTriangle(Line2D a, Line2D b) {
                 return areaOfRect(a, b) / 2;
             }
 
-            public int areaOfTriangle(Point2D a, Point2D b, Point2D c) {
+            public double areaOfTriangle(Point2D a, Point2D b, Point2D c) {
                 return Math.abs(a.cross(b, c)) / 2;
             }
 
         }
 
-        public static class GrahamScan {
-            PointConvexHull convex;
+        public static class HalfPlaneIntersection {
+            LineConvexHull convex;
+            boolean hasSolution = true;
 
-            public GrahamScan(PointPolygon pointPolygon) {
-                final Point2D[] points = pointPolygon.data.toArray(new Point2D[0]);
-                int n = points.length;
-                for (int i = 1; i < n; i++) {
-                    int cmp = points[i].y != points[0].y ? Double.compare(points[i].y, points[0].y)
-                            : Double.compare(points[i].x, points[0].x);
-                    if (cmp >= 0) {
+            public HalfPlaneIntersection(Polygon<Line2D> linePolygon, boolean close) {
+                this(linePolygon, close, false);
+            }
+
+            public HalfPlaneIntersection(Polygon<Line2D> linePolygon, boolean close, boolean isAnticlockwise) {
+                Line2D[] lines = linePolygon.data.toArray(new Line2D[linePolygon.data.size()]);
+                if (!isAnticlockwise) {
+                    Arrays.sort(lines, Line2D.SORT_BY_ANGLE);
+                }
+                int n = lines.length;
+
+
+                Deque<Line2D> deque = new ArrayDeque(n);
+                for (int i = 0; i < n; i++) {
+                    Line2D line = lines[i];
+                    while (i + 1 < n && valueOf(line.theta - lines[i + 1].theta) == 0) {
+                        i++;
+                        if (line.whichSideIs(lines[i].b) == 1) {
+                            line = lines[i];
+                        }
+                    }
+                    insert(deque, line, close);
+                }
+                insert(deque, deque.removeFirst(), close);
+
+                //reinsert head
+                if (!hasSolution) {
+                    return;
+                }
+                convex = new LineConvexHull(new ArrayList(deque));
+            }
+
+            private void insert(Deque<Line2D> deque, Line2D line, boolean close) {
+                if (!hasSolution) {
+                    return;
+                }
+                while (deque.size() >= 2) {
+                    Line2D tail = deque.removeLast();
+                    Point2D pt = tail.intersect(deque.peekLast());
+                    if (pt == null) {
                         continue;
                     }
-                    Point2D tmp = points[0];
-                    points[0] = points[i];
-                    points[i] = tmp;
-                }
-
-
-                Comparator<Point2D> cmp = new Comparator<Point2D>() {
-                    @Override
-                    public int compare(Point2D o1, Point2D o2) {
-                        return signOf(valueOf(-points[0].cross(o1, o2)));
+                    int side = line.whichSideIs(pt);
+                    if (side > 0 || (close && side == 0)) {
+                        deque.add(tail);
+                        break;
                     }
-                };
-                Arrays.sort(points, 1, n, cmp);
+                    if (line.onWhichSide(deque.peekLast()) != tail.onWhichSide(deque.peekLast())) {
+                        hasSolution = false;
+                    }
 
-                int shrinkSize = 2;
-                for (int i = 2; i < n; i++) {
-                    if (cmp.compare(points[i], points[shrinkSize - 1]) == 0) {
-                        if (points[i].distance2Between(points[0]) > points[shrinkSize - 1].distance2Between(points[0])) {
-                            points[shrinkSize - 1] = points[i];
-                        }
-                    } else {
-                        points[shrinkSize++] = points[i];
+                }
+                if (deque.size() == 1 && line.onWhichSide(deque.peekLast()) == 0) {
+                    int side = deque.peekLast().whichSideIs(line.b);
+                    if (!(side > 0 || (close && side == 0))) {
+                        hasSolution = false;
                     }
                 }
 
-                n = shrinkSize;
-                Deque<Point2D> stack = new ArrayDeque(n);
-                stack.addLast(points[0]);
-                for (int i = 1; i < n; i++) {
-                    while (stack.size() >= 2) {
-                        Point2D last = stack.removeLast();
-                        Point2D second = stack.peekLast();
-                        if (valueOf(second.cross(points[i], last)) < 0) {
-                            stack.addLast(last);
-                            break;
-                        }
-                    }
-                    stack.addLast(points[i]);
-                }
-
-                convex = new PointConvexHull(new ArrayList(stack));
+                deque.addLast(line);
             }
         }
 
@@ -664,10 +729,9 @@ public class POJ2187 {
                 return new LineConvexHull(Arrays.asList(lines));
             }
 
-
-            public int area() {
+            public double area() {
                 Area areaHelper = new Area();
-                int area = 0;
+                double area = 0;
                 int n = data.size();
                 for (int i = 2; i < n; i++) {
                     area += areaHelper.areaOfTriangle(data.get(0), data.get(i),
@@ -675,70 +739,7 @@ public class POJ2187 {
                 }
                 return area;
             }
-
-            public Segment2D theFarthestPointPairBruteForce() {
-                Point2D x = data.get(0);
-                Point2D y = data.get(0);
-                int farthestDist = 0;
-                int n = data.size();
-                for (int i = 0; i < n; i++) {
-                    for (int j = i + 1; j < n; j++) {
-                        Point2D a = data.get(i);
-                        Point2D b = data.get(j);
-                        int d = a.distance2Between(b);
-                        if (d > farthestDist) {
-                            farthestDist = d;
-                            x = a;
-                            y = b;
-                        }
-                    }
-                }
-                return new Segment2D(x, y);
-            }
-
-            public Segment2D theFarthestPointPair() {
-                //旋转卡壳
-                int n = data.size();
-
-                if (n <= 2) {
-                    return new Segment2D(pointAtLoop(0), pointAtLoop(1));
-                }
-
-                Point2D[] ab = new Point2D[2];
-                Point2D[] cd = new Point2D[]{pointAtLoop(1), pointAtLoop(2)};
-
-                Point2D x = cd[0];
-                Point2D y = cd[1];
-                int farthestDist2 = 0;
-                for (int i = 0, j = 1; i < n; i++) {
-                    ab[0] = pointAtLoop(i);
-                    ab[1] = pointAtLoop(i + 1);
-                    while (Point2D.cross(ab[0], ab[1], cd[0], cd[1]) >= 0 && Point2D.cross(ab[0], ab[1], cd[1], pointAtLoop(j + 2)) >= 0) {
-                        j++;
-                        cd[0] = cd[1];
-                        cd[1] = pointAtLoop(j + 1);
-                    }
-                    for (int k = 0; k < 2; k++) {
-                        for (int t = 0; t < 2; t++) {
-                            int dist2 = ab[k].distance2Between(cd[t]);
-                            if (farthestDist2 >= dist2) {
-                                continue;
-                            }
-                            x = ab[k];
-                            y = cd[t];
-                            farthestDist2 = dist2;
-                        }
-                    }
-                }
-
-                return new Segment2D(x, y);
-            }
-
-            private Point2D pointAtLoop(int i) {
-                return data.get(i % data.size());
-            }
         }
-
 
         public static class PointPolygon extends Polygon<Point2D> {
             public PointPolygon(List<Point2D> points) {
@@ -757,7 +758,7 @@ public class POJ2187 {
 
             Point2D theNearestPointX;
             Point2D theNearestPointY;
-            int nearestDistance2;
+            double nearestDistance2;
 
             public Segment2D theNearestPointPair() {
                 //最近点对，分而治之
@@ -773,7 +774,7 @@ public class POJ2187 {
             }
 
             private void theNearestPointPair(Point2D a, Point2D b) {
-                int d = a.distance2Between(b);
+                double d = a.distance2Between(b);
                 if (d < nearestDistance2) {
                     nearestDistance2 = d;
                     theNearestPointX = a;
@@ -814,7 +815,7 @@ public class POJ2187 {
                 lwpos = from;
                 rwpos = m;
                 for (int i = bufFrom; i < bufTo; i++) {
-                    int dx2 = pow2(buf[i].x - pointOrderByX[m].x);
+                    double dx2 = pow2(buf[i].x - pointOrderByX[m].x);
                     if (Point2D.SORT_BY_X_AND_Y.compare(buf[i], pointOrderByX[m]) < 0) {
                         if (nearestDistance2 > dx2) {
                             pointOrderByY[lwpos++] = buf[i];

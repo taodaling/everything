@@ -10,7 +10,7 @@ import java.util.*;
 
 public class CFContest {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
+        boolean local = false;
         boolean async = false;
 
         Charset charset = Charset.forName("ascii");
@@ -45,58 +45,46 @@ public class CFContest {
             this.debug = debug;
         }
 
+        int depth;
+
         @Override
         public void run() {
             solve();
         }
 
+
         public void solve() {
             int n = io.readInt();
-            int q = io.readInt();
-            int[] a = new int[n + 1];
-            for (int i = 0; i < n; i++) {
-                a[i] = io.readInt();
-            }
-            int[][] last = new int[20][n + 1];
-            for (int i = 0; i < 20; i++) {
-                last[i][n] = n;
-            }
-
-            int[] lastPos = new int[20];
-            Arrays.fill(lastPos, n);
-            for (int i = n - 1; i >= 0; i--) {
-                for (int j = 0; j < 20; j++) {
-                    last[j][i] = n;
-                }
-                for (int k = 0; k < 20; k++) {
-                    if (bitOperator.bitAt(a[i], k) == 0) {
-                        continue;
-                    }
-                    for (int j = 0; j < 20; j++) {
-                        last[j][i] = Math.min(last[j][i], last[j][lastPos[k]]);
-                    }
-                    last[k][i] = i;
-                    lastPos[k] = i;
-                }
-            }
-
-            for (int i = 0; i < q; i++) {
-                int x = io.readInt() - 1;
-                int y = io.readInt() - 1;
-                boolean reachable = false;
-                for (int j = 0; j < 20; j++) {
-                    if (bitOperator.bitAt(a[y], j) == 0) {
-                        continue;
-                    }
-                    if (last[j][x] <= y) {
-                        reachable = true;
-                        break;
-                    }
-                }
-                io.cache.append(reachable ? "Shi" : "Fou").append('\n');
+            int x = io.readInt();
+            List<Integer> ans = new ArrayList<>();
+            dfs(n, x, ans);
+            io.cache.append(ans.size()).append('\n');
+            for(Integer i : ans)
+            {
+                io.cache.append(i).append(' ');
             }
         }
+
+        public void dfs(int n, int x, List<Integer> ans) {
+            if (n == 1) {
+                if (x == 1) {
+                    return;
+                }
+                ans.add(1);
+                return;
+            }
+            int expect = (1 << (n - 1));
+            if (expect == x) {
+
+                expect++;
+            }
+            x = bitOperator.setBit(x ^ expect, n - 1, false);
+            dfs(n - 1, x, ans);
+            ans.add(expect);
+            dfs(n - 1, x, ans);
+        }
     }
+
 
     public static class MathUtils {
         private static Random random = new Random(123456789);

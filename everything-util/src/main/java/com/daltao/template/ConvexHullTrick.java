@@ -4,7 +4,9 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.TreeSet;
 
-public class ConvexHullTrick implements Iterable<ConvexHullTrick.Line>{
+public class ConvexHullTrick implements Iterable<ConvexHullTrick.Line> {
+    static final double INF = 1e50;
+
     public static class Line {
         // y = ax + b
         double a;
@@ -62,7 +64,7 @@ public class ConvexHullTrick implements Iterable<ConvexHullTrick.Line>{
         while (add) {
             Line prev = setOrderByA.floor(newLine);
             if (prev == null) {
-                newLine.lx = Double.MIN_VALUE;
+                newLine.lx = -INF;
                 break;
             }
             if (prev.a == newLine.a) {
@@ -78,7 +80,7 @@ public class ConvexHullTrick implements Iterable<ConvexHullTrick.Line>{
                 if (lx <= prev.lx) {
                     setOrderByA.remove(prev);
                     setOrderByLx.remove(prev);
-                } else if (lx >= prev.rx) {
+                } else if (lx > prev.rx) {
                     add = false;
                     break;
                 } else {
@@ -92,14 +94,18 @@ public class ConvexHullTrick implements Iterable<ConvexHullTrick.Line>{
         while (add) {
             Line next = setOrderByA.ceiling(newLine);
             if (next == null) {
-                newLine.rx = Double.MAX_VALUE;
+                newLine.rx = INF;
                 break;
             }
             double rx = Line.intersectAt(newLine, next);
             if (rx >= next.rx) {
                 setOrderByA.remove(next);
                 setOrderByLx.remove(next);
-            } else if (rx <= next.lx) {
+            } else if (rx < next.lx || (newLine.lx >= rx)) {
+                Line lastLine = setOrderByA.floor(newLine);
+                if (lastLine != null) {
+                    lastLine.rx = next.lx;
+                }
                 add = false;
                 break;
             } else {
@@ -118,5 +124,26 @@ public class ConvexHullTrick implements Iterable<ConvexHullTrick.Line>{
     @Override
     public Iterator<Line> iterator() {
         return setOrderByA.iterator();
+    }
+
+    public static ConvexHullTrick merge(ConvexHullTrick a, ConvexHullTrick b) {
+        if (a.setOrderByA.size() > b.setOrderByA.size()) {
+            ConvexHullTrick tmp = a;
+            a = b;
+            b = tmp;
+        }
+        for (Line line : a) {
+            b.insert(line.a, line.b);
+        }
+        return b;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for (Line line : this) {
+            builder.append(line).append('\n');
+        }
+        return builder.toString();
     }
 }

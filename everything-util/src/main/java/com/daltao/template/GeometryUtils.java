@@ -14,7 +14,6 @@ public class GeometryUtils {
         return x * x;
     }
 
-
     public static class Point2D {
         final double x;
         final double y;
@@ -240,8 +239,8 @@ public class GeometryUtils {
                     continue;
                 }
                 Point2D tmp = points[0];
-                points[i] = points[0];
-                points[0] = tmp;
+                points[0] = points[i];
+                points[i] = tmp;
             }
 
 
@@ -283,7 +282,6 @@ public class GeometryUtils {
         }
     }
 
-
     public static class HalfPlaneIntersection {
         LineConvexHull convex;
         boolean hasSolution = true;
@@ -303,7 +301,7 @@ public class GeometryUtils {
             Deque<Line2D> deque = new ArrayDeque(n);
             for (int i = 0; i < n; i++) {
                 Line2D line = lines[i];
-                while (i + 1 < n && line.onWhichSide(lines[i + 1]) == 0) {
+                while (i + 1 < n && valueOf(line.theta - lines[i + 1].theta) == 0) {
                     i++;
                     if (line.whichSideIs(lines[i].b) == 1) {
                         line = lines[i];
@@ -408,6 +406,25 @@ public class GeometryUtils {
             return new LineConvexHull(Arrays.asList(lines));
         }
 
+        public Segment2D theFarthestPointPairBruteForce() {
+            Point2D x = data.get(0);
+            Point2D y = data.get(0);
+            double farthestDist = 0;
+            int n = data.size();
+            for (int i = 0; i < n; i++) {
+                for (int j = i + 1; j < n; j++) {
+                    Point2D a = data.get(i);
+                    Point2D b = data.get(j);
+                    double d = a.distance2Between(b);
+                    if (d > farthestDist) {
+                        farthestDist = d;
+                        x = a;
+                        y = b;
+                    }
+                }
+            }
+            return new Segment2D(x, y);
+        }
 
         public double area() {
             Area areaHelper = new Area();
@@ -437,7 +454,7 @@ public class GeometryUtils {
             for (int i = 0, j = 1; i < n; i++) {
                 ab[0] = pointAtLoop(i);
                 ab[1] = pointAtLoop(i + 1);
-                while (Point2D.cross(ab[0], ab[1], cd[0], cd[1]) <= 0 && Point2D.cross(ab[0], ab[1], cd[1], pointAtLoop(j + 2)) <= 0) {
+                while (Point2D.cross(ab[0], ab[1], cd[0], cd[1]) >= 0 && Point2D.cross(ab[0], ab[1], cd[1], pointAtLoop(j + 2)) >= 0) {
                     j++;
                     cd[0] = cd[1];
                     cd[1] = pointAtLoop(j + 1);
@@ -463,7 +480,6 @@ public class GeometryUtils {
         }
     }
 
-
     public static class PointPolygon extends Polygon<Point2D> {
         public PointPolygon(List<Point2D> points) {
             super(points);
@@ -488,11 +504,6 @@ public class GeometryUtils {
             int n = data.size();
             pointOrderByX = data.toArray(new Point2D[n]);
             Arrays.sort(pointOrderByX, Point2D.SORT_BY_X_AND_Y);
-            for (int i = 1; i < n; i++) {
-                if (Point2D.SORT_BY_X_AND_Y.compare(pointOrderByX[i], pointOrderByX[i - 1]) == 0) {
-                    return new Segment2D(pointOrderByX[i], pointOrderByX[i - 1]);
-                }
-            }
             pointOrderByY = data.toArray(new Point2D[n]);
             Arrays.sort(pointOrderByY, Point2D.SORT_BY_Y_AND_X);
             buf = new Point2D[4 * n];
@@ -531,7 +542,7 @@ public class GeometryUtils {
             int lwpos = from;
             int rwpos = m;
             for (int i = bufFrom; i < bufTo; i++) {
-                if (Point2D.SORT_BY_X_AND_Y.compare(buf[i], pointOrderByX[m]) <= 0) {
+                if (Point2D.SORT_BY_X_AND_Y.compare(buf[i], pointOrderByX[m]) < 0) {
                     pointOrderByY[lwpos++] = buf[i];
                 } else {
                     pointOrderByY[rwpos++] = buf[i];
@@ -541,15 +552,15 @@ public class GeometryUtils {
             theNearestPointPair(m, to, bufTo);
 
             lwpos = from;
-            rwpos = m + 1;
+            rwpos = m;
             for (int i = bufFrom; i < bufTo; i++) {
                 double dx2 = pow2(buf[i].x - pointOrderByX[m].x);
-                if (Point2D.SORT_BY_X_AND_Y.compare(buf[i], pointOrderByX[m]) <= 0) {
+                if (Point2D.SORT_BY_X_AND_Y.compare(buf[i], pointOrderByX[m]) < 0) {
                     if (nearestDistance2 > dx2) {
                         pointOrderByY[lwpos++] = buf[i];
                     }
                 } else {
-                    if (nearestDistance2 > dx2) {
+                    if (nearestDistance2 < dx2) {
                         pointOrderByY[rwpos++] = buf[i];
                     }
                 }
