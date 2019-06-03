@@ -6,7 +6,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 public class CFContest {
     public static void main(String[] args) throws Exception {
@@ -52,54 +59,151 @@ public class CFContest {
 
         public void solve() {
             int n = io.readInt();
-            int q = io.readInt();
-            int[] a = new int[n + 1];
+            Location[] s = new Location[n];
+            int[] t = new int[n];
+
             for (int i = 0; i < n; i++) {
-                a[i] = io.readInt();
-            }
-            int[][] last = new int[20][n + 1];
-            for (int i = 0; i < 20; i++) {
-                last[i][n] = n;
+                s[i] = new Location();
+                s[i].index = i + 1;
+                s[i].val = io.readInt();
             }
 
-            int[] lastPos = new int[20];
-            Arrays.fill(lastPos, n);
-            for (int i = n - 1; i >= 0; i--) {
-                for (int j = 0; j < 20; j++) {
-                    last[j][i] = n;
-                }
-                for (int k = 0; k < 20; k++) {
-                    if (bitOperator.bitAt(a[i], k) == 0) {
-                        continue;
-                    }
-                    for (int j = 0; j < 20; j++) {
-                        last[j][i] = Math.min(last[j][i], last[j][lastPos[k]]);
-                    }
-                    last[k][i] = i;
-                    lastPos[k] = i;
-                }
+            for (int i = 0; i < n; i++) {
+                t[i] = io.readInt();
             }
 
-            for (int i = 0; i < q; i++) {
-                int x = io.readInt() - 1;
-                int y = io.readInt() - 1;
-                boolean reachable = false;
-                for (int j = 0; j < 20; j++) {
-                    if (bitOperator.bitAt(a[y], j) == 0) {
-                        continue;
-                    }
-                    if (last[j][x] <= y) {
-                        reachable = true;
+            Randomized.randomizedArray(t, 0, n);
+            Arrays.sort(t);
+            Arrays.sort(s, (a, b) -> a.val - b.val);
+            for (int i = 0; i < n; i++) {
+                s[i].target = t[i];
+            }
+
+            List<OP> opList = new ArrayList<>();
+            Deque<Location> rightDeque = new ArrayDeque<>(n);
+            long remain = 0;
+            for (int i = 0; i < n; i++) {
+                if (s[i].val < s[i].target) {
+                    rightDeque.add(s[i]);
+                    remain += s[i].target - s[i].val;
+                } else if (s[i].val > s[i].target) {
+                    remain += s[i].target - s[i].val;
+                    if (remain < 0) {
                         break;
                     }
+                    while (s[i].val != s[i].target) {
+                        int d1 = rightDeque.peekFirst().target - rightDeque.peekFirst().val;
+                        int d2 = s[i].val - s[i].target;
+                        int d = Math.min(d1, d2);
+                        opList.add(new OP(rightDeque.peekFirst().index, s[i].index, d));
+                        s[i].val -= d;
+                        rightDeque.peekFirst().val += d;
+                        if (rightDeque.peekFirst().val == rightDeque.peekFirst().target) {
+                            rightDeque.removeFirst();
+                        }
+                    }
                 }
-                io.cache.append(reachable ? "Shi" : "Fou").append('\n');
             }
+            if (remain != 0) {
+                io.cache.append("NO");
+                return;
+            }
+
+            io.cache.append("YES\n").append(opList.size()).append('\n');
+            for (OP op : opList) {
+                io.cache.append(op.i).append(' ')
+                        .append(op.j).append(' ')
+                        .append(op.d).append('\n');
+            }
+
+        }
+    }
+
+    public static class Location {
+        int index;
+        int val;
+        int target;
+    }
+
+    public static class OP {
+        final int i;
+        final int j;
+        final int d;
+
+        public OP(int i, int j, int d) {
+            this.i = i;
+            this.j = j;
+            this.d = d;
+        }
+    }
+
+    /**
+     * Created by dalt on 2018/6/1.
+     */
+    public static class Randomized {
+        static Random random = new Random();
+
+        public static double nextDouble(double min, double max) {
+            return random.nextDouble() * (max - min) + min;
+        }
+
+        public static void randomizedArray(int[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                int tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(long[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                long tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(double[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                double tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(float[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                float tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static <T> void randomizedArray(T[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                T tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static int nextInt(int l, int r) {
+            return random.nextInt(r - l + 1) + l;
         }
     }
 
     public static class MathUtils {
-        private static Random random = new Random(123456789);
+        private static Random random = new Random();
 
         public static class ExtLucasFactorial {
             int exp;
