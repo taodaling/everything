@@ -10,7 +10,7 @@ import java.util.*;
 
 public class CFContest {
     public static void main(String[] args) throws Exception {
-        boolean local = false;
+        boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
 
         Charset charset = Charset.forName("ascii");
@@ -75,8 +75,8 @@ public class CFContest {
             }
             int expect = (1 << (n - 1));
             if (expect == x) {
-
-                expect++;
+                dfs(n - 1, 0, ans);
+                return;
             }
             x = bitOperator.setBit(x ^ expect, n - 1, false);
             dfs(n - 1, x, ans);
