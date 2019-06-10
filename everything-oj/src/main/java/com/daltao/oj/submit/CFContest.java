@@ -6,7 +6,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 public class CFContest {
     public static void main(String[] args) throws Exception {
@@ -37,54 +44,88 @@ public class CFContest {
     public static class Task implements Runnable {
         final FastIO io;
         final Debug debug;
-        int inf = (int) 1e8;
-        MathUtils.BitOperator bitOperator = new MathUtils.BitOperator();
+        int inf = (int) 1e9 + 2;
+        MathUtils.Modular modular = new MathUtils.Modular(998244353);
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
             this.debug = debug;
         }
 
-        int depth;
-
         @Override
         public void run() {
             solve();
         }
 
-
         public void solve() {
             int n = io.readInt();
-            int x = io.readInt();
-            List<Integer> ans = new ArrayList<>();
-            dfs(n, x, ans);
-            io.cache.append(ans.size()).append('\n');
-            for(Integer i : ans)
-            {
-                io.cache.append(i).append(' ');
+            int k = io.readInt();
+            Node[] nodes = new Node[n + 1];
+            for (int i = 1; i <= n; i++) {
+                nodes[i] = new Node();
+                nodes[i].id = i;
+            }
+            for (int i = 1; i < n; i++) {
+                Node a = nodes[io.readInt()];
+                Node b = nodes[io.readInt()];
+                a.next.add(b);
+                b.next.add(a);
+            }
+
+            if (n == 1) {
+                io.cache.append("NO");
+                return;
+            }
+
+            Deque<Node> deque = new ArrayDeque<>();
+            for (int i = 1; i <= n; i++) {
+                if (nodes[i].next.size() == 1) {
+                    deque.add(nodes[i]);
+                    nodes[i].visited = true;
+                }
+            }
+
+            Node last = null;
+            while (deque.size() > 0) {
+                last = deque.removeFirst();
+                for (Node node : last.next) {
+                    if (node.visited) {
+                        continue;
+                    }
+                    deque.addLast(node);
+                    node.visited = true;
+                }
+            }
+
+            if (dfs(last, null, k)) {
+                io.cache.append("Yes");
+            } else {
+                io.cache.append("No");
             }
         }
 
-        public void dfs(int n, int x, List<Integer> ans) {
-            if (n == 1) {
-                if (x == 1) {
-                    return;
+        public boolean dfs(Node root, Node father, int k) {
+            root.next.remove(father);
+            if (root.next.size() == 0) {
+                return k == 0;
+            }
+            if (root.next.size() < 3) {
+                return false;
+            }
+            for (Node node : root.next) {
+                if (!dfs(node, root, k - 1)) {
+                    return false;
                 }
-                ans.add(1);
-                return;
             }
-            int expect = (1 << (n - 1));
-            if (expect == x) {
-                dfs(n - 1, 0, ans);
-                return;
-            }
-            x = bitOperator.setBit(x ^ expect, n - 1, false);
-            dfs(n - 1, x, ans);
-            ans.add(expect);
-            dfs(n - 1, x, ans);
+            return true;
         }
     }
 
+    public static class Node {
+        List<Node> next = new ArrayList<>(2);
+        boolean visited;
+        int id;
+    }
 
     public static class MathUtils {
         private static Random random = new Random(123456789);

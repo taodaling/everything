@@ -128,7 +128,7 @@ public class Matrix implements Cloneable {
     }
 
     void divideRow(int i, double f) {
-        for (int k = 0; k < n; k++) {
+        for (int k = 0; k < m; k++) {
             mat[i][k] /= f;
         }
     }

@@ -6,8 +6,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Random;
 
-public class AGC033E {
+public class POJ2947 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -37,7 +38,6 @@ public class AGC033E {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        Modular modular = new Modular((int) 1e9 + 7);
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -50,117 +50,300 @@ public class AGC033E {
         }
 
         public void solve() {
-            int n = io.readInt();
-            int m = io.readInt();
-            char[] s = new char[m];
-            io.readString(s, 0);
-            if (s[0] != 'R') {
-                for (int j = 0; j < m; j++) {
-                    if (s[j] == 'R') {
-                        s[j] = 'B';
-                    } else {
-                        s[j] = 'R';
-                    }
-                }
-            }
-            boolean allR = true;
-            int firstB = 0;
-            for (int i = 0; i < m; i++) {
-                char c = s[i];
-                if (c != 'R') {
-                    firstB = i;
-                    allR = false;
+            MathUtils.Modular modular = new MathUtils.Modular(7);
+            ModGussianElimination mge = new ModGussianElimination(300, 300, modular);
+            while (true) {
+                int n = io.readInt();
+                int m = io.readInt();
+                if (n == 0 && m == 0) {
                     break;
                 }
-            }
-
-            if (allR) {
-                io.cache.append(dp(n, 2, n) + 1);
-                return;
-            }
-            int currentPeriod = 0;
-            int dist = firstB % 2 == 0 ? firstB + 1 : firstB;
-            for (int i = firstB; i < m; i++) {
-                char c = s[i];
-                if (c == 'R') {
-                    currentPeriod++;
-                } else {
-                    if (currentPeriod % 2 != 0) {
-                        dist = Math.min(dist, currentPeriod);
+                mge.clear(m, n);
+                for (int i = 0; i < m; i++) {
+                    int num = io.readInt();
+                    int time = -readTime() + readTime() + 1;
+                    mge.setRight(i, time);
+                    for (int k = 0; k < num; k++) {
+                        int id = io.readInt();
+                        mge.mat[i][id - 1]++;
                     }
-                    currentPeriod = 0;
                 }
-            }
+                boolean hasSolution = mge.solve();
 
-            if (n % 2 != 0) {
-                io.cache.append(0);
-                return;
-            }
-            io.cache.append(modular.mul(dp(n / 2, 1, (dist + 1) / 2), 2));
-        }
-
-        //Paint n edges, each connected edge component has size less than t+1 and greater than 0
-        public int dp(int n, int l, int r) {
-            int[] dp = new int[n + 1];
-            dp[0] = 1;
-            int[] preSum = new int[n + 1];
-            preSum[0] = 1;
-            for (int i = 1; i < n; i++) {
-                preSum[i] = preSum[i - 1];
-                if (l > i) {
+                if (!hasSolution) {
+                    io.cache.append("Inconsistent data.\n");
                     continue;
                 }
-                dp[i] = preSum[i - l];
-                if (i - r - 1 >= 0) {
-                    dp[i] = modular.plus(dp[i], -preSum[i - r - 1]);
+                if(mge.rank < n) {
+                    io.cache.append("Multiple solutions.\n");
+                    continue;
                 }
-                preSum[i] = modular.plus(dp[i], preSum[i]);
+                for (int i = 0; i < n; i++) {
+                    if (mge.solutions[i] >= 3) {
+                        io.cache.append(mge.solutions[i]);
+                    } else {
+                        io.cache.append(mge.solutions[i] + 7);
+                    }
+                    io.cache.append(' ');
+                }
+                io.cache.setLength(io.cache.length() - 1);
+                io.cache.append('\n');
             }
-            for (int i = l; i <= r && i <= n; i++) {
-                int count = modular.mul(dp[n - i], i);
-                dp[n] = modular.plus(dp[n], count);
+
+            if (io.cache.length() > 0) {
+                io.cache.setLength(io.cache.length() - 1);
             }
-            return dp[n];
+        }
+
+        char[] date = new char[3];
+        public int readTime() {
+            io.readString(date, 0);
+            if (date[0] == 'M') {
+                return 1;
+            }
+            if (date[2] == 'E') {
+                return 2;
+            }
+            if (date[0] == 'W') {
+                return 3;
+            }
+            if (date[1] == 'H') {
+                return 4;
+            }
+            if (date[0] == 'F') {
+                return 5;
+            }
+            if (date[1] == 'A') {
+                return 6;
+            }
+            if (date[0] == 'S') {
+                return 7;
+            }
+            throw new RuntimeException();
         }
     }
 
-    /**
-     * 模运算
-     */
-    public static class Modular {
-        final int m;
+    public static class ModGussianElimination {
+        int[][] mat;
+        int[] solutions;
+        int rank;
+        MathUtils.Power power;
+        MathUtils.Modular modular;
+        int n;
+        int m;
 
-        public Modular(int m) {
+        public ModGussianElimination(int n, int m, MathUtils.Modular modular) {
+            this.n = n;
             this.m = m;
+            mat = new int[n + 1][m + 1];
+            solutions = mat[n];
+            this.modular = modular;
+            power = new MathUtils.Power(modular);
         }
 
-        public int valueOf(int x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
+        public void clear(int n, int m) {
+            this.n = n;
+            this.m = m;
+            for (int i = 0; i <= n; i++) {
+                for (int j = 0; j <= m; j++) {
+                    mat[i][j] = 0;
+                }
             }
-            return x;
+            solutions = mat[n];
         }
 
-        public int valueOf(long x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
+
+        public void setRight(int row, int val) {
+            mat[row][m] = val;
+        }
+
+        public boolean solve() {
+            for (int i = 0; i <= n; i++) {
+                for (int j = 0; j <= m; j++) {
+                    mat[i][j] = modular.valueOf(mat[i][j]);
+                }
             }
-            return (int) x;
+
+            int now = 0;
+            for (int i = 0; i < m; i++) {
+                int maxRow = now;
+                for (int j = now; j < n; j++) {
+                    if (mat[j][i] != 0) {
+                        maxRow = j;
+                        break;
+                    }
+                }
+
+                if (mat[maxRow][i] == 0) {
+                    continue;
+                }
+                swapRow(now, maxRow);
+                divideRow(now, mat[now][i]);
+                for (int j = now + 1; j < n; j++) {
+                    if (mat[j][i] == 0) {
+                        continue;
+                    }
+                    int f = mat[j][i];
+                    subtractRow(j, now, f);
+                }
+
+                now++;
+            }
+
+            rank = now;
+            for (int i = now; i < n; i++) {
+                if (mat[i][m] != 0) {
+                    return false;
+                }
+            }
+
+            for (int i = now - 1; i >= 0; i--) {
+                int x = -1;
+                for (int j = 0; j < m; j++) {
+                    if (mat[i][j] != 0) {
+                        x = j;
+                        break;
+                    }
+                }
+                mat[n][x] = modular.mul(mat[i][m], power.inverse(mat[i][x]));
+                for (int j = i - 1; j >= 0; j--) {
+                    if (mat[j][x] == 0) {
+                        continue;
+                    }
+                    mat[j][m] = modular.plus(mat[j][m], -modular.mul(mat[j][x], mat[n][x]));
+                    mat[j][x] = 0;
+                }
+            }
+            return true;
         }
 
-        public int mul(int x, int y) {
-            return valueOf((long) x * y);
+        void swapRow(int i, int j) {
+            int[] row = mat[i];
+            mat[i] = mat[j];
+            mat[j] = row;
         }
 
-        public int plus(int x, int y) {
-            return valueOf(x + y);
+        void subtractRow(int i, int j, int f) {
+            for (int k = 0; k <= m; k++) {
+                mat[i][k] = modular.plus(mat[i][k], -modular.mul(mat[j][k], f));
+            }
+        }
+
+        void divideRow(int i, int f) {
+            int divisor = power.inverse(f);
+            for (int k = 0; k <= m; k++) {
+                mat[i][k] = modular.mul(mat[i][k], divisor);
+            }
         }
 
         @Override
         public String toString() {
-            return "mod " + m;
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < n; i++) {
+                StringBuilder row = new StringBuilder();
+                for (int j = 0; j < m; j++) {
+                    if (mat[i][j] == 0) {
+                        continue;
+                    }
+                    if (mat[i][j] != 1) {
+                        row.append(mat[i][j]);
+                    }
+                    row.append("x").append(j).append('+');
+                }
+                if (row.length() > 0) {
+                    row.setLength(row.length() - 1);
+                } else {
+                    row.append(0);
+                }
+                row.append("=").append(mat[i][m]);
+                builder.append(row).append('\n');
+            }
+            return builder.toString();
+        }
+    }
+
+    public static class MathUtils {
+        private static Random random = new Random(123456789);
+
+
+        /**
+         * 模运算
+         */
+        public static class Modular {
+            final int m;
+
+            public Modular(int m) {
+                this.m = m;
+            }
+
+            public int valueOf(int x) {
+                x %= m;
+                if (x < 0) {
+                    x += m;
+                }
+                return x;
+            }
+
+            public int valueOf(long x) {
+                x %= m;
+                if (x < 0) {
+                    x += m;
+                }
+                return (int) x;
+            }
+
+            public int mul(int x, int y) {
+                return valueOf((long) x * y);
+            }
+
+            public int plus(int x, int y) {
+                return valueOf(x + y);
+            }
+
+            @Override
+            public String toString() {
+                return "mod " + m;
+            }
+        }
+
+
+        /**
+         * 幂运算
+         */
+        public static class Power {
+            final Modular modular;
+
+            public Power(Modular modular) {
+                this.modular = modular;
+            }
+
+            public int pow(int x, long n) {
+                if (n == 0) {
+                    return 1;
+                }
+                long r = pow(x, n >> 1);
+                r = modular.valueOf(r * r);
+                if ((n & 1) == 1) {
+                    r = modular.valueOf(r * x);
+                }
+                return (int) r;
+            }
+
+            public int inverse(int x) {
+                return pow(x, modular.m - 2);
+            }
+
+            public int pow2(int x) {
+                return x * x;
+            }
+
+            public long pow2(long x) {
+                return x * x;
+            }
+
+            public double pow2(double x) {
+                return x * x;
+            }
         }
     }
 

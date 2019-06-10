@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-public class AGC033E {
+public class POJ1681 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -37,7 +37,6 @@ public class AGC033E {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        Modular modular = new Modular((int) 1e9 + 7);
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -50,117 +49,6 @@ public class AGC033E {
         }
 
         public void solve() {
-            int n = io.readInt();
-            int m = io.readInt();
-            char[] s = new char[m];
-            io.readString(s, 0);
-            if (s[0] != 'R') {
-                for (int j = 0; j < m; j++) {
-                    if (s[j] == 'R') {
-                        s[j] = 'B';
-                    } else {
-                        s[j] = 'R';
-                    }
-                }
-            }
-            boolean allR = true;
-            int firstB = 0;
-            for (int i = 0; i < m; i++) {
-                char c = s[i];
-                if (c != 'R') {
-                    firstB = i;
-                    allR = false;
-                    break;
-                }
-            }
-
-            if (allR) {
-                io.cache.append(dp(n, 2, n) + 1);
-                return;
-            }
-            int currentPeriod = 0;
-            int dist = firstB % 2 == 0 ? firstB + 1 : firstB;
-            for (int i = firstB; i < m; i++) {
-                char c = s[i];
-                if (c == 'R') {
-                    currentPeriod++;
-                } else {
-                    if (currentPeriod % 2 != 0) {
-                        dist = Math.min(dist, currentPeriod);
-                    }
-                    currentPeriod = 0;
-                }
-            }
-
-            if (n % 2 != 0) {
-                io.cache.append(0);
-                return;
-            }
-            io.cache.append(modular.mul(dp(n / 2, 1, (dist + 1) / 2), 2));
-        }
-
-        //Paint n edges, each connected edge component has size less than t+1 and greater than 0
-        public int dp(int n, int l, int r) {
-            int[] dp = new int[n + 1];
-            dp[0] = 1;
-            int[] preSum = new int[n + 1];
-            preSum[0] = 1;
-            for (int i = 1; i < n; i++) {
-                preSum[i] = preSum[i - 1];
-                if (l > i) {
-                    continue;
-                }
-                dp[i] = preSum[i - l];
-                if (i - r - 1 >= 0) {
-                    dp[i] = modular.plus(dp[i], -preSum[i - r - 1]);
-                }
-                preSum[i] = modular.plus(dp[i], preSum[i]);
-            }
-            for (int i = l; i <= r && i <= n; i++) {
-                int count = modular.mul(dp[n - i], i);
-                dp[n] = modular.plus(dp[n], count);
-            }
-            return dp[n];
-        }
-    }
-
-    /**
-     * 模运算
-     */
-    public static class Modular {
-        final int m;
-
-        public Modular(int m) {
-            this.m = m;
-        }
-
-        public int valueOf(int x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return x;
-        }
-
-        public int valueOf(long x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return (int) x;
-        }
-
-        public int mul(int x, int y) {
-            return valueOf((long) x * y);
-        }
-
-        public int plus(int x, int y) {
-            return valueOf(x + y);
-        }
-
-        @Override
-        public String toString() {
-            return "mod " + m;
         }
     }
 

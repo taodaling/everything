@@ -310,7 +310,15 @@ public class Splay implements Cloneable {
     public static Splay bruteForceMerge(Splay a, Splay b) {
         if (a == NIL) {
             return b;
+        } else if (b == NIL) {
+            return a;
         }
+        if (a.size < b.size) {
+            Splay tmp = a;
+            a = b;
+            b = tmp;
+        }
+
         a = selectMaxAsRoot(a);
         int k = a.key;
         while (b != NIL) {

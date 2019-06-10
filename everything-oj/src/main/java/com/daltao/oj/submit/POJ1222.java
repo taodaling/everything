@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-public class AGC033E {
+public class POJ1222 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -37,7 +37,6 @@ public class AGC033E {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        Modular modular = new Modular((int) 1e9 + 7);
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -49,118 +48,210 @@ public class AGC033E {
             solve();
         }
 
+
+        XorGuassianElimination ge = new XorGuassianElimination(5 * 6, 5 * 6);
+        ArrayIndex arrayIndex = new ArrayIndex(5, 6);
+        int[][] dirs = new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+
         public void solve() {
-            int n = io.readInt();
-            int m = io.readInt();
-            char[] s = new char[m];
-            io.readString(s, 0);
-            if (s[0] != 'R') {
-                for (int j = 0; j < m; j++) {
-                    if (s[j] == 'R') {
-                        s[j] = 'B';
-                    } else {
-                        s[j] = 'R';
-                    }
-                }
+            int t = io.readInt();
+            for (int i = 1; i <= t; i++) {
+                solveSingle(i);
             }
-            boolean allR = true;
-            int firstB = 0;
-            for (int i = 0; i < m; i++) {
-                char c = s[i];
-                if (c != 'R') {
-                    firstB = i;
-                    allR = false;
-                    break;
-                }
-            }
-
-            if (allR) {
-                io.cache.append(dp(n, 2, n) + 1);
-                return;
-            }
-            int currentPeriod = 0;
-            int dist = firstB % 2 == 0 ? firstB + 1 : firstB;
-            for (int i = firstB; i < m; i++) {
-                char c = s[i];
-                if (c == 'R') {
-                    currentPeriod++;
-                } else {
-                    if (currentPeriod % 2 != 0) {
-                        dist = Math.min(dist, currentPeriod);
-                    }
-                    currentPeriod = 0;
-                }
-            }
-
-            if (n % 2 != 0) {
-                io.cache.append(0);
-                return;
-            }
-            io.cache.append(modular.mul(dp(n / 2, 1, (dist + 1) / 2), 2));
         }
 
-        //Paint n edges, each connected edge component has size less than t+1 and greater than 0
-        public int dp(int n, int l, int r) {
-            int[] dp = new int[n + 1];
-            dp[0] = 1;
-            int[] preSum = new int[n + 1];
-            preSum[0] = 1;
-            for (int i = 1; i < n; i++) {
-                preSum[i] = preSum[i - 1];
-                if (l > i) {
-                    continue;
+        public void solveSingle(int testCaseNum) {
+            ge.clear();
+
+            for (int i = 0; i < 5; i++) {
+                for (int j = 0; j < 6; j++) {
+                    int row = arrayIndex.indexOf(i, j);
+                    ge.setRight(arrayIndex.indexOf(i, j), io.readInt());
+                    ge.mat[row][row] = 1;
+                    for (int[] dir : dirs) {
+                        if (!arrayIndex.isValidIndex(i + dir[0], j + dir[1])) {
+                            continue;
+                        }
+                        ge.mat[row][arrayIndex.indexOf(i + dir[0], j + dir[1])] = 1;
+                    }
                 }
-                dp[i] = preSum[i - l];
-                if (i - r - 1 >= 0) {
-                    dp[i] = modular.plus(dp[i], -preSum[i - r - 1]);
+            }
+
+            io.cache.append("PUZZLE #").append(testCaseNum).append('\n');
+            ge.solve();
+            for (int i = 0; i < 5; i++) {
+                for (int j = 0; j < 6; j++) {
+                    io.cache.append(ge.solutions[arrayIndex.indexOf(i, j)]).append(' ');
                 }
-                preSum[i] = modular.plus(dp[i], preSum[i]);
+                io.cache.append('\n');
             }
-            for (int i = l; i <= r && i <= n; i++) {
-                int count = modular.mul(dp[n - i], i);
-                dp[n] = modular.plus(dp[n], count);
-            }
-            return dp[n];
         }
     }
 
-    /**
-     * 模运算
-     */
-    public static class Modular {
-        final int m;
+    public static class ArrayIndex {
+        int[] dimensions;
 
-        public Modular(int m) {
-            this.m = m;
+        public ArrayIndex(int... dimensions) {
+            this.dimensions = dimensions;
         }
 
-        public int valueOf(int x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
+        public int indexOf(int a, int b) {
+            return a * dimensions[1] + b;
+        }
+
+        public int indexOf(int a, int b, int c) {
+            return indexOf(a, b) * dimensions[2] + c;
+        }
+
+        public int indexOf(int a, int b, int c, int d) {
+            return indexOf(a, b, c) * dimensions[3] + d;
+        }
+
+        public int indexOf(int a, int b, int c, int d, int e) {
+            return indexOf(a, b, c, d) * dimensions[4] + e;
+        }
+
+        public boolean isValid(int a, int d) {
+            return dimensions[d] > a && a >= 0;
+        }
+
+        public boolean isValidIndex(int a) {
+            return isValid(a, 0);
+        }
+
+        public boolean isValidIndex(int a, int b) {
+            return isValidIndex(a) && isValid(b, 1);
+        }
+
+        public boolean isValidIndex(int a, int b, int c) {
+            return isValidIndex(a, b) && isValid(c, 2);
+        }
+
+        public boolean isValidIndex(int a, int b, int c, int d) {
+            return isValidIndex(a, b, c) && isValid(d, 3);
+        }
+
+        public int indexOfSpecifiedDimension(int index, int d) {
+            return indexOfSpecifiedDimension0(index, d, dimensions.length - 1);
+        }
+
+        private int indexOfSpecifiedDimension0(int index, int t, int now) {
+            return now == t ? index % dimensions[now] : indexOfSpecifiedDimension0(index / dimensions[now], t, now - 1);
+        }
+    }
+
+    public static class XorGuassianElimination {
+        int[][] mat;
+        int[] solutions;
+
+        public XorGuassianElimination(int n, int m) {
+            mat = new int[n + 1][m + 1];
+            solutions = mat[n];
+        }
+
+        public void clear() {
+            for (int[] row : mat) {
+                Arrays.fill(row, 0);
             }
-            return x;
         }
 
-        public int valueOf(long x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
+        public void swapRow(int i, int j) {
+            int[] tmp = mat[i];
+            mat[i] = mat[j];
+            mat[j] = tmp;
+        }
+
+        public void setRight(int row, int val) {
+            mat[row][mat[row].length - 1] = val;
+        }
+
+        /**
+         * Let a[i] = a[i] ^ a[j]
+         */
+        public void xorRow(int i, int j) {
+            int m = mat[0].length;
+            for (int k = 0; k < m; k++) {
+                mat[i][k] ^= mat[j][k];
             }
-            return (int) x;
         }
 
-        public int mul(int x, int y) {
-            return valueOf((long) x * y);
-        }
+        public boolean solve() {
+            int n = mat.length - 1;
+            int m = mat[0].length - 1;
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < m; j++) {
+                    mat[i][j] &= 1;
+                }
+            }
+            int now = 0;
+            for (int i = 0; i < n; i++) {
+                int swapRow = -1;
+                for (int j = now; j < m; j++) {
+                    if (mat[j][i] != 0) {
+                        swapRow = j;
+                        break;
+                    }
+                }
+                if (swapRow == -1) {
+                    continue;
+                }
+                swapRow(now, swapRow);
+                for (int j = now + 1; j < m; j++) {
+                    if (mat[j][i] == 1) {
+                        xorRow(j, now);
+                    }
+                }
+                now++;
+            }
 
-        public int plus(int x, int y) {
-            return valueOf(x + y);
+            for (int i = now; i < n; i++) {
+                if (mat[i][m] != 0) {
+                    return false;
+                }
+            }
+
+            for (int i = now - 1; i >= 0; i--) {
+                int x = -1;
+                for (int j = 0; j < m; j++) {
+                    if (mat[i][j] != 0) {
+                        x = j;
+                        break;
+                    }
+                }
+                mat[n][x] = mat[i][m];
+                for (int j = i - 1; j >= 0; j--) {
+                    if (mat[j][x] == 0) {
+                        continue;
+                    }
+                    mat[j][x] = 0;
+                    mat[j][m] ^= mat[n][x];
+                }
+            }
+            return true;
         }
 
         @Override
         public String toString() {
-            return "mod " + m;
+            StringBuilder builder = new StringBuilder();
+            int n = mat.length - 1;
+            int m = mat[0].length - 1;
+            for (int i = 0; i < n; i++) {
+                StringBuilder row = new StringBuilder();
+                for (int j = 0; j < m; j++) {
+                    if (mat[i][j] == 0) {
+                        continue;
+                    }
+                    row.append("x").append(j).append('+');
+                }
+                if (row.length() > 0) {
+                    row.setLength(row.length() - 1);
+                } else {
+                    row.append(0);
+                }
+                row.append("=").append(mat[i][m]);
+                builder.append(row).append('\n');
+            }
+            return builder.toString();
         }
     }
 
