@@ -6,16 +6,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class CFContest {
+public class CF1172C {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -44,8 +40,9 @@ public class CFContest {
     public static class Task implements Runnable {
         final FastIO io;
         final Debug debug;
-        int inf = (int) 1e9 + 2;
+        int inf = (int) 1e8;
         MathUtils.Modular modular = new MathUtils.Modular(998244353);
+        MathUtils.Power power = new MathUtils.Power(modular);
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -57,16 +54,90 @@ public class CFContest {
             solve();
         }
 
+        int[][] f;
+        int[][] h;
+
+        int n;
+        int m;
+        int fW;
+        int hW;
+        int[] inv;
+
         public void solve() {
-            int n = io.readInt();
-            int m = n * 2 / 3;
-            int r = n - m;
-            for (int i = 0; i < m; i++) {
-                io.cache.append(i).append(' ').append(0).append('\n');
+            n = io.readInt();
+            m = io.readInt();
+            int[] a = new int[n];
+            int[] count = new int[2];
+            for (int i = 0; i < n; i++) {
+                a[i] = io.readInt();
+                count[a[i] % 2]++;
             }
-            for (int i = 0; i < r; i++) {
-                io.cache.append(i * 2).append(' ').append(3).append('\n');
+            int[] w = new int[n];
+            for (int i = 0; i < n; i++) {
+                w[i] = io.readInt();
+                if (a[i] % 2 == 0) {
+                    hW += w[i];
+                } else {
+                    fW += w[i];
+                }
             }
+
+            inv = new int[m * 2 + 1];
+            for (int i = 0; i < m * 2 + 1; i++) {
+                inv[i] = power.inverse(modular.valueOf(hW + fW + i - m));
+            }
+
+            f = new int[m + 1][m + 1];
+            h = new int[m + 1][m + 1];
+            for (int i = 0; i <= m; i++) {
+                Arrays.fill(f[i], -1);
+                Arrays.fill(h[i], -1);
+            }
+
+            for (int i = 0; i <= m; i++) {
+                f[i][0] = 1;
+                h[i][0] = 1;
+            }
+
+            for (int i = 0; i < n; i++) {
+                if (a[i] % 2 == 1) {
+                    io.cache.append(modular.mul(w[i], f(0, m)));
+                } else {
+                    io.cache.append(modular.mul(w[i], h(0, m)));
+                }
+                io.cache.append('\n');
+            }
+        }
+
+        public int f(int i, int k) {
+            if (f[i][k] == -1) {
+                int j = (m - k) - i;
+                int fixI = modular.plus(i, fW);
+                int fixJ = modular.plus(hW, -j);
+                f[i][k] = 0;
+                int inv = this.inv[i - j + m];
+                f[i][k] = modular.plus(f[i][k], modular.mul(modular.mul(fixI + 1, inv),
+                        f(i + 1, k - 1)));
+                f[i][k] = modular.plus(f[i][k], modular.mul(modular.mul(fixJ, inv),
+                        f(i, k - 1)));
+            }
+            return f[i][k];
+        }
+
+        public int h(int i, int k) {
+            if (h[i][k] == -1) {
+                int j = (m - k) - i;
+                int fixI = modular.plus(i, fW);
+                int fixJ = modular.plus(hW, -j);
+                h[i][k] = 0;
+                int inv = this.inv[i - j + m];
+
+                h[i][k] = modular.plus(h[i][k], modular.mul(modular.mul(fixJ - 1, inv),
+                        h(i, k - 1)));
+                h[i][k] = modular.plus(h[i][k], modular.mul(modular.mul(fixI, inv),
+                        h(i + 1, k - 1)));
+            }
+            return h[i][k];
         }
     }
 
