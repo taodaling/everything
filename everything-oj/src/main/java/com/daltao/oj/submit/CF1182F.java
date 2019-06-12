@@ -1,19 +1,19 @@
 package com.daltao.oj.submit;
 
+import com.sun.org.apache.xpath.internal.operations.Mod;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class CFContest {
+public class CF1182F {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -42,7 +42,7 @@ public class CFContest {
     public static class Task implements Runnable {
         final FastIO io;
         final Debug debug;
-        int inf = (int) 1e9 + 2;
+        int inf = (int) 1e8;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -51,190 +51,34 @@ public class CFContest {
 
         @Override
         public void run() {
-            //bruteForce();
-            solve();
+            int t = io.readInt();
+            while (t-- > 0)
+                solve();
         }
 
         public void solve() {
-            MathUtils.Modular modular = new MathUtils.Modular((int) 1e9 + 7);
-            MathUtils.Power power = new MathUtils.Power(modular);
-            MathUtils.Modular exp = new MathUtils.Modular((int) 1e9 + 6);
-            long n = io.readLong();
-            int f1 = io.readInt();
-            int f2 = io.readInt();
-            int f3 = io.readInt();
-            int c = io.readInt();
-            Matrix t = new Matrix(3, 3);
-            t.mat[0][0] = 1;
-            t.mat[0][1] = 1;
-            t.mat[0][2] = 1;
-            t.mat[1][0] = 1;
-            t.mat[2][1] = 1;
-            Matrix transform = Matrix.pow(t, n - 4, exp);
+            int a = io.readInt();
+            int b = io.readInt();
+            int p = io.readInt();
+            int q = io.readInt();
 
-            Matrix vec1 = new Matrix(3, 1);
-            vec1.mat[0][0] = 2;
-            vec1.mat[1][0] = 1;
-            vec1.mat[2][0] = 1;
-            vec1 = Matrix.mul(transform, vec1, exp);
+            p %= q;
+            MathUtils.ExtGCD gcd = new MathUtils.ExtGCD();
+            int g = (int)gcd.extgcd(q, p);
+            p /= g;
+            q /= g;
 
-            Matrix vec2 = new Matrix(3, 1);
-            vec2.mat[0][0] = 3;
-            vec2.mat[1][0] = 2;
-            vec2.mat[2][0] = 1;
-            vec2 = Matrix.mul(transform, vec2, exp);
+            MathUtils.Modular modular = new MathUtils.Modular(q);
 
-            Matrix vec3 = new Matrix(3, 1);
-            vec3.mat[0][0] = 4;
-            vec3.mat[1][0] = 2;
-            vec3.mat[2][0] = 1;
-            vec3 = Matrix.mul(transform, vec3, exp);
+            int t1 = p / 2;
+            int t2 = (p + 1) / 2;
+            int n1 = modular.plus(t1, -q);
+            n1 = modular.valueOf(n1 * gcd.x);
+            int n2 = modular.plus(t2, -q);
+            n2 = modular.valueOf(n2 * gcd.x);
 
-            Matrix cMat = new Matrix(5, 5);
-            cMat.mat = new int[][]
-                    {
-                            {1, 1, 1, 1, 0},
-                            {1, 0, 0, 0, 0},
-                            {0, 1, 0, 0, 0},
-                            {0, 0, 0, 1, 2},
-                            {0, 0, 0, 0, 1}};
-            Matrix vec4 = new Matrix(5, 1);
-            vec4.mat[0][0] = 14;
-            vec4.mat[1][0] = 6;
-            vec4.mat[2][0] = 2;
-            vec4.mat[3][0] = 8;
-            vec4.mat[4][0] = 1;
-
-            Matrix t2 = Matrix.pow(cMat, n - 4, exp);
-            vec4 = Matrix.mul(t2, vec4, exp);
-
-            int f = power.pow(c, vec4.mat[2][0]);
-            f = modular.mul(f, power.pow(f1, vec1.mat[2][0]));
-            f = modular.mul(f, power.pow(f2, vec2.mat[2][0]));
-            f = modular.mul(f, power.pow(f3, vec3.mat[2][0]));
-
-            io.cache.append(f);
+            io.cache.append(Math.min(n1, n2)).append('\n');
         }
-
-        public void bruteForce() {
-            MathUtils.Modular modular = new MathUtils.Modular((int) 1e9 + 7);
-            MathUtils.Power power = new MathUtils.Power(modular);
-            MathUtils.Modular exp = new MathUtils.Modular((int) 1e9 + 6);
-            long n = io.readLong();
-            int f1 = io.readInt();
-            int f2 = io.readInt();
-            int f3 = io.readInt();
-            int c = io.readInt();
-
-            for (int i = 4; i <= n; i++) {
-                int t = power.pow(c, 2 * i - 6);
-                t = modular.mul(f1, t);
-                t = modular.mul(f2, t);
-                t = modular.mul(f3, t);
-                f1 = f2;
-                f2 = f3;
-                f3 = t;
-            }
-
-            io.cache.append(f3);
-        }
-    }
-
-    public static class Matrix implements Cloneable {
-        int[][] mat;
-        int n;
-        int m;
-
-        public Matrix(Matrix model) {
-            n = model.n;
-            m = model.m;
-            mat = new int[n][m];
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    mat[i][j] = model.mat[i][j];
-                }
-            }
-        }
-
-        public Matrix(int n, int m) {
-            this.n = n;
-            this.m = m;
-            mat = new int[n][m];
-        }
-
-        public void fill(int v) {
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    mat[i][j] = v;
-                }
-            }
-        }
-
-        public void asStandard() {
-            fill(0);
-            for (int i = 0; i < n && i < m; i++) {
-                mat[i][i] = 1;
-            }
-        }
-
-        public static Matrix mul(Matrix a, Matrix b, MathUtils.Modular modular) {
-            Matrix c = new Matrix(a.n, b.m);
-            for (int i = 0; i < c.n; i++) {
-                for (int j = 0; j < c.m; j++) {
-                    for (int k = 0; k < a.m; k++) {
-                        c.mat[i][j] = modular.plus(c.mat[i][j], modular.mul(a.mat[i][k], b.mat[k][j]));
-                    }
-                }
-            }
-            return c;
-        }
-
-        public static Matrix pow(Matrix x, long n, MathUtils.Modular modular) {
-            if (n == 0) {
-                Matrix r = new Matrix(x.n, x.m);
-                r.asStandard();
-                return r;
-            }
-            Matrix r = pow(x, n >> 1, modular);
-            r = Matrix.mul(r, r, modular);
-            if (n % 2 == 1) {
-                r = Matrix.mul(r, x, modular);
-            }
-            return r;
-        }
-
-
-        void subtractRow(int i, int j, double f) {
-            for (int k = 0; k < m; k++) {
-                mat[i][k] -= mat[j][k] * f;
-            }
-        }
-
-        void divideRow(int i, double f) {
-            for (int k = 0; k < m; k++) {
-                mat[i][k] /= f;
-            }
-        }
-
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    builder.append(mat[i][j]).append(' ');
-                }
-                builder.append('\n');
-            }
-            return builder.toString();
-        }
-
-    }
-
-    public static class Node {
-        List<Node> next = new ArrayList<>(2);
-        Node comeFrom;
-        int height;
-        boolean visit;
-        int id;
     }
 
     public static class MathUtils {
