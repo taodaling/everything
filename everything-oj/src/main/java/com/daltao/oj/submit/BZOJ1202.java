@@ -5,11 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
-public class BZOJ1059 {
+public class BZOJ1202 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -47,140 +45,24 @@ public class BZOJ1059 {
 
         @Override
         public void run() {
-            int t = io.readInt();
-            while (t-- > 0)
+            int w = io.readInt();
+            while (w-- > 0)
                 solve();
         }
 
+        DifferenceConstraintSystem dcs = new DifferenceConstraintSystem(101);
+
         public void solve() {
             int n = io.readInt();
-            KMAlgo km = new KMAlgo(n, n);
-            int total = 0;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < n; j++) {
-                    int v = io.readInt();
-                    if (v == 1) {
-                        km.addEdge(i, j);
-                    }
-                }
-                if (km.matchLeft(i)) {
-                    total++;
-                }
+            int m = io.readInt();
+            dcs.clear(n + 1);
+            for (int i = 0; i < m; i++) {
+                int s = io.readInt();
+                int t = io.readInt();
+                int v = io.readInt();
+                dcs.differenceEqualTo(t, s - 1, v);
             }
-
-            if (total == n) {
-                io.cache.append("Yes\n");
-            } else {
-                io.cache.append("No\n");
-            }
-        }
-    }
-
-    public static class KMAlgo {
-        public static class Node {
-            List<Node> nodes = new ArrayList(2);
-            int visited;
-            Node partner;
-            int id;
-
-            @Override
-            public String toString() {
-                return "" + id;
-            }
-        }
-
-        Node[] leftSides;
-        Node[] rightSides;
-        int version;
-
-        public KMAlgo(int l, int r) {
-            leftSides = new Node[l];
-            for (int i = 0; i < l; i++) {
-                leftSides[i] = new Node();
-                leftSides[i].id = i;
-            }
-            rightSides = new Node[r];
-            for (int i = 0; i < r; i++) {
-                rightSides[i] = new Node();
-                rightSides[i].id = i;
-            }
-        }
-
-        public void addEdge(int lId, int rId) {
-            leftSides[lId].nodes.add(rightSides[rId]);
-            rightSides[rId].nodes.add(leftSides[lId]);
-        }
-
-        private void init() {
-            version++;
-        }
-
-        /**
-         * Determine can we find a partner for a left node to enhance the matching degree.
-         */
-        public boolean matchLeft(int id) {
-            if (leftSides[id].partner != null) {
-                return false;
-            }
-            init();
-            return findPartner(leftSides[id]);
-        }
-
-        /**
-         * Determine can we find a partner for a right node to enhance the matching degree.
-         */
-        public boolean matchRight(int id) {
-            if (rightSides[id].partner != null) {
-                return false;
-            }
-            init();
-            return findPartner(rightSides[id]);
-        }
-
-        private boolean findPartner(Node src) {
-            if (src.visited == version) {
-                return false;
-            }
-            src.visited = version;
-            for (Node node : src.nodes) {
-                if (!tryRelease(node)) {
-                    continue;
-                }
-                node.partner = src;
-                src.partner = node;
-                return true;
-            }
-            return false;
-        }
-
-        private boolean tryRelease(Node src) {
-            if (src.visited == version) {
-                return false;
-            }
-            src.visited = version;
-            if (src.partner == null) {
-                return true;
-            }
-            if (findPartner(src.partner)) {
-                src.partner = null;
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = 1; i < leftSides.length; i++) {
-                if (leftSides[i].partner == null) {
-                    continue;
-                }
-                builder.append(leftSides[i].id).append(" - ").append(leftSides[i].partner.id).append(" || ");
-            }
-            if (builder.length() > 0) {
-                builder.setLength(builder.length() - 4);
-            }
-            return builder.toString();
+            io.cache.append(dcs.hasSolution()).append('\n');
         }
     }
 
@@ -472,6 +354,161 @@ public class BZOJ1059 {
             }
             outputName(name);
             System.out.println(Arrays.deepToString(x));
+        }
+    }
+
+    public static class DifferenceConstraintSystem {
+        private static class Node {
+            List<Edge> edges = new ArrayList(2);
+            long dist;
+            boolean inque;
+            int times;
+            int id;
+
+            @Override
+            public String toString() {
+                return "a" + id;
+            }
+        }
+
+        private static class Edge {
+            final Node next;
+            final long len;
+
+            private Edge(Node next, long len) {
+                this.next = next;
+                this.len = len;
+            }
+
+            @Override
+            public String toString() {
+                return String.format("- %s <= %d", next.toString(), len);
+            }
+        }
+
+        Node[] nodes;
+        Deque<Node> deque;
+        int n;
+
+        public DifferenceConstraintSystem(int n) {
+            this.n = n;
+            deque = new ArrayDeque(n);
+            nodes = new Node[n];
+            for (int i = 0; i < n; i++) {
+                nodes[i] = new Node();
+                nodes[i].id = i;
+            }
+        }
+
+        public void clear(int n) {
+            this.n = n;
+            for (int i = 0; i < n; i++) {
+                nodes[i].edges.clear();
+            }
+        }
+
+        public void differenceLessThanOrEqualTo(int i, int j, long d) {
+            nodes[j].edges.add(new Edge(nodes[i], d));
+        }
+
+        public void differenceGreaterThanOrEqualTo(int i, int j, long d) {
+            differenceLessThanOrEqualTo(j, i, -d);
+        }
+
+        public void differenceEqualTo(int i, int j, long d) {
+            differenceGreaterThanOrEqualTo(i, j, d);
+            differenceLessThanOrEqualTo(i, j, d);
+        }
+
+        public void differenceLessThan(int i, int j, long d) {
+            differenceLessThanOrEqualTo(i, j, d - 1);
+        }
+
+        public void differenceGreaterThan(int i, int j, long d) {
+            differenceGreaterThanOrEqualTo(i, j, d + 1);
+        }
+
+        boolean hasSolution;
+
+        private boolean spfa() {
+            while (!deque.isEmpty()) {
+                Node head = deque.removeFirst();
+                head.inque = false;
+                if (head.times >= n) {
+                    return false;
+                }
+                for (Edge edge : head.edges) {
+                    Node node = edge.next;
+                    if (node.dist <= edge.len + head.dist) {
+                        continue;
+                    }
+                    node.dist = edge.len + head.dist;
+                    if (node.inque) {
+                        continue;
+                    }
+                    node.times++;
+                    node.inque = true;
+                    deque.addLast(node);
+                }
+            }
+            return true;
+        }
+
+        public long possibleSolutionOf(int i) {
+            return nodes[i].dist;
+        }
+
+        private void prepare(long initDist) {
+            deque.clear();
+            for (int i = 0; i < n; i++) {
+                nodes[i].dist = initDist;
+                nodes[i].inque = true;
+                nodes[i].times = 0;
+            }
+        }
+
+        public boolean hasSolution() {
+            prepare(0);
+            for (int i = 0; i < n; i++) {
+                deque.addLast(nodes[i]);
+            }
+            hasSolution = spfa();
+            return hasSolution;
+        }
+
+        public static final long INF = (long) 2e18;
+
+        /**
+         * Find max(ai - aj), if INF is returned, it means no constraint between ai and aj
+         */
+        public long findMaxDifferenceBetween(int i, int j) {
+            prepare(INF);
+            deque.addLast(nodes[j]);
+            spfa();
+            return nodes[j].dist;
+        }
+
+        /**
+         * Find min(ai - aj), if INF is returned, it means no constraint between ai and aj
+         */
+        public long findMinDifferenceBetween(int i, int j) {
+            long r = findMaxDifferenceBetween(j, i);
+            if (r == INF) {
+                return INF;
+            }
+            return -r;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            if (!hasSolution) {
+                return "impossible";
+            }
+            for (int i = 0; i < n; i++) {
+                builder.append("a").append(i).append("=").append(nodes[i].dist).append('\n');
+            }
+            return builder.toString();
         }
     }
 }

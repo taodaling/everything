@@ -5,11 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
-public class BZOJ1059 {
+public class BZOJ1059V2 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -54,21 +52,27 @@ public class BZOJ1059 {
 
         public void solve() {
             int n = io.readInt();
-            KMAlgo km = new KMAlgo(n, n);
-            int total = 0;
+            ISAP isap = new ISAP(n + n + 2);
+            int idOfSrc = n + n + 1;
+            int idOfDst = idOfSrc + 1;
+            isap.setSource(idOfSrc);
+            isap.setTarget(idOfDst);
+            for (int i = 0; i < n; i++) {
+                isap.getChannel(idOfSrc, i + 1).modify(1, 0);
+                isap.getChannel(i + 1 + n, idOfDst).modify(1, 0);
+            }
             for (int i = 0; i < n; i++) {
                 for (int j = 0; j < n; j++) {
                     int v = io.readInt();
                     if (v == 1) {
-                        km.addEdge(i, j);
+                        isap.getChannel(i + 1, j + 1 + n).modify(1, 0);
                     }
-                }
-                if (km.matchLeft(i)) {
-                    total++;
                 }
             }
 
-            if (total == n) {
+            isap.bfs();
+            double total = isap.sendFlow(inf);
+            if (Math.abs(total - n) < 0.5) {
                 io.cache.append("Yes\n");
             } else {
                 io.cache.append("No\n");
@@ -76,12 +80,285 @@ public class BZOJ1059 {
         }
     }
 
-    public static class KMAlgo {
+
+    public static class ISAP {
+        Node[] nodes;
+        int[] distanceCnt;
+        Node source;
+        Node target;
+        int nodeNum;
+        Map<Long, DirectChannel> channelMap = new HashMap();
+        Deque<Node> deque;
+        boolean bfsFlag = false;
+
+        public List<Node> getComponentS() {
+            List<Node> result = new ArrayList();
+            for (int i = 1; i <= nodeNum; i++) {
+                nodes[i].visited = false;
+            }
+            deque.addLast(source);
+            source.visited = true;
+            while (!deque.isEmpty()) {
+                Node head = deque.removeFirst();
+                result.add(head);
+                for (Channel channel : head.channelList) {
+                    if (channel.getFlow() == channel.getCapacity()) {
+                        continue;
+                    }
+                    Node node = channel.getDst();
+                    if (node.visited) {
+                        continue;
+                    }
+                    node.visited = true;
+                    deque.addLast(node);
+                }
+            }
+            return result;
+        }
+
+        public Collection<DirectChannel> getChannels() {
+            return channelMap.values();
+        }
+
+        public DirectChannel getChannel(int src, int dst) {
+            Long id = (((long) src) << 32) | dst;
+            DirectChannel channel = channelMap.get(id);
+            if (channel == null) {
+                channel = new DirectChannel(nodes[src], nodes[dst], 0, id.hashCode());
+                nodes[src].channelList.add(channel);
+                nodes[dst].channelList.add(channel.getInverse());
+                channelMap.put(id, channel);
+            }
+            return channel;
+        }
+
+        public ISAP(int nodeNum) {
+            this.nodeNum = nodeNum;
+            deque = new ArrayDeque(nodeNum);
+            nodes = new Node[nodeNum + 1];
+            distanceCnt = new int[nodeNum + 2];
+            for (int i = 1; i <= nodeNum; i++) {
+                Node node = new Node();
+                node.id = i;
+                nodes[i] = node;
+            }
+        }
+
+        public double sendFlow(double flow) {
+            bfs();
+            double flowSnapshot = flow;
+            while (flow > 0 && source.distance < nodeNum) {
+                flow -= send(source, flow);
+            }
+            return flowSnapshot - flow;
+        }
+
+        public double send(Node node, double flowRemain) {
+            if (node == target) {
+                return flowRemain;
+            }
+
+            double flowSnapshot = flowRemain;
+            int nextDistance = node.distance - 1;
+            for (Channel channel : node.channelList) {
+                double channelRemain = channel.getCapacity() - channel.getFlow();
+                Node dst = channel.getDst();
+                if (channelRemain == 0 || dst.distance != nextDistance) {
+                    continue;
+                }
+                double actuallySend = send(channel.getDst(), Math.min(flowRemain, channelRemain));
+                channel.sendFlow(actuallySend);
+                flowRemain -= actuallySend;
+                if (flowRemain == 0) {
+                    break;
+                }
+            }
+
+            if (flowSnapshot == flowRemain) {
+                if (--distanceCnt[node.distance] == 0) {
+                    distanceCnt[source.distance]--;
+                    source.distance = nodeNum;
+                    distanceCnt[source.distance]++;
+                    if (node != source) {
+                        distanceCnt[++node.distance]++;
+                    }
+                } else {
+                    distanceCnt[++node.distance]++;
+                }
+            }
+
+            return flowSnapshot - flowRemain;
+        }
+
+        public void setSource(int id) {
+            source = nodes[id];
+        }
+
+        public void setTarget(int id) {
+            target = nodes[id];
+        }
+
+        public void bfs() {
+            if (bfsFlag) {
+                return;
+            }
+            bfsFlag = true;
+            Arrays.fill(distanceCnt, 0);
+            deque.clear();
+
+            for (int i = 1; i <= nodeNum; i++) {
+                nodes[i].distance = nodeNum;
+            }
+
+            target.distance = 0;
+            deque.addLast(target);
+
+            while (!deque.isEmpty()) {
+                Node head = deque.removeFirst();
+                distanceCnt[head.distance]++;
+                for (Channel channel : head.channelList) {
+                    Channel inverse = channel.getInverse();
+                    if (inverse.getCapacity() == inverse.getFlow()) {
+                        continue;
+                    }
+                    Node dst = channel.getDst();
+                    if (dst.distance != nodeNum) {
+                        continue;
+                    }
+                    dst.distance = head.distance + 1;
+                    deque.addLast(dst);
+                }
+            }
+        }
+
+        public static interface Channel {
+            public Node getSrc();
+
+            public Node getDst();
+
+            public double getCapacity();
+
+            public double getFlow();
+
+            public void sendFlow(double volume);
+
+            public Channel getInverse();
+        }
+
+        public static class DirectChannel implements Channel {
+            final Node src;
+            final Node dst;
+            final int id;
+            double capacity;
+            double flow;
+            Channel inverse;
+
+            public DirectChannel(Node src, Node dst, int capacity, int id) {
+                this.src = src;
+                this.dst = dst;
+                this.capacity = capacity;
+                this.id = id;
+                inverse = new InverseChannelWrapper(this);
+            }
+
+            public void modify(double cap, double flow) {
+                this.flow = flow;
+                this.capacity = cap;
+            }
+
+            @Override
+            public String toString() {
+                return String.format("%s--%s/%s-->%s", getSrc(), getFlow(), getCapacity(), getDst());
+            }
+
+            @Override
+            public Node getSrc() {
+                return src;
+            }
+
+            @Override
+            public Channel getInverse() {
+                return inverse;
+            }
+
+
+            public void setCapacity(int expand) {
+                capacity = expand;
+            }
+
+            @Override
+            public Node getDst() {
+                return dst;
+            }
+
+            @Override
+            public double getCapacity() {
+                return capacity;
+            }
+
+            @Override
+            public double getFlow() {
+                return flow;
+            }
+
+            @Override
+            public void sendFlow(double volume) {
+                flow += volume;
+            }
+
+
+        }
+
+        public static class InverseChannelWrapper implements Channel {
+            final Channel channel;
+
+            public InverseChannelWrapper(Channel channel) {
+                this.channel = channel;
+            }
+
+            @Override
+            public Channel getInverse() {
+                return channel;
+            }
+
+
+            @Override
+            public Node getSrc() {
+                return channel.getDst();
+            }
+
+            @Override
+            public Node getDst() {
+                return channel.getSrc();
+            }
+
+            @Override
+            public double getCapacity() {
+                return channel.getFlow();
+            }
+
+            @Override
+            public double getFlow() {
+                return 0;
+            }
+
+            @Override
+            public void sendFlow(double volume) {
+                channel.sendFlow(-volume);
+            }
+
+
+            @Override
+            public String toString() {
+                return String.format("%s--%s/%s-->%s", getSrc(), getFlow(), getCapacity(), getDst());
+            }
+        }
+
         public static class Node {
-            List<Node> nodes = new ArrayList(2);
-            int visited;
-            Node partner;
             int id;
+            int distance;
+            boolean visited;
+            List<Channel> channelList = new ArrayList(1);
 
             @Override
             public String toString() {
@@ -89,96 +366,11 @@ public class BZOJ1059 {
             }
         }
 
-        Node[] leftSides;
-        Node[] rightSides;
-        int version;
-
-        public KMAlgo(int l, int r) {
-            leftSides = new Node[l];
-            for (int i = 0; i < l; i++) {
-                leftSides[i] = new Node();
-                leftSides[i].id = i;
-            }
-            rightSides = new Node[r];
-            for (int i = 0; i < r; i++) {
-                rightSides[i] = new Node();
-                rightSides[i].id = i;
-            }
-        }
-
-        public void addEdge(int lId, int rId) {
-            leftSides[lId].nodes.add(rightSides[rId]);
-            rightSides[rId].nodes.add(leftSides[lId]);
-        }
-
-        private void init() {
-            version++;
-        }
-
-        /**
-         * Determine can we find a partner for a left node to enhance the matching degree.
-         */
-        public boolean matchLeft(int id) {
-            if (leftSides[id].partner != null) {
-                return false;
-            }
-            init();
-            return findPartner(leftSides[id]);
-        }
-
-        /**
-         * Determine can we find a partner for a right node to enhance the matching degree.
-         */
-        public boolean matchRight(int id) {
-            if (rightSides[id].partner != null) {
-                return false;
-            }
-            init();
-            return findPartner(rightSides[id]);
-        }
-
-        private boolean findPartner(Node src) {
-            if (src.visited == version) {
-                return false;
-            }
-            src.visited = version;
-            for (Node node : src.nodes) {
-                if (!tryRelease(node)) {
-                    continue;
-                }
-                node.partner = src;
-                src.partner = node;
-                return true;
-            }
-            return false;
-        }
-
-        private boolean tryRelease(Node src) {
-            if (src.visited == version) {
-                return false;
-            }
-            src.visited = version;
-            if (src.partner == null) {
-                return true;
-            }
-            if (findPartner(src.partner)) {
-                src.partner = null;
-                return true;
-            }
-            return false;
-        }
-
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
-            for (int i = 1; i < leftSides.length; i++) {
-                if (leftSides[i].partner == null) {
-                    continue;
-                }
-                builder.append(leftSides[i].id).append(" - ").append(leftSides[i].partner.id).append(" || ");
-            }
-            if (builder.length() > 0) {
-                builder.setLength(builder.length() - 4);
+            for (DirectChannel channel : getChannels()) {
+                builder.append(channel).append('\n');
             }
             return builder.toString();
         }
