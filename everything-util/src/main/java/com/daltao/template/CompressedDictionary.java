@@ -11,8 +11,6 @@ public class CompressedDictionary<T> {
 
     public CompressedDictionary(T[] data, Comparator<T> cmp, boolean needReverse) {
         data = data.clone();
-        cmp = cmp;
-
         Arrays.sort(data, cmp);
         int n = data.length;
 

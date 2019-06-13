@@ -53,7 +53,7 @@ public class MathUtils {
             while (m > 1) {
                 exp += m / p;
                 fact = modular.mul(fact, power.pow(g[pc], m / pc));
-                fact = modular.mul(fact, g[(int)(m % pc)]);
+                fact = modular.mul(fact, g[(int) (m % pc)]);
                 m /= p;
             }
             return fact;
@@ -288,6 +288,28 @@ public class MathUtils {
                 x &= ~(1L << i);
             }
             return x;
+        }
+
+        /**
+         * Determine whether x is subset of y
+         */
+        public boolean subset(long x, long y) {
+            return intersect(x, y) == x;
+        }
+
+        /**
+         * Merge two set
+         */
+        public long merge(long x, long y) {
+            return x | y;
+        }
+
+        public long intersect(long x, long y) {
+            return x & y;
+        }
+
+        public long differ(long x, long y) {
+            return x - intersect(x, y);
         }
     }
 

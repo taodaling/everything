@@ -1,6 +1,11 @@
 package com.daltao.template;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.List;
+import java.util.TreeSet;
 
 public class DifferenceConstraintSystem {
     private static class Node {
@@ -17,11 +22,11 @@ public class DifferenceConstraintSystem {
     }
 
     private static class Edge {
-        final Node src;
-        final Node next;
+        final DifferenceConstraintSystem.Node src;
+        final DifferenceConstraintSystem.Node next;
         final long len;
 
-        private Edge(Node src, Node next, long len) {
+        private Edge(DifferenceConstraintSystem.Node src, DifferenceConstraintSystem.Node next, long len) {
             this.src = src;
             this.next = next;
             this.len = len;
@@ -79,9 +84,9 @@ public class DifferenceConstraintSystem {
     boolean hasSolution;
 
     private boolean dijkstraElog2V() {
-        TreeSet<Node> heap = new TreeSet(new Comparator<Node>() {
+        TreeSet<Node> heap = new TreeSet(new Comparator<DifferenceConstraintSystem.Node>() {
             @Override
-            public int compare(Node a, Node b) {
+            public int compare(DifferenceConstraintSystem.Node a, DifferenceConstraintSystem.Node b) {
                 return a.dist == b.dist ? a.id - b.id : a.dist < b.dist ? -1 : 1;
             }
         });
@@ -125,6 +130,7 @@ public class DifferenceConstraintSystem {
         return true;
     }
 
+
     public long possibleSolutionOf(int i) {
         return nodes[i].dist;
     }
@@ -153,11 +159,7 @@ public class DifferenceConstraintSystem {
      * Find max(ai - aj), if INF is returned, it means no constraint between ai and aj
      */
     public long findMaxDifferenceBetween(int i, int j) {
-        prepare(INF);
-        deque.addLast(nodes[j]);
-        nodes[j].dist = 0;
-        nodes[j].inque = true;
-        spfa();
+        runSpfaSince(j);
         return nodes[i].dist;
     }
 
@@ -170,6 +172,14 @@ public class DifferenceConstraintSystem {
             return INF;
         }
         return -r;
+    }
+
+    public void runSpfaSince(int j) {
+        prepare(INF);
+        deque.addLast(nodes[j]);
+        nodes[j].dist = 0;
+        nodes[j].inque = true;
+        spfa();
     }
 
     @Override

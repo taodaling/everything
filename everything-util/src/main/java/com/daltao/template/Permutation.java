@@ -46,6 +46,9 @@ public class Permutation {
         }
     }
 
+    /**
+     * return a * b^bp
+     */
     public static Permutation mul(Permutation a, int ap, Permutation b, int bp) {
         int n = a.n;
         int[] p = new int[n];

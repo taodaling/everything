@@ -1,4 +1,4 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
