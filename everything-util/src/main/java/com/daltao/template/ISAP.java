@@ -189,9 +189,14 @@ public class ISAP {
             inverse = new InverseChannelWrapper(this);
         }
 
-        public void modify(double cap, double flow) {
+        public void reset(double cap, double flow) {
             this.flow = flow;
             this.capacity = cap;
+        }
+
+        public void modify(double cap, double flow) {
+            this.capacity += cap;
+            this.flow += flow;
         }
 
         @Override

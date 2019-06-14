@@ -61,7 +61,7 @@ public class BZOJ1041 {
 
 
         public void solve() {
-            long r = io.readInt();
+            long r = io.readLong();
             long rr = r + r;
             if (r == 0) {
                 io.cache.append(1);

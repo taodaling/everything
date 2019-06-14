@@ -12,6 +12,7 @@ public class DifferenceConstraintSystem {
         List<Edge> edges = new ArrayList(2);
         long dist;
         boolean inque;
+        boolean instk;
         int times;
         int id;
 
@@ -84,7 +85,7 @@ public class DifferenceConstraintSystem {
     boolean hasSolution;
 
     private boolean dijkstraElog2V() {
-        TreeSet<Node> heap = new TreeSet(new Comparator<DifferenceConstraintSystem.Node>() {
+        TreeSet<Node> heap = new TreeSet(new Comparator<Node>() {
             @Override
             public int compare(DifferenceConstraintSystem.Node a, DifferenceConstraintSystem.Node b) {
                 return a.dist == b.dist ? a.id - b.id : a.dist < b.dist ? -1 : 1;
@@ -130,6 +131,44 @@ public class DifferenceConstraintSystem {
         return true;
     }
 
+    private static boolean spfaDfs0(Node root, long dist) {
+        if (root.dist <= dist) {
+            return true;
+        }
+        if (root.instk) {
+            return false;
+        }
+        root.instk = true;
+        root.dist = dist;
+        for (Edge edge : root.edges) {
+            if (!spfaDfs0(edge.next, dist + edge.len)) {
+                return false;
+            }
+        }
+        root.instk = false;
+        return true;
+    }
+
+    private static boolean spfaDfs1(Node root, long dist) {
+        root.instk = true;
+        for (Edge edge : root.edges) {
+            if (!spfaDfs0(edge.next, dist + edge.len)) {
+                return false;
+            }
+        }
+        root.instk = false;
+        return true;
+    }
+
+    private boolean spfaDfs() {
+        while (!deque.isEmpty()) {
+            Node head = deque.removeFirst();
+            if (!spfaDfs1(deque.removeFirst(), head.dist)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     public long possibleSolutionOf(int i) {
         return nodes[i].dist;
@@ -140,6 +179,8 @@ public class DifferenceConstraintSystem {
         for (int i = 0; i < n; i++) {
             nodes[i].dist = initDist;
             nodes[i].times = 0;
+            nodes[i].inque = false;
+            nodes[i].instk = false;
         }
     }
 
@@ -174,12 +215,16 @@ public class DifferenceConstraintSystem {
         return -r;
     }
 
-    public void runSpfaSince(int j) {
+    /**
+     * After invoking this method, the value of i is max(ai - aj)
+     */
+    public boolean runSpfaSince(int j) {
         prepare(INF);
         deque.addLast(nodes[j]);
         nodes[j].dist = 0;
         nodes[j].inque = true;
-        spfa();
+        hasSolution = spfa();
+        return hasSolution;
     }
 
     @Override

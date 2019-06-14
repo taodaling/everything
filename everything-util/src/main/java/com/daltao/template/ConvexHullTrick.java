@@ -42,6 +42,17 @@ public class ConvexHullTrick implements Iterable<ConvexHullTrick.Line> {
         }
 
         @Override
+        public int hashCode() {
+            return (int) (Double.doubleToLongBits(a) * 31 + Double.doubleToLongBits(b));
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            Line line = (Line) obj;
+            return a == line.a && b == line.b;
+        }
+
+        @Override
         public String toString() {
             return a + "x+" + b;
         }
@@ -58,7 +69,7 @@ public class ConvexHullTrick implements Iterable<ConvexHullTrick.Line> {
         return line.y(x);
     }
 
-    public void insert(double a, double b) {
+    public Line insert(double a, double b) {
         Line newLine = new Line(a, b);
         boolean add = true;
         while (add) {
@@ -119,6 +130,8 @@ public class ConvexHullTrick implements Iterable<ConvexHullTrick.Line> {
             setOrderByA.add(newLine);
             setOrderByLx.add(newLine);
         }
+
+        return newLine;
     }
 
     @Override
