@@ -220,6 +220,50 @@ public class MathUtils {
         }
     }
 
+    public static class Mobius {
+        int[] primes;
+        boolean[] isComp;
+        int[] mu;
+        int[] smallestPrimeFactor;
+        int[] numberOfSmallestPrimeFactor;
+        int primeLength;
+
+        public Mobius(int limit) {
+            isComp = new boolean[limit + 1];
+            primes = new int[limit + 1];
+            numberOfSmallestPrimeFactor = new int[limit + 1];
+            smallestPrimeFactor = new int[limit + 1];
+            mu = new int[limit + 1];
+            mu[1] = 1;
+            primeLength = 0;
+            for (int i = 2; i <= limit; i++) {
+                if (!isComp[i]) {
+                    primes[primeLength++] = i;
+                    numberOfSmallestPrimeFactor[i] = smallestPrimeFactor[i] = i;
+                    mu[i] = -1;
+                } else {
+                    if (numberOfSmallestPrimeFactor[i] != smallestPrimeFactor[i]) {
+                        mu[i] = 0;
+                    } else {
+                        mu[i] = mu[numberOfSmallestPrimeFactor[i]] *
+                                mu[i / numberOfSmallestPrimeFactor[i]];
+                    }
+                }
+                for (int j = 0, until = limit / i; j < primeLength && primes[j] <= until; j++) {
+                    int pi = primes[j] * i;
+                    smallestPrimeFactor[pi] = primes[j];
+                    numberOfSmallestPrimeFactor[pi] = smallestPrimeFactor[i] == primes[j]
+                            ? (numberOfSmallestPrimeFactor[i] * numberOfSmallestPrimeFactor[primes[j]])
+                            : numberOfSmallestPrimeFactor[primes[j]];
+                    isComp[pi] = true;
+                    if (i % primes[j] == 0) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * 模运算
      */

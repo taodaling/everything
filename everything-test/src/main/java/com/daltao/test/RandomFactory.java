@@ -25,6 +25,11 @@ public abstract class RandomFactory implements Factory<Input> {
         return random.nextDouble();
     }
 
+    protected double nextDouble(double l, double r)
+    {
+        return random.nextDouble() * (r - l) + l;
+    }
+
     protected long nextLong(long l, long r)
     {
         return l + (long)(nextDouble() * (r - l + 1));

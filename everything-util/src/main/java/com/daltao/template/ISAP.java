@@ -303,6 +303,9 @@ public class ISAP {
     public String toString() {
         StringBuilder builder = new StringBuilder();
         for (DirectChannel channel : getChannels()) {
+            if (channel.getFlow() == 0) {
+                continue;
+            }
             builder.append(channel).append('\n');
         }
         return builder.toString();
