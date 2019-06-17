@@ -133,9 +133,10 @@ public class MathUtils {
     /**
      * 扩展欧几里得
      */
-    public static class ExtGCD extends Gcd {
+    public static class ExtGCD {
         private long x;
         private long y;
+        private long g;
 
         public long getX() {
             return x;
@@ -150,15 +151,16 @@ public class MathUtils {
          */
         public long extgcd(long a, long b) {
             if (a >= b) {
-                return extgcd0(a, b);
+                g = extgcd0(a, b);
             } else {
-                long g = extgcd0(b, a);
+                g = extgcd0(b, a);
                 long tmp = x;
                 x = y;
                 y = tmp;
-                return g;
             }
+            return g;
         }
+
 
         private long extgcd0(long a, long b) {
             if (b == 0) {
@@ -268,7 +270,7 @@ public class MathUtils {
      * 模运算
      */
     public static class Modular {
-        final int m;
+        int m;
 
         public Modular(int m) {
             this.m = m;
@@ -815,6 +817,28 @@ public class MathUtils {
                 }
             }
             return -1;
+        }
+    }
+
+    public static class ModExpression {
+        ExtGCD extGCD = new ExtGCD();
+        Modular modular = new Modular(1);
+
+        /**
+         * Find ka=b(mod c) where k is the minimum possible non negative integer.
+         * <br>
+         * If it's impossible, -1 will be returned.
+         */
+        public long solve(long a, long b, int c) {
+            modular.m = c;
+            a = modular.valueOf(a);
+            b = modular.valueOf(b);
+            int g = (int) extGCD.extgcd((int) a, c);
+            if (b % g != 0) {
+                return -1;
+            }
+            modular.m = c / g;
+            return modular.valueOf(b / g * extGCD.getX());
         }
     }
 }

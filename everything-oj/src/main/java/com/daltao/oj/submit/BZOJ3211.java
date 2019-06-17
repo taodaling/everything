@@ -1,4 +1,4 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -6,8 +6,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.TreeSet;
 
-public class OJCodeTemplate {
+public class BZOJ3211 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -49,8 +51,109 @@ public class OJCodeTemplate {
         }
 
         public void solve() {
+            int n = io.readInt();
+            Node[] nodes = new Node[n + 1];
+            BIT bit = new BIT(n + 1);
+            TreeSet<Node> set = new TreeSet(Node.sortByIndex);
+            for (int i = 1; i <= n; i++) {
+                nodes[i] = new Node();
+                nodes[i].val = io.readInt();
+                nodes[i].index = i;
+                bit.update(i, nodes[i].val);
+                if (nodes[i].val > 1) {
+                    set.add(nodes[i]);
+                }
+            }
+
+
+            int m = io.readInt();
+            for (int i = 1; i <= m; i++) {
+                int x = io.readInt();
+                int l = io.readInt();
+                int r = io.readInt();
+                if (x == 1) {
+                    io.cache.append(bit.query(r) - bit.query(l - 1)).append('\n');
+                } else {
+                    Node last = nodes[r];
+                    while (last != null) {
+                        Node prev = set.floor(last);
+                        if (prev == null || prev.index < l) {
+                            break;
+                        }
+                        bit.update(prev.index, -prev.val);
+                        prev.val = (int) Math.sqrt(prev.val);
+                        bit.update(prev.index, prev.val);
+                        if (prev.val <= 1) {
+                            set.remove(prev);
+                        }
+                        last = nodes[prev.index - 1];
+                    }
+                }
+            }
         }
     }
+
+    public static class Node {
+        int val;
+        int index;
+
+        public static Comparator<Node> sortByIndex = new Comparator<Node>() {
+            @Override
+            public int compare(Node a, Node b) {
+                return a.index - b.index;
+            }
+        };
+    }
+
+    public static class BIT {
+        private long[] data;
+        private int n;
+
+        /**
+         * 创建大小A[1...n]
+         */
+        public BIT(int n) {
+            this.n = n;
+            data = new long[n + 1];
+        }
+
+        /**
+         * 查询A[1]+A[2]+...+A[i]
+         */
+        public long query(int i) {
+            long sum = 0;
+            for (; i > 0; i -= i & -i) {
+                sum += data[i];
+            }
+            return sum;
+        }
+
+        /**
+         * 将A[i]更新为A[i]+mod
+         */
+        public void update(int i, int mod) {
+            for (; i <= n; i += i & -i) {
+                data[i] += mod;
+            }
+        }
+
+        /**
+         * 将A全部清0
+         */
+        public void clear() {
+            Arrays.fill(data, 0);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 1; i <= n; i++) {
+                builder.append(query(i) - query(i - 1)).append(' ');
+            }
+            return builder.toString();
+        }
+    }
+
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder();

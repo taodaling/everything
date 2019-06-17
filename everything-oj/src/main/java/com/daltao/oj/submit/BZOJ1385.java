@@ -1,4 +1,4 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-public class OJCodeTemplate {
+public class BZOJ1385 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -45,10 +45,44 @@ public class OJCodeTemplate {
 
         @Override
         public void run() {
-            solve();
+            int t = io.readInt();
+            while (t-- > 0)
+                solve();
         }
 
         public void solve() {
+            Gcd gcd = new Gcd();
+            int n = io.readInt();
+            if (n == 1) {
+                io.readInt();
+                io.cache.append("YES\n");
+                return;
+            }
+            int a = io.readInt();
+            int b = io.readInt();
+            b /= gcd.gcd(a, b);
+            for (int i = 2; i < n; i++) {
+                b /= gcd.gcd(io.readInt(), b);
+            }
+            io.cache.append(b == 1 ? "YES" : "NO").append('\n');
+        }
+    }
+
+    public static class Gcd {
+        public long gcd(long a, long b) {
+            return a >= b ? gcd0(a, b) : gcd0(b, a);
+        }
+
+        private long gcd0(long a, long b) {
+            return b == 0 ? a : gcd0(b, a % b);
+        }
+
+        public int gcd(int a, int b) {
+            return a >= b ? gcd0(a, b) : gcd0(b, a);
+        }
+
+        private int gcd0(int a, int b) {
+            return b == 0 ? a : gcd0(b, a % b);
         }
     }
 
