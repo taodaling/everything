@@ -5,16 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-public class BZOJ3171 {
+public class BZOJ2424 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -55,99 +48,44 @@ public class BZOJ3171 {
             solve();
         }
 
-
         int n;
-        int m;
 
-        public int idOfLeftCell(int i, int j) {
-            return i * m + j + 1;
+        int idOfMonth(int i) {
+            return i + 1;
         }
 
-        public int idOfRightCell(int i, int j) {
-            return idOfLeftCell(i, j) + n * m;
+        int idOfSrc() {
+            return n + 1;
         }
 
-        public int idOfSrc() {
-            return n * m * 2 + 1;
-        }
-
-        public int idOfDst() {
+        int idOfDst() {
             return idOfSrc() + 1;
-        }
-
-        public int rightCellOnLeftOf(int i, int j) {
-            if (j == 0) {
-                return idOfRightCell(i, m - 1);
-            } else {
-                return idOfRightCell(i, j - 1);
-            }
-        }
-
-        public int rightCellOnRightOf(int i, int j) {
-            if (j == m - 1) {
-                return idOfRightCell(i, 0);
-            } else {
-                return idOfRightCell(i, j + 1);
-            }
-        }
-
-        public int rightCellOnUpOf(int i, int j) {
-            if (i == 0) {
-                return idOfRightCell(n - 1, j);
-            } else {
-                return idOfRightCell(i - 1, j);
-            }
-        }
-
-        public int rightCellOnDownOf(int i, int j) {
-            if (i == n - 1) {
-                return idOfRightCell(0, j);
-            } else {
-                return idOfRightCell(i + 1, j);
-            }
         }
 
         public void solve() {
             n = io.readInt();
-            m = io.readInt();
-
+            int m = io.readInt();
+            int s = io.readInt();
             MinCostMaxFlow mcmf = new MinCostMaxFlow(idOfDst());
-            int[][] dirs = new int[][]{
-                    {1, 0},
-                    {-1, 0},
-                    {0, 1},
-                    {0, -1}
-            };
+            int[] requirements = new int[n];
+            int[] prices = new int[n];
             for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    mcmf.getChannel(idOfSrc(), idOfLeftCell(i, j), 0).reset(1, 0);
-                    mcmf.getChannel(idOfRightCell(i, j), idOfDst(), 0).reset(1, 0);
-                    switch (io.readChar()) {
-                        case 'L':
-                            mcmf.getChannel(idOfLeftCell(i, j), rightCellOnLeftOf(i, j), 0).reset(1, 0);
-                            break;
-                        case 'R':
-                            mcmf.getChannel(idOfLeftCell(i, j), rightCellOnRightOf(i, j), 0).reset(1, 0);
-                            break;
-                        case 'U':
-                            mcmf.getChannel(idOfLeftCell(i, j), rightCellOnUpOf(i, j), 0).reset(1, 0);
-                            break;
-                        case 'D':
-                            mcmf.getChannel(idOfLeftCell(i, j), rightCellOnDownOf(i, j), 0).reset(1, 0);
-                            break;
-                    }
-                    mcmf.getChannel(idOfLeftCell(i, j), rightCellOnLeftOf(i, j), 1).reset(1, 0);
-                    mcmf.getChannel(idOfLeftCell(i, j), rightCellOnRightOf(i, j), 1).reset(1, 0);
-                    mcmf.getChannel(idOfLeftCell(i, j), rightCellOnUpOf(i, j), 1).reset(1, 0);
-                    mcmf.getChannel(idOfLeftCell(i, j), rightCellOnDownOf(i, j), 1).reset(1, 0);
+                requirements[i] = io.readInt();
+            }
+            for (int i = 0; i < n; i++) {
+                prices[i] = io.readInt();
+            }
+            for (int i = 0; i < n; i++) {
+                mcmf.getChannel(idOfSrc(), idOfMonth(i), prices[i]).reset(inf, 0);
+                mcmf.getChannel(idOfMonth(i), idOfDst(), 0).reset(requirements[i], 0);
+                if (i > 0) {
+                    mcmf.getChannel(idOfMonth(i - 1), idOfMonth(i), m).reset(s, 0);
                 }
             }
-
             mcmf.setSource(idOfSrc());
             mcmf.setTarget(idOfDst());
-
-            double fee = mcmf.send(n * m)[1];
-            io.cache.append((long)(fee + 0.5));
+            long ans = (long)(mcmf.send(inf)[1] + 0.5);
+            io.cache.append(ans);
         }
     }
 
