@@ -266,6 +266,50 @@ public class MathUtils {
         }
     }
 
+    public static class Euler {
+        int[] primes;
+        boolean[] isComp;
+        int[] euler;
+        int[] smallestPrimeFactor;
+        int[] numberOfSmallestPrimeFactor;
+        int primeLength;
+
+        public Euler(int limit) {
+            isComp = new boolean[limit + 1];
+            primes = new int[limit + 1];
+            numberOfSmallestPrimeFactor = new int[limit + 1];
+            smallestPrimeFactor = new int[limit + 1];
+            euler = new int[limit + 1];
+            euler[1] = 1;
+            primeLength = 0;
+            for (int i = 2; i <= limit; i++) {
+                if (!isComp[i]) {
+                    primes[primeLength++] = i;
+                    numberOfSmallestPrimeFactor[i] = smallestPrimeFactor[i] = i;
+                    euler[i] = i - 1;
+                } else {
+                    if (numberOfSmallestPrimeFactor[i] == i) {
+                        euler[i] = i - i / smallestPrimeFactor[i];
+                    } else {
+                        euler[i] = euler[numberOfSmallestPrimeFactor[i]] *
+                                euler[i / numberOfSmallestPrimeFactor[i]];
+                    }
+                }
+                for (int j = 0, until = limit / i; j < primeLength && primes[j] <= until; j++) {
+                    int pi = primes[j] * i;
+                    smallestPrimeFactor[pi] = primes[j];
+                    numberOfSmallestPrimeFactor[pi] = smallestPrimeFactor[i] == primes[j]
+                            ? (numberOfSmallestPrimeFactor[i] * numberOfSmallestPrimeFactor[primes[j]])
+                            : numberOfSmallestPrimeFactor[primes[j]];
+                    isComp[pi] = true;
+                    if (i % primes[j] == 0) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * 模运算
      */
