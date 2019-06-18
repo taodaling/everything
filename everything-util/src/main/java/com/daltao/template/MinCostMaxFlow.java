@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 public class MinCostMaxFlow {
     Node[] nodes;
     Deque<Node> deque;
@@ -15,7 +14,33 @@ public class MinCostMaxFlow {
     Node target;
     int nodeNum;
     final static double INF = 1e50;
-    Map<Long, Map<Double, DirectFeeChannel>> channelMap = new HashMap();
+
+    static class ID {
+        int src;
+        int dst;
+        double fee;
+
+        ID(int src, int dst, double fee) {
+            this.src = src;
+            this.dst = dst;
+            this.fee = fee;
+        }
+
+        @Override
+        public int hashCode() {
+            return (int) ((src * 31L + dst) * 31 + Double.doubleToLongBits(fee));
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            ID other = (ID) obj;
+            return src == other.src &&
+                    dst == other.dst &&
+                    fee == other.fee;
+        }
+    }
+
+    Map<ID, DirectFeeChannel> channelMap = new HashMap();
 
     public MinCostMaxFlow(int nodeNum) {
         this.nodeNum = nodeNum;
@@ -34,17 +59,16 @@ public class MinCostMaxFlow {
         target = nodes[id];
     }
 
+    ID id = new ID(0, 0, 0);
+
     public DirectFeeChannel getChannel(int src, int dst, double fee) {
-        long id = (((long) src) << 32) | dst;
-        Map<Double, DirectFeeChannel> map = channelMap.get(id);
-        if (map == null) {
-            map = new HashMap(1);
-            channelMap.put(id, map);
-        }
-        DirectFeeChannel channel = map.get(fee);
+        id.src = src;
+        id.dst = dst;
+        id.fee = fee;
+        DirectFeeChannel channel = channelMap.get(id);
         if (channel == null) {
             channel = addChannel(src, dst, fee);
-            map.put(fee, channel);
+            channelMap.put(new ID(src, dst, fee), channel);
         }
         return channel;
     }
@@ -278,5 +302,16 @@ public class MinCostMaxFlow {
         public String toString() {
             return "" + id;
         }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for (DirectFeeChannel channel : channelMap.values()) {
+            if (channel.getFlow() > 0) {
+                builder.append(channel).append('\n');
+            }
+        }
+        return builder.toString();
     }
 }
