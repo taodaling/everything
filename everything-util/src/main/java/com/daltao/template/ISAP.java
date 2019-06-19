@@ -308,6 +308,13 @@ public class ISAP {
             }
             builder.append(channel).append('\n');
         }
+
+        for (DirectChannel channel : getChannels()) {
+            if (channel.getFlow() != 0) {
+                continue;
+            }
+            builder.append(channel).append('\n');
+        }
         return builder.toString();
     }
 }
