@@ -6,12 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 public class CFContest {
     public static void main(String[] args) throws Exception {
@@ -43,6 +38,8 @@ public class CFContest {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e9 + 2;
+        BitOperator bitOperator = new BitOperator();
+        Modular modular = new Modular((int) 1e9 + 7);
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -51,937 +48,641 @@ public class CFContest {
 
         @Override
         public void run() {
-            //bruteForce();
             solve();
         }
 
-        public void solve() {
-            MathUtils.Modular modular = new MathUtils.Modular((int) 1e9 + 7);
-            MathUtils.Power power = new MathUtils.Power(modular);
-            MathUtils.Modular exp = new MathUtils.Modular((int) 1e9 + 6);
-            long n = io.readLong();
-            int f1 = io.readInt();
-            int f2 = io.readInt();
-            int f3 = io.readInt();
-            int c = io.readInt();
-            Matrix t = new Matrix(3, 3);
-            t.mat[0][0] = 1;
-            t.mat[0][1] = 1;
-            t.mat[0][2] = 1;
-            t.mat[1][0] = 1;
-            t.mat[2][1] = 1;
-            Matrix transform = Matrix.pow(t, n - 4, exp);
-
-            Matrix vec1 = new Matrix(3, 1);
-            vec1.mat[0][0] = 2;
-            vec1.mat[1][0] = 1;
-            vec1.mat[2][0] = 1;
-            vec1 = Matrix.mul(transform, vec1, exp);
-
-            Matrix vec2 = new Matrix(3, 1);
-            vec2.mat[0][0] = 3;
-            vec2.mat[1][0] = 2;
-            vec2.mat[2][0] = 1;
-            vec2 = Matrix.mul(transform, vec2, exp);
-
-            Matrix vec3 = new Matrix(3, 1);
-            vec3.mat[0][0] = 4;
-            vec3.mat[1][0] = 2;
-            vec3.mat[2][0] = 1;
-            vec3 = Matrix.mul(transform, vec3, exp);
-
-            Matrix cMat = new Matrix(5, 5);
-            cMat.mat = new int[][]
-                    {
-                            {1, 1, 1, 1, 0},
-                            {1, 0, 0, 0, 0},
-                            {0, 1, 0, 0, 0},
-                            {0, 0, 0, 1, 2},
-                            {0, 0, 0, 0, 1}};
-            Matrix vec4 = new Matrix(5, 1);
-            vec4.mat[0][0] = 14;
-            vec4.mat[1][0] = 6;
-            vec4.mat[2][0] = 2;
-            vec4.mat[3][0] = 8;
-            vec4.mat[4][0] = 1;
-
-            Matrix t2 = Matrix.pow(cMat, n - 4, exp);
-            vec4 = Matrix.mul(t2, vec4, exp);
-
-            int f = power.pow(c, vec4.mat[2][0]);
-            f = modular.mul(f, power.pow(f1, vec1.mat[2][0]));
-            f = modular.mul(f, power.pow(f2, vec2.mat[2][0]));
-            f = modular.mul(f, power.pow(f3, vec3.mat[2][0]));
-
-            io.cache.append(f);
-        }
-
-        public void bruteForce() {
-            MathUtils.Modular modular = new MathUtils.Modular((int) 1e9 + 7);
-            MathUtils.Power power = new MathUtils.Power(modular);
-            MathUtils.Modular exp = new MathUtils.Modular((int) 1e9 + 6);
-            long n = io.readLong();
-            int f1 = io.readInt();
-            int f2 = io.readInt();
-            int f3 = io.readInt();
-            int c = io.readInt();
-
-            for (int i = 4; i <= n; i++) {
-                int t = power.pow(c, 2 * i - 6);
-                t = modular.mul(f1, t);
-                t = modular.mul(f2, t);
-                t = modular.mul(f3, t);
-                f1 = f2;
-                f2 = f3;
-                f3 = t;
-            }
-
-            io.cache.append(f3);
-        }
-    }
-
-    public static class Matrix implements Cloneable {
-        int[][] mat;
         int n;
-        int m;
+        int t;
+        int[] songTimes;
+        int[] songTypes;
+        int mask;
+        int[] cnts = new int[4];
+        int[][][][] perm;
 
-        public Matrix(Matrix model) {
-            n = model.n;
-            m = model.m;
-            mat = new int[n][m];
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    mat[i][j] = model.mat[i][j];
-                }
+        public void solve() {
+            n = io.readInt();
+            t = io.readInt();
+
+
+            songTimes = new int[n + 1];
+            songTypes = new int[n + 1];
+            for (int i = 1; i <= n; i++) {
+                songTimes[i] = io.readInt();
+                songTypes[i] = io.readInt();
+                cnts[songTypes[i]]++;
             }
-        }
 
-        public Matrix(int n, int m) {
-            this.n = n;
-            this.m = m;
-            mat = new int[n][m];
-        }
-
-        public void fill(int v) {
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    mat[i][j] = v;
-                }
-            }
-        }
-
-        public void asStandard() {
-            fill(0);
-            for (int i = 0; i < n && i < m; i++) {
-                mat[i][i] = 1;
-            }
-        }
-
-        public static Matrix mul(Matrix a, Matrix b, MathUtils.Modular modular) {
-            Matrix c = new Matrix(a.n, b.m);
-            for (int i = 0; i < c.n; i++) {
-                for (int j = 0; j < c.m; j++) {
-                    for (int k = 0; k < a.m; k++) {
-                        c.mat[i][j] = modular.plus(c.mat[i][j], modular.mul(a.mat[i][k], b.mat[k][j]));
+            int[][][][] fr = new int[cnts[1] + 1][cnts[2] + 1][cnts[3] + 1][t + 1];
+            int[][][][] fw = new int[cnts[1] + 1][cnts[2] + 1][cnts[3] + 1][t + 1];
+            fr[0][0][0][0] = 1;
+            int[] abc = new int[4];
+            for (int i = 1; i <= n; i++) {
+                for (abc[1] = 0; abc[1] <= cnts[1]; abc[1]++) {
+                    for (abc[2] = 0; abc[2] <= cnts[2]; abc[2]++) {
+                        for (abc[3] = 0; abc[3] <= cnts[3]; abc[3]++) {
+                            for (int d = 0; d <= t; d++) {
+                                int a = abc[1];
+                                int b = abc[2];
+                                int c = abc[3];
+                                fw[a][b][c][d] = fr[a][b][c][d];
+                                if (abc[songTypes[i]] > 0 && d >= songTimes[i]) {
+                                    abc[songTypes[i]]--;
+                                    fw[a][b][c][d] = modular.plus(fw[a][b][c][d],
+                                            fr[abc[1]][abc[2]][abc[3]][d - songTimes[i]]);
+                                    abc[songTypes[i]]++;
+                                }
+                            }
+                        }
                     }
                 }
-            }
-            return c;
-        }
-
-        public static Matrix pow(Matrix x, long n, MathUtils.Modular modular) {
-            if (n == 0) {
-                Matrix r = new Matrix(x.n, x.m);
-                r.asStandard();
-                return r;
-            }
-            Matrix r = pow(x, n >> 1, modular);
-            r = Matrix.mul(r, r, modular);
-            if (n % 2 == 1) {
-                r = Matrix.mul(r, x, modular);
-            }
-            return r;
-        }
-
-
-        void subtractRow(int i, int j, double f) {
-            for (int k = 0; k < m; k++) {
-                mat[i][k] -= mat[j][k] * f;
-            }
-        }
-
-        void divideRow(int i, double f) {
-            for (int k = 0; k < m; k++) {
-                mat[i][k] /= f;
-            }
-        }
-
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    builder.append(mat[i][j]).append(' ');
-                }
-                builder.append('\n');
-            }
-            return builder.toString();
-        }
-
-    }
-
-    public static class Node {
-        List<Node> next = new ArrayList<>(2);
-        Node comeFrom;
-        int height;
-        boolean visit;
-        int id;
-    }
-
-    public static class MathUtils {
-        private static Random random = new Random(123456789);
-
-        public static class ExtLucasFactorial {
-            int exp;
-            int fact;
-            int p;
-            int pc;
-            Modular modular;
-            Power power;
-            ExtGCD extGCD = new ExtGCD();
-            int[] g;
-
-            /**
-             * O(pc)
-             *
-             * @param p  the prime
-             * @param pc p^c
-             * @param g  buffer
-             */
-            public ExtLucasFactorial(int p, int pc, int[] g) {
-                this.p = p;
-                this.pc = pc;
-                this.g = g;
-                modular = new Modular(pc);
-                power = new Power(modular);
-                g[0] = 1;
-                g[1] = 1;
-                for (int i = 2; i <= pc; i++) {
-                    if (i % p == 0) {
-                        g[i] = g[i - 1];
-                    } else {
-                        g[i] = modular.mul(g[i - 1], i);
-                    }
-                }
+                int[][][][] tmp = fr;
+                fr = fw;
+                fw = tmp;
             }
 
-            /**
-             * return m! (mod pc) without any factor which is multiple of p.
-             * <br>
-             * O(\log_2^2{m})
-             */
-            private int fact(long m) {
-                fact = 1;
-                exp = 0;
-                while (m > 1) {
-                    exp += m / p;
-                    fact = modular.mul(fact, power.pow(g[pc], m / pc));
-                    fact = modular.mul(fact, g[(int) (m % pc)]);
-                    m /= p;
-                }
-                return fact;
-            }
-
-            /**
-             * Find C(m,n), it means choose n elements from a set whose size is m.
-             * <br>
-             * O(\log_2^2{m})
-             */
-            public int composite(long m, long n) {
-                int v = fact(m);
-                int e = exp;
-                extGCD.extgcd(fact(n), pc);
-                v = modular.mul(v, modular.valueOf(extGCD.getX()));
-                e -= exp;
-                extGCD.extgcd(fact(m - n), pc);
-                v = modular.mul(v, modular.valueOf(extGCD.getX()));
-                e -= exp;
-                v = modular.mul(v, power.pow(p, e));
-                return v;
-            }
-        }
-
-        /**
-         * 扩展卢卡斯算法
-         */
-        public static class ExtLucas {
-            PollardRho pr = new PollardRho();
-            Map<Integer, ExtLucasFactorial> factorialMap = new HashMap();
-
-            public ExtLucas(int p) {
-                Map<Integer, Integer> factors = pr.findAllFactors(p);
-                for (Map.Entry<Integer, Integer> entry : factors.entrySet()) {
-                    factorialMap.put(entry.getValue(), new ExtLucasFactorial(entry.getKey(), entry.getValue(), new int[entry.getValue() + 1]));
-                }
-            }
-
-            /**
-             * Get C(m, n) % p
-             */
-            public int composite(long m, long n) {
-                ExtCRT extCRT = new ExtCRT();
-                for (Map.Entry<Integer, ExtLucasFactorial> entry : factorialMap.entrySet()) {
-                    extCRT.add(entry.getValue().composite(m, n), entry.getKey());
-                }
-                return (int) extCRT.r;
-            }
-        }
-
-        /**
-         * 扩展卢卡斯算法
-         */
-        public static class LongExtLucas {
-            LongPollardRho pr = new LongPollardRho();
-            Map<Integer, ExtLucasFactorial> factorialMap = new HashMap();
-
-            public LongExtLucas(long p) {
-                Map<Long, Long> factors = pr.findAllFactors(p);
-                for (Map.Entry<Long, Long> entry : factors.entrySet()) {
-                    factorialMap.put(entry.getValue().intValue(), new ExtLucasFactorial(entry.getKey().intValue(), entry.getValue().intValue(), new int[entry.getValue().intValue() + 1]));
-                }
-            }
-
-            /**
-             * Get C(m, n) % p
-             */
-            public int composite(long m, long n) {
-                ExtCRT extCRT = new ExtCRT();
-                for (Map.Entry<Integer, ExtLucasFactorial> entry : factorialMap.entrySet()) {
-                    extCRT.add(entry.getValue().composite(m, n), entry.getKey());
-                }
-                return (int) extCRT.r;
-            }
-        }
-
-        /**
-         * 扩展欧几里得
-         */
-        public static class ExtGCD extends Gcd {
-            private long x;
-            private long y;
-
-            public long getX() {
-                return x;
-            }
-
-            public long getY() {
-                return y;
-            }
-
-            /**
-             * Get g = Gcd(a, b) and find a way to set x and y to match ax+by=g
-             */
-            public long extgcd(long a, long b) {
-                if (a >= b) {
-                    return extgcd0(a, b);
-                } else {
-                    long g = extgcd0(b, a);
-                    long tmp = x;
-                    x = y;
-                    y = tmp;
-                    return g;
-                }
-            }
-
-            private long extgcd0(long a, long b) {
-                if (b == 0) {
-                    x = 1;
-                    y = 0;
-                    return a;
-                }
-                long g = extgcd0(b, a % b);
-                long n = x;
-                long m = y;
-                x = m;
-                y = n - m * (a / b);
-                return g;
-            }
-        }
-
-        public static class Gcd {
-            public long gcd(long a, long b) {
-                return a >= b ? gcd0(a, b) : gcd0(b, a);
-            }
-
-            private long gcd0(long a, long b) {
-                return b == 0 ? a : gcd0(b, a % b);
-            }
-
-            public int gcd(int a, int b) {
-                return a >= b ? gcd0(a, b) : gcd0(b, a);
-            }
-
-            private int gcd0(int a, int b) {
-                return b == 0 ? a : gcd0(b, a % b);
-            }
-        }
-
-        /**
-         * 欧拉筛
-         */
-        public static class EulerSieve {
-            int[] primes;
-            boolean[] isComp;
-            int primeLength;
-
-            public EulerSieve(int limit) {
-                isComp = new boolean[limit + 1];
-                primes = new int[limit + 1];
-                primeLength = 0;
-                for (int i = 2; i <= limit; i++) {
-                    if (!isComp[i]) {
-                        primes[primeLength++] = i;
-                    }
-                    for (int j = 0, until = limit / i; j < primeLength && primes[j] <= until; j++) {
-                        int pi = primes[j] * i;
-                        isComp[pi] = true;
-                        if (i % primes[j] == 0) {
-                            break;
+            perm = new int[cnts[1] + 1][cnts[2] + 1][cnts[3] + 1][4];
+            for (int a = 0; a <= cnts[1]; a++) {
+                for (int b = 0; b <= cnts[2]; b++) {
+                    for (int c = 0; c <= cnts[3]; c++) {
+                        for (int d = 0; d < 4; d++) {
+                            perm[a][b][c][d] = -1;
                         }
                     }
                 }
             }
+            perm[0][0][0][0] = 1;
+
+            int ans = 0;
+            for (int a = 0; a <= cnts[1]; a++) {
+                for (int b = 0; b <= cnts[2]; b++) {
+                    for (int c = 0; c <= cnts[3]; c++) {
+                        for (int d = 0; d < 4; d++) {
+                            int p = modular.mul(fr[a][b][c][t], perm(a, b, c, d));
+                            ans = modular.plus(ans, p);
+                        }
+                    }
+                }
+            }
+
+            io.cache.append(ans);
+        }
+
+        int perm(int a, int b, int c, int d) {
+            if (a < 0 || b < 0 || c < 0) {
+                return 0;
+            }
+            if (perm[a][b][c][d] == -1) {
+                perm[a][b][c][d] = 0;
+                int aa = a;
+                int bb = b;
+                int cc = c;
+                if (d == 0) {
+                    return perm[a][b][c][d];
+                }
+                int mul = 1;
+                if (d == 1) {
+                    mul = a;
+                    aa--;
+                } else if (d == 2) {
+                    mul = b;
+                    bb--;
+                } else if (d == 3) {
+                    mul = c;
+                    cc--;
+                }
+
+                for (int k = 0; k < 4; k++) {
+                    if (k == d) {
+                        continue;
+                    }
+                    perm[a][b][c][d] = modular.plus(perm[a][b][c][d],
+                            perm(aa, bb, cc, k));
+                }
+                perm[a][b][c][d] = modular.mul(perm[a][b][c][d], mul);
+            }
+
+            return perm[a][b][c][d];
+        }
+    }
+
+    /**
+     * 模运算
+     */
+    public static class Modular {
+        int m;
+
+        public Modular(int m) {
+            this.m = m;
+        }
+
+        public int valueOf(int x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
+            }
+            return x;
+        }
+
+        public int valueOf(long x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
+            }
+            return (int) x;
+        }
+
+        public int mul(int x, int y) {
+            return valueOf((long) x * y);
+        }
+
+        public int plus(int x, int y) {
+            return valueOf(x + y);
+        }
+
+        @Override
+        public String toString() {
+            return "mod " + m;
+        }
+    }
+
+    public static class BitOperator {
+        public int bitAt(int x, int i) {
+            return (x >> i) & 1;
+        }
+
+        public int bitAt(long x, int i) {
+            return (int) ((x >> i) & 1);
+        }
+
+        public int setBit(int x, int i, boolean v) {
+            if (v) {
+                x |= 1 << i;
+            } else {
+                x &= ~(1 << i);
+            }
+            return x;
+        }
+
+        public long setBit(long x, int i, boolean v) {
+            if (v) {
+                x |= 1L << i;
+            } else {
+                x &= ~(1L << i);
+            }
+            return x;
         }
 
         /**
-         * 模运算
+         * Determine whether x is subset of y
          */
-        public static class Modular {
-            final int m;
-
-            public Modular(int m) {
-                this.m = m;
-            }
-
-            public int valueOf(int x) {
-                x %= m;
-                if (x < 0) {
-                    x += m;
-                }
-                return x;
-            }
-
-            public int valueOf(long x) {
-                x %= m;
-                if (x < 0) {
-                    x += m;
-                }
-                return (int) x;
-            }
-
-            public int mul(int x, int y) {
-                return valueOf((long) x * y);
-            }
-
-            public int plus(int x, int y) {
-                return valueOf(x + y);
-            }
-
-            @Override
-            public String toString() {
-                return "mod " + m;
-            }
+        public boolean subset(long x, long y) {
+            return intersect(x, y) == x;
         }
 
         /**
-         * 位运算
+         * Merge two set
          */
-        public static class BitOperator {
-            public int bitAt(int x, int i) {
-                return (x >> i) & 1;
-            }
+        public long merge(long x, long y) {
+            return x | y;
+        }
 
-            public int bitAt(long x, int i) {
-                return (int) ((x >> i) & 1);
-            }
+        public long intersect(long x, long y) {
+            return x & y;
+        }
 
-            public int setBit(int x, int i, boolean v) {
-                if (v) {
-                    x |= 1 << i;
+        public long differ(long x, long y) {
+            return x - intersect(x, y);
+        }
+    }
+
+    public static class Randomized {
+        static Random random = new Random();
+
+        public static double nextDouble(double min, double max) {
+            return random.nextDouble() * (max - min) + min;
+        }
+
+        public static void randomizedArray(int[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                int tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(long[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                long tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(double[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                double tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(float[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                float tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static <T> void randomizedArray(T[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                T tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static int nextInt(int l, int r) {
+            return random.nextInt(r - l + 1) + l;
+        }
+    }
+
+
+    public static class Splay implements Cloneable {
+        public static final Splay NIL = new Splay();
+
+        static {
+            NIL.left = NIL;
+            NIL.right = NIL;
+            NIL.father = NIL;
+            NIL.size = 0;
+            NIL.key = Integer.MIN_VALUE;
+            NIL.sum = 0;
+        }
+
+        Splay left = NIL;
+        Splay right = NIL;
+        Splay father = NIL;
+        int size = 1;
+        int key;
+        long sum;
+
+        public static void splay(Splay x) {
+            if (x == NIL) {
+                return;
+            }
+            Splay y, z;
+            while ((y = x.father) != NIL) {
+                if ((z = y.father) == NIL) {
+                    y.pushDown();
+                    x.pushDown();
+                    if (x == y.left) {
+                        zig(x);
+                    } else {
+                        zag(x);
+                    }
                 } else {
-                    x &= ~(1 << i);
+                    z.pushDown();
+                    y.pushDown();
+                    x.pushDown();
+                    if (x == y.left) {
+                        if (y == z.left) {
+                            zig(y);
+                            zig(x);
+                        } else {
+                            zig(x);
+                            zag(x);
+                        }
+                    } else {
+                        if (y == z.left) {
+                            zag(x);
+                            zig(x);
+                        } else {
+                            zag(y);
+                            zag(x);
+                        }
+                    }
                 }
-                return x;
             }
 
-            public long setBit(long x, int i, boolean v) {
-                if (v) {
-                    x |= 1L << i;
+            x.pushDown();
+            x.pushUp();
+        }
+
+        public static void zig(Splay x) {
+            Splay y = x.father;
+            Splay z = y.father;
+            Splay b = x.right;
+
+            y.setLeft(b);
+            x.setRight(y);
+            z.changeChild(y, x);
+
+            y.pushUp();
+        }
+
+        public static void zag(Splay x) {
+            Splay y = x.father;
+            Splay z = y.father;
+            Splay b = x.left;
+
+            y.setRight(b);
+            x.setLeft(y);
+            z.changeChild(y, x);
+
+            y.pushUp();
+        }
+
+        public void setLeft(Splay x) {
+            left = x;
+            x.father = this;
+        }
+
+        public void setRight(Splay x) {
+            right = x;
+            x.father = this;
+        }
+
+        public void changeChild(Splay y, Splay x) {
+            if (left == y) {
+                setLeft(x);
+            } else {
+                setRight(x);
+            }
+        }
+
+        public void pushUp() {
+            if (this == NIL) {
+                return;
+            }
+            size = left.size + right.size + 1;
+            sum = left.sum + right.sum + key;
+        }
+
+        public void pushDown() {
+        }
+
+        public static int toArray(Splay root, int[] data, int offset) {
+            if (root == NIL) {
+                return offset;
+            }
+            offset = toArray(root.left, data, offset);
+            data[offset++] = root.key;
+            offset = toArray(root.right, data, offset);
+            return offset;
+        }
+
+        public static void toString(Splay root, StringBuilder builder) {
+            if (root == NIL) {
+                return;
+            }
+            root.pushDown();
+            toString(root.left, builder);
+            builder.append(root.key).append(',');
+            toString(root.right, builder);
+        }
+
+        public Splay clone() {
+            try {
+                return (Splay) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public static Splay cloneTree(Splay splay) {
+            if (splay == NIL) {
+                return NIL;
+            }
+            splay = splay.clone();
+            splay.left = cloneTree(splay.left);
+            splay.right = cloneTree(splay.right);
+            return splay;
+        }
+
+        public static Splay add(Splay root, Splay node) {
+            if (root == NIL) {
+                return node;
+            }
+            Splay p = root;
+            while (root != NIL) {
+                p = root;
+                root.pushDown();
+                if (root.key < node.key) {
+                    root = root.right;
                 } else {
-                    x &= ~(1L << i);
+                    root = root.left;
                 }
-                return x;
             }
+
+            if (p.key < node.key) {
+                p.setRight(node);
+            } else {
+                p.setLeft(node);
+            }
+            p.pushUp();
+            splay(node);
+            return node;
         }
 
         /**
-         * 幂运算
+         * Make the node with the minimum key as the root of tree
          */
-        public static class Power {
-            final Modular modular;
-
-            public Power(Modular modular) {
-                this.modular = modular;
+        public static Splay selectMinAsRoot(Splay root) {
+            if (root == NIL) {
+                return root;
             }
-
-            public int pow(int x, long n) {
-                if (n == 0) {
-                    return 1;
-                }
-                long r = pow(x, n >> 1);
-                r = modular.valueOf(r * r);
-                if ((n & 1) == 1) {
-                    r = modular.valueOf(r * x);
-                }
-                return (int) r;
+            root.pushDown();
+            while (root.left != NIL) {
+                root = root.left;
+                root.pushDown();
             }
-
-            public int inverse(int x) {
-                return pow(x, modular.m - 2);
-            }
-
-            public int pow2(int x) {
-                return x * x;
-            }
-
-            public long pow2(long x) {
-                return x * x;
-            }
-
-            public double pow2(double x) {
-                return x * x;
-            }
+            splay(root);
+            return root;
         }
 
         /**
-         * 对数
+         * Make the node with the maximum key as the root of tree
          */
-        public static class Log2 {
-            public int ceilLog(int x) {
-                return 32 - Integer.numberOfLeadingZeros(x - 1);
+        public static Splay selectMaxAsRoot(Splay root) {
+            if (root == NIL) {
+                return root;
             }
-
-            public int floorLog(int x) {
-                return 31 - Integer.numberOfLeadingZeros(x);
+            root.pushDown();
+            while (root.right != NIL) {
+                root = root.right;
+                root.pushDown();
             }
-
-            public int ceilLog(long x) {
-                return 64 - Long.numberOfLeadingZeros(x - 1);
-            }
-
-            public int floorLog(long x) {
-                return 63 - Long.numberOfLeadingZeros(x);
-            }
+            splay(root);
+            return root;
         }
 
         /**
-         * 乘法逆元
+         * delete root of tree, then merge remain nodes into a new tree, and return the new root
          */
-        public static class InverseNumber {
-            int[] inv;
-
-            public InverseNumber(int[] inv, int limit, Modular modular) {
-                this.inv = inv;
-                inv[1] = 1;
-                int p = modular.m;
-                for (int i = 2; i <= limit; i++) {
-                    int k = p / i;
-                    int r = p % i;
-                    inv[i] = modular.mul(-k, inv[r]);
-                }
-            }
-
-            public InverseNumber(int limit, Modular modular) {
-                this(new int[limit + 1], limit, modular);
-            }
+        public static Splay deleteRoot(Splay root) {
+            root.pushDown();
+            Splay left = splitLeft(root);
+            Splay right = splitRight(root);
+            return merge(left, right);
         }
 
         /**
-         * 排列
+         * detach the left subtree from root and return the root of left subtree
          */
-        public static class Factorial {
-            int[] fact;
-            int[] inv;
-
-            public Factorial(int[] fact, int[] inv, InverseNumber in, int limit, Modular modular) {
-                this.fact = fact;
-                this.inv = inv;
-                fact[0] = inv[0] = 1;
-                for (int i = 1; i <= limit; i++) {
-                    fact[i] = modular.mul(fact[i - 1], i);
-                    inv[i] = modular.mul(inv[i - 1], in.inv[i]);
-                }
-            }
-
-            public Factorial(int limit, Modular modular) {
-                this(new int[limit + 1], new int[limit + 1], new InverseNumber(limit, modular), limit, modular);
-            }
+        public static Splay splitLeft(Splay root) {
+            root.pushDown();
+            Splay left = root.left;
+            left.father = NIL;
+            root.setLeft(NIL);
+            root.pushUp();
+            return left;
         }
 
         /**
-         * 组合
+         * detach the right subtree from root and return the root of right subtree
          */
-        public static class Composite {
-            final Factorial factorial;
-            final Modular modular;
-
-            public Composite(Factorial factorial, Modular modular) {
-                this.factorial = factorial;
-                this.modular = modular;
-            }
-
-            public Composite(int limit, Modular modular) {
-                this(new Factorial(limit, modular), modular);
-            }
-
-            public int composite(int m, int n) {
-                if (n > m) {
-                    return 0;
-                }
-                return modular.mul(modular.mul(factorial.fact[m], factorial.inv[n]), factorial.inv[m - n]);
-            }
-        }
-
-        /**
-         * 大素数测试
-         */
-        public static class MillerRabin {
-            Modular modular;
-            Power power;
-
-            /**
-             * 判断n是否是素数
-             */
-            public boolean mr(int n, int s) {
-                if (n == 2) {
-                    return true;
-                }
-                if (n % 2 == 0) {
-                    return false;
-                }
-                modular = new Modular(n);
-                power = new Power(modular);
-                for (int i = 0; i < s; i++) {
-                    int x = random.nextInt(n - 2) + 2;
-                    if (!mr0(x, n)) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-
-            private boolean mr0(int x, int n) {
-                int exp = n - 1;
-                while (true) {
-                    int y = power.pow(x, exp);
-                    if (y != 1 && y != n - 1) {
-                        return false;
-                    }
-                    if (y != 1 || exp % 2 == 1) {
-                        break;
-                    }
-                    exp = exp / 2;
-                }
-                return true;
-            }
+        public static Splay splitRight(Splay root) {
+            root.pushDown();
+            Splay right = root.right;
+            right.father = NIL;
+            root.setRight(NIL);
+            root.pushUp();
+            return right;
         }
 
 
-        public static class LongModular {
-            final long m;
-
-            public LongModular(long m) {
-                this.m = m;
+        public static Splay merge(Splay a, Splay b) {
+            if (a == NIL) {
+                return b;
             }
-
-            public long mul(long a, long b) {
-                return b == 0 ? 0 : ((mul(a, b >> 1) << 1) % m + a * (b & 1)) % m;
-            }
-
-            public long plus(long a, long b) {
-                return valueOf(a + b);
-            }
-
-            public long valueOf(long a) {
-                a %= m;
-                if (a < 0) {
-                    a += m;
-                }
+            if (b == NIL) {
                 return a;
             }
+            a = selectMaxAsRoot(a);
+            a.setRight(b);
+            a.pushUp();
+            return a;
         }
 
-        public static class LongPower {
-            final LongModular modular;
-
-            public LongPower(LongModular modular) {
-                this.modular = modular;
+        public static Splay selectKthAsRoot(Splay root, int k) {
+            if (root == NIL) {
+                return NIL;
             }
-
-            long pow(long x, long n) {
-                if (n == 0) {
-                    return 1;
-                }
-                long r = pow(x, n >> 1);
-                r = modular.mul(r, r);
-                if ((n & 1) == 1) {
-                    r = modular.mul(r, x);
-                }
-                return r;
-            }
-
-            long inverse(long x) {
-                return pow(x, modular.m - 2);
-            }
-        }
-
-        /**
-         * 大素数测试
-         */
-        public static class LongMillerRabin {
-            LongModular modular;
-            LongPower power;
-
-            /**
-             * 判断n是否是素数
-             */
-            public boolean mr(long n, int s) {
-                if (n == 2) {
-                    return true;
-                }
-                if (n % 2 == 0) {
-                    return false;
-                }
-                modular = new LongModular(n);
-                power = new LongPower(modular);
-                for (int i = 0; i < s; i++) {
-                    long x = (long) (random.nextDouble() * (n - 2) + 2);
-                    if (!mr0(x, n)) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-
-            private boolean mr0(long x, long n) {
-                long exp = n - 1;
-                while (true) {
-                    long y = power.pow(x, exp);
-                    if (y != 1 && y != n - 1) {
-                        return false;
-                    }
-                    if (y != 1 || exp % 2 == 1) {
+            Splay trace = root;
+            Splay father = NIL;
+            while (trace != NIL) {
+                father = trace;
+                trace.pushDown();
+                if (trace.left.size >= k) {
+                    trace = trace.left;
+                } else {
+                    k -= trace.left.size + 1;
+                    if (k == 0) {
                         break;
+                    } else {
+                        trace = trace.right;
                     }
-                    exp = exp / 2;
                 }
-                return true;
+            }
+            splay(father);
+            return father;
+        }
+
+        public static Splay selectKeyAsRoot(Splay root, int k) {
+            if (root == NIL) {
+                return NIL;
+            }
+            Splay trace = root;
+            Splay father = NIL;
+            Splay find = NIL;
+            while (trace != NIL) {
+                father = trace;
+                trace.pushDown();
+                if (trace.key > k) {
+                    trace = trace.left;
+                } else {
+                    if (trace.key == k) {
+                        find = trace;
+                        trace = trace.left;
+                    } else {
+                        trace = trace.right;
+                    }
+                }
+            }
+
+            splay(father);
+            if (find != NIL) {
+                splay(find);
+                return find;
+            }
+            return father;
+        }
+
+        public static Splay bruteForceMerge(Splay a, Splay b) {
+            if (a == NIL) {
+                return b;
+            } else if (b == NIL) {
+                return a;
+            }
+            if (a.size < b.size) {
+                Splay tmp = a;
+                a = b;
+                b = tmp;
+            }
+
+            a = selectMaxAsRoot(a);
+            int k = a.key;
+            while (b != NIL) {
+                b = selectMinAsRoot(b);
+                if (b.key >= k) {
+                    break;
+                }
+                Splay kickedOut = b;
+                b = deleteRoot(b);
+                a = add(a, kickedOut);
+            }
+            return merge(a, b);
+        }
+
+        public static Splay[] split(Splay root, int key) {
+            if (root == NIL) {
+                return new Splay[]{NIL, NIL};
+            }
+            Splay p = root;
+            while (root != NIL) {
+                p = root;
+                root.pushDown();
+                if (root.key > key) {
+                    root = root.left;
+                } else {
+                    root = root.right;
+                }
+            }
+
+            splay(p);
+            if (p.key <= key) {
+                return new Splay[]{p, splitRight(p)};
+            } else {
+                return new Splay[]{splitLeft(p), p};
             }
         }
 
-        public static class LongPollardRho {
-            LongMillerRabin mr = new LongMillerRabin();
-            Gcd gcd = new Gcd();
-            LongModular modular;
-
-            /**
-             * Find a factor of n, if n is returned, it means n is 1 or a prime
-             */
-            public long findFactor(long n) {
-                if (mr.mr(n, 3)) {
-                    return n;
-                }
-                modular = new LongModular(n);
-                while (true) {
-                    long f = findFactor0((long) (random.nextDouble() * n), (long) (random.nextDouble() * n), n);
-                    if (f != -1) {
-                        return f;
-                    }
-                }
-            }
-
-            private long findFactor0(long x, long c, long n) {
-                long xi = x;
-                long xj = x;
-                int j = 2;
-                int i = 1;
-                while (i < n) {
-                    i++;
-                    xi = modular.plus(modular.mul(xi, xi), c);
-                    long g = gcd.gcd(n, Math.abs(xi - xj));
-                    if (g != 1 && g != n) {
-                        return g;
-                    }
-                    if (i == j) {
-                        j = j << 1;
-                        xj = xi;
-                    }
-                }
-                return -1;
-            }
-
-            /**
-             * Find the representation of n=p1^c1 * p2^c2 * ... * pm ^ cm.
-             * <br>
-             * The returned map contained such entries: pi -> pi^ci
-             */
-            public Map<Long, Long> findAllFactors(long n) {
-                Map<Long, Long> map = new HashMap();
-                findAllFactors(map, n);
-                return map;
-            }
-
-            private void findAllFactors(Map<Long, Long> map, long n) {
-                if (n == 1) {
-                    return;
-                }
-                long f = findFactor(n);
-                if (f == n) {
-                    Long value = map.get(f);
-                    if (value == null) {
-                        value = 1L;
-                    }
-                    map.put(f, value * f);
-                    return;
-                }
-                findAllFactors(map, f);
-                findAllFactors(map, n / f);
-            }
-
-        }
-
-        /**
-         * 扩展中国余数定理
-         */
-        public static class ExtCRT {
-            /**
-             * remainder
-             */
-            long r;
-            /**
-             * modulus
-             */
-            long m;
-            ExtGCD gcd = new ExtGCD();
-
-            public ExtCRT() {
-                r = 0;
-                m = 1;
-            }
-
-            /**
-             * Add a new condition: x % m = r
-             */
-            public boolean add(long r, long m) {
-                long m1 = this.m;
-                long x1 = this.r;
-                long m2 = m;
-                long x2 = ((r % m) + m) % m;
-                long g = gcd.extgcd(m1, m2);
-                long a = gcd.getX();
-                if ((x2 - x1) % g != 0) {
-                    return false;
-                }
-                this.m = m1 / g * m2;
-                this.r = BigInteger.valueOf(a).multiply(BigInteger.valueOf((x2 - x1) / g))
-                        .multiply(BigInteger.valueOf(m1)).add(BigInteger.valueOf(x1))
-                        .mod(BigInteger.valueOf(this.m)).longValue();
-                return true;
-            }
-        }
-
-        /**
-         * 卢卡斯定理
-         */
-        public static class Lucas {
-            private final Composite composite;
-            private int modulus;
-
-            public Lucas(Composite composite) {
-                this.composite = composite;
-                this.modulus = composite.modular.m;
-            }
-
-            public int composite(long m, long n) {
-                if (n == 0) {
-                    return 1;
-                }
-                return composite.modular.mul(composite.composite((int) (m % modulus), (int) (n % modulus)),
-                        composite(m / modulus, n / modulus));
-            }
-        }
-
-        /**
-         * 因式分解
-         */
-        public static class PollardRho {
-            MillerRabin mr = new MillerRabin();
-            Gcd gcd = new Gcd();
-            Random random = new Random(123456789);
-
-            public int findFactor(int n) {
-                if (mr.mr(n, 10)) {
-                    return n;
-                }
-                while (true) {
-                    int f = findFactor0(random.nextInt(n), random.nextInt(n), n);
-                    if (f != -1) {
-                        return f;
-                    }
-                }
-            }
-
-            public Map<Integer, Integer> findAllFactors(int n) {
-                Map<Integer, Integer> map = new HashMap();
-                findAllFactors(map, n);
-                return map;
-            }
-
-            private void findAllFactors(Map<Integer, Integer> map, int n) {
-                if (n == 1) {
-                    return;
-                }
-                int f = findFactor(n);
-                if (f == n) {
-                    Integer value = map.get(f);
-                    if (value == null) {
-                        value = 1;
-                    }
-                    map.put(f, value * f);
-                    return;
-                }
-                findAllFactors(map, f);
-                findAllFactors(map, n / f);
-            }
-
-            private int findFactor0(int x, int c, int n) {
-                int xi = x;
-                int xj = x;
-                int j = 2;
-                int i = 1;
-                while (i < n) {
-                    i++;
-                    xi = (int) ((long) xi * xi + c) % n;
-                    int g = gcd.gcd(n, Math.abs(xi - xj));
-                    if (g != 1 && g != n) {
-                        return g;
-                    }
-                    if (i == j) {
-                        j = j << 1;
-                        xj = xi;
-                    }
-                }
-                return -1;
-            }
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder().append(key).append(":");
+            toString(cloneTree(this), builder);
+            return builder.toString();
         }
     }
 
