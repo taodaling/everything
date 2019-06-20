@@ -6,10 +6,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.Random;
+import java.util.Comparator;
 
-
-public class CFContest {
+public class BZOJ2038V2 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -38,9 +37,8 @@ public class CFContest {
     public static class Task implements Runnable {
         final FastIO io;
         final Debug debug;
-        int inf = (int) 1e9 + 2;
-        BitOperator bitOperator = new BitOperator();
-        Modular modular = new Modular((int) 1e9 + 7);
+        int inf = (int) 1e8;
+        Gcd gcd = new Gcd();
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -52,268 +50,119 @@ public class CFContest {
             solve();
         }
 
-        int n;
-        int t;
-        int[] songTimes;
-        int[] songTypes;
-        int mask;
-        int[] cnts = new int[4];
-        int[][][][] perm;
-        int ct1 ;
-        int ct2 ;
-        int ct3 ;
         public void solve() {
-            n = io.readInt();
-            t = io.readInt();
-
-
-            songTimes = new int[n + 1];
-            songTypes = new int[n + 1];
+            int n = io.readInt();
+            int m = io.readInt();
+            int block = (int) Math.ceil(Math.sqrt(n));
+            int[] colors = new int[n + 1];
             for (int i = 1; i <= n; i++) {
-                songTimes[i] = io.readInt();
-                songTypes[i] = io.readInt();
-                cnts[songTypes[i]]++;
+                colors[i] = io.readInt();
+            }
+            Query[] queries = new Query[m];
+            for (int i = 0; i < m; i++) {
+                queries[i] = new Query();
+                queries[i].l = io.readInt();
+                queries[i].r = io.readInt();
+                queries[i].block = queries[i].l / block;
+
             }
 
-            ct1 = cnts[1];
-            ct2 = cnts[2];
-            ct3 = cnts[3];
-            ArrayIndex arrayIndex = new ArrayIndex(ct1 + 1, ct2 + 1, ct3 + 1, t + 1);
-
-            int[] fr = new int[(ct1 + 1) * (ct2 + 1) * (ct3 + 1) * (t + 1)];
-            int[] fw = new int[fr.length];
-            fr[0] = 1;
-            int[] abc = new int[4];
-            for (int i = 1; i <= n; i++) {
-                for (abc[1] = 0; abc[1] <= ct1; abc[1]++) {
-                    for (abc[2] = 0; abc[2] <= ct2; abc[2]++) {
-                        for (abc[3] = 0; abc[3] <= ct3; abc[3]++) {
-                            int a = abc[1];
-                            int b = abc[2];
-                            int c = abc[3];
-                            for (int d = 0; d <= t; d++) {
-                                int index = arrayIndex.indexOf(a, b, c, d);
-                                fw[index] = fr[index];
-                                if (abc[songTypes[i]] > 0 && d >= songTimes[i]) {
-                                    abc[songTypes[i]]--;
-                                    fw[index] = modular.plus(fw[index],
-                                            fr[arrayIndex.indexOf(abc[1], abc[2], abc[3], d - songTimes[i])]);
-                                    abc[songTypes[i]]++;
-                                }
-                            }
-                        }
-                    }
+            Query[] queriesSortByBlock = queries.clone();
+            Arrays.sort(queriesSortByBlock, Query.sortByBlock);
+            int l = 1;
+            int r = 0;
+            ColorMachine cm = new ColorMachine(n);
+            for (Query query : queriesSortByBlock) {
+                while (r < query.r) {
+                    r++;
+                    cm.addColor(colors[r]);
                 }
-                int[] tmp = fr;
-                fr = fw;
-                fw = tmp;
+                while (l > query.l) {
+                    l--;
+                    cm.addColor(colors[l]);
+                }
+                while (r > query.r) {
+                    cm.removeColor(colors[r]);
+                    r--;
+                }
+                while (l < query.l) {
+                    cm.removeColor(colors[l]);
+                    l++;
+                }
+                long a = cm.queryWays();
+                long b = cm.queryTotal();
+                long g = gcd.gcd(a, b);
+                query.a = a / g;
+                query.b = b / g;
             }
 
-            perm = new int[ct1 + 1][ct2 + 1][ct3 + 1][4];
-            for (int a = 0; a <= ct1; a++) {
-                for (int b = 0; b <= ct2; b++) {
-                    for (int c = 0; c <= ct3; c++) {
-                        for (int d = 0; d < 4; d++) {
-                            perm[a][b][c][d] = -1;
-                        }
-                    }
-                }
+            for (Query query : queries) {
+                io.cache.append(query.a).append('/').append(query.b).append('\n');
             }
-            perm[0][0][0][0] = 1;
-
-            int ans = 0;
-            for (int a = 0; a <= ct1; a++) {
-                for (int b = 0; b <= ct2; b++) {
-                    for (int c = 0; c <= ct3; c++) {
-                        int index = arrayIndex.indexOf(a, b, c, t);
-                        for (int d = 0; d < 4; d++) {
-                            int p = modular.mul(fr[index], perm(a, b, c, d));
-                            ans = modular.plus(ans, p);
-                        }
-                    }
-                }
-            }
-
-            io.cache.append(ans);
-        }
-
-        int perm(int a, int b, int c, int d) {
-            if (a < 0 || b < 0 || c < 0) {
-                return 0;
-            }
-            if (perm[a][b][c][d] == -1) {
-                perm[a][b][c][d] = 0;
-                int aa = a;
-                int bb = b;
-                int cc = c;
-                if (d == 0) {
-                    return perm[a][b][c][d];
-                }
-                int mul = 1;
-                if (d == 1) {
-                    mul = a;
-                    aa--;
-                } else if (d == 2) {
-                    mul = b;
-                    bb--;
-                } else if (d == 3) {
-                    mul = c;
-                    cc--;
-                }
-
-                for (int k = 0; k < 4; k++) {
-                    if (k == d) {
-                        continue;
-                    }
-                    perm[a][b][c][d] = modular.plus(perm[a][b][c][d],
-                            perm(aa, bb, cc, k));
-                }
-                perm[a][b][c][d] = modular.mul(perm[a][b][c][d], mul);
-            }
-
-            return perm[a][b][c][d];
         }
     }
 
-    public static class ArrayIndex {
-        int[] dimensions;
+    public static class Query {
+        int l;
+        int r;
+        int block;
+        long a;
+        long b;
+        static Comparator<Query> sortByBlock = new Comparator<Query>() {
+            @Override
+            public int compare(Query o1, Query o2) {
+                return o1.block == o2.block ? o1.r - o2.r : o1.block - o2.block;
+            }
+        };
+    }
 
-        public ArrayIndex(int... dimensions) {
-            this.dimensions = dimensions;
+    public static class Gcd {
+        public long gcd(long a, long b) {
+            return a >= b ? gcd0(a, b) : gcd0(b, a);
         }
 
-        public int indexOf(int a, int b) {
-            return a * dimensions[1] + b;
+        private long gcd0(long a, long b) {
+            return b == 0 ? a : gcd0(b, a % b);
         }
 
-        public int indexOf(int a, int b, int c) {
-            return indexOf(a, b) * dimensions[2] + c;
+        public int gcd(int a, int b) {
+            return a >= b ? gcd0(a, b) : gcd0(b, a);
         }
 
-        public int indexOf(int a, int b, int c, int d) {
-            return indexOf(a, b, c) * dimensions[3] + d;
-        }
-
-        public int indexOf(int a, int b, int c, int d, int e) {
-            return indexOf(a, b, c, d) * dimensions[4] + e;
-        }
-
-        public boolean isValid(int a, int d) {
-            return dimensions[d] > a && a >= 0;
-        }
-
-        public boolean isValidIndex(int a) {
-            return isValid(a, 0);
-        }
-
-        public boolean isValidIndex(int a, int b) {
-            return isValidIndex(a) && isValid(b, 1);
-        }
-
-        public boolean isValidIndex(int a, int b, int c) {
-            return isValidIndex(a, b) && isValid(c, 2);
-        }
-
-        public boolean isValidIndex(int a, int b, int c, int d) {
-            return isValidIndex(a, b, c) && isValid(d, 3);
-        }
-
-        public int indexOfSpecifiedDimension(int index, int d) {
-            return indexOfSpecifiedDimension0(index, d, dimensions.length - 1);
-        }
-
-        private int indexOfSpecifiedDimension0(int index, int t, int now) {
-            return now == t ? index % dimensions[now] : indexOfSpecifiedDimension0(index / dimensions[now], t, now - 1);
+        private int gcd0(int a, int b) {
+            return b == 0 ? a : gcd0(b, a % b);
         }
     }
 
-    /**
-     * 模运算
-     */
-    public static class Modular {
-        int m;
+    public static class ColorMachine {
+        int[] colors;
+        long a;
+        int total;
 
-        public Modular(int m) {
-            this.m = m;
+        public ColorMachine(int n) {
+            colors = new int[n + 1];
         }
 
-        public int valueOf(int x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return x;
+        public void addColor(int c) {
+            a -= (long) colors[c] * (colors[c] - 1);
+            colors[c]++;
+            a += (long) colors[c] * (colors[c] - 1);
+            total++;
         }
 
-        public int valueOf(long x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return (int) x;
+        public void removeColor(int c) {
+            a -= (long) colors[c] * (colors[c] - 1);
+            colors[c]--;
+            a += (long) colors[c] * (colors[c] - 1);
+            total--;
         }
 
-        public int mul(int x, int y) {
-            return valueOf((long) x * y);
+        public long queryWays() {
+            return a;
         }
 
-        public int plus(int x, int y) {
-            return valueOf(x + y);
-        }
-
-        @Override
-        public String toString() {
-            return "mod " + m;
-        }
-    }
-
-    public static class BitOperator {
-        public int bitAt(int x, int i) {
-            return (x >> i) & 1;
-        }
-
-        public int bitAt(long x, int i) {
-            return (int) ((x >> i) & 1);
-        }
-
-        public int setBit(int x, int i, boolean v) {
-            if (v) {
-                x |= 1 << i;
-            } else {
-                x &= ~(1 << i);
-            }
-            return x;
-        }
-
-        public long setBit(long x, int i, boolean v) {
-            if (v) {
-                x |= 1L << i;
-            } else {
-                x &= ~(1L << i);
-            }
-            return x;
-        }
-
-        /**
-         * Determine whether x is subset of y
-         */
-        public boolean subset(long x, long y) {
-            return intersect(x, y) == x;
-        }
-
-        /**
-         * Merge two set
-         */
-        public long merge(long x, long y) {
-            return x | y;
-        }
-
-        public long intersect(long x, long y) {
-            return x & y;
-        }
-
-        public long differ(long x, long y) {
-            return x - intersect(x, y);
+        public long queryTotal() {
+            return (long) total * (total - 1);
         }
     }
 

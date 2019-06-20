@@ -6,10 +6,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.Random;
+import java.util.Comparator;
 
-
-public class CFContest {
+public class BZOJ1977 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -38,9 +37,7 @@ public class CFContest {
     public static class Task implements Runnable {
         final FastIO io;
         final Debug debug;
-        int inf = (int) 1e9 + 2;
-        BitOperator bitOperator = new BitOperator();
-        Modular modular = new Modular((int) 1e9 + 7);
+        int inf = (int) 1e8;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -52,269 +49,86 @@ public class CFContest {
             solve();
         }
 
-        int n;
-        int t;
-        int[] songTimes;
-        int[] songTypes;
-        int mask;
-        int[] cnts = new int[4];
-        int[][][][] perm;
-        int ct1 ;
-        int ct2 ;
-        int ct3 ;
         public void solve() {
-            n = io.readInt();
-            t = io.readInt();
+            int n = io.readInt();
+            int m = io.readInt();
+            Node[] nodes = new Node[n + 1];
 
-
-            songTimes = new int[n + 1];
-            songTypes = new int[n + 1];
             for (int i = 1; i <= n; i++) {
-                songTimes[i] = io.readInt();
-                songTypes[i] = io.readInt();
-                cnts[songTypes[i]]++;
+                nodes[i] = new Node();
+                nodes[i].index = i;
             }
 
-            ct1 = cnts[1];
-            ct2 = cnts[2];
-            ct3 = cnts[3];
-            ArrayIndex arrayIndex = new ArrayIndex(ct1 + 1, ct2 + 1, ct3 + 1, t + 1);
+            Edge[] edges = new Edge[m];
+            for (int i = 0; i < m; i++) {
+                Edge edge = new Edge();
+                edge.a = nodes[io.readInt()];
+                edge.b = nodes[io.readInt()];
+                edge.len = io.readInt();
+                edges[i] = edge;
+            }
 
-            int[] fr = new int[(ct1 + 1) * (ct2 + 1) * (ct3 + 1) * (t + 1)];
-            int[] fw = new int[fr.length];
-            fr[0] = 1;
-            int[] abc = new int[4];
+            Arrays.sort(edges, Edge.sortByLen);
+            for (Edge edge : edges) {
+                if (edge.a.find() != edge.b.find()) {
+                    Node.union(edge.a, edge.b);
+                    edge.selected = true;
+                }
+            }
+
+            LCTNode[] tree = new LCTNode[n + 1];
             for (int i = 1; i <= n; i++) {
-                for (abc[1] = 0; abc[1] <= ct1; abc[1]++) {
-                    for (abc[2] = 0; abc[2] <= ct2; abc[2]++) {
-                        for (abc[3] = 0; abc[3] <= ct3; abc[3]++) {
-                            int a = abc[1];
-                            int b = abc[2];
-                            int c = abc[3];
-                            for (int d = 0; d <= t; d++) {
-                                int index = arrayIndex.indexOf(a, b, c, d);
-                                fw[index] = fr[index];
-                                if (abc[songTypes[i]] > 0 && d >= songTimes[i]) {
-                                    abc[songTypes[i]]--;
-                                    fw[index] = modular.plus(fw[index],
-                                            fr[arrayIndex.indexOf(abc[1], abc[2], abc[3], d - songTimes[i])]);
-                                    abc[songTypes[i]]++;
-                                }
-                            }
-                        }
-                    }
-                }
-                int[] tmp = fr;
-                fr = fw;
-                fw = tmp;
+                tree[i] = new LCTNode();
             }
 
-            perm = new int[ct1 + 1][ct2 + 1][ct3 + 1][4];
-            for (int a = 0; a <= ct1; a++) {
-                for (int b = 0; b <= ct2; b++) {
-                    for (int c = 0; c <= ct3; c++) {
-                        for (int d = 0; d < 4; d++) {
-                            perm[a][b][c][d] = -1;
-                        }
-                    }
+            for (Edge edge : edges) {
+                if (!edge.selected) {
+                    continue;
                 }
+                LCTNode edgeRepr = new LCTNode();
+                edgeRepr.w = edge.len;
             }
-            perm[0][0][0][0] = 1;
-
-            int ans = 0;
-            for (int a = 0; a <= ct1; a++) {
-                for (int b = 0; b <= ct2; b++) {
-                    for (int c = 0; c <= ct3; c++) {
-                        int index = arrayIndex.indexOf(a, b, c, t);
-                        for (int d = 0; d < 4; d++) {
-                            int p = modular.mul(fr[index], perm(a, b, c, d));
-                            ans = modular.plus(ans, p);
-                        }
-                    }
-                }
-            }
-
-            io.cache.append(ans);
-        }
-
-        int perm(int a, int b, int c, int d) {
-            if (a < 0 || b < 0 || c < 0) {
-                return 0;
-            }
-            if (perm[a][b][c][d] == -1) {
-                perm[a][b][c][d] = 0;
-                int aa = a;
-                int bb = b;
-                int cc = c;
-                if (d == 0) {
-                    return perm[a][b][c][d];
-                }
-                int mul = 1;
-                if (d == 1) {
-                    mul = a;
-                    aa--;
-                } else if (d == 2) {
-                    mul = b;
-                    bb--;
-                } else if (d == 3) {
-                    mul = c;
-                    cc--;
-                }
-
-                for (int k = 0; k < 4; k++) {
-                    if (k == d) {
-                        continue;
-                    }
-                    perm[a][b][c][d] = modular.plus(perm[a][b][c][d],
-                            perm(aa, bb, cc, k));
-                }
-                perm[a][b][c][d] = modular.mul(perm[a][b][c][d], mul);
-            }
-
-            return perm[a][b][c][d];
         }
     }
 
-    public static class ArrayIndex {
-        int[] dimensions;
+    public static class Node {
+        Node p = this;
+        int rank;
+        int index;
 
-        public ArrayIndex(int... dimensions) {
-            this.dimensions = dimensions;
+        Node find() {
+            return p == p.p ? p : p.find();
         }
 
-        public int indexOf(int a, int b) {
-            return a * dimensions[1] + b;
-        }
-
-        public int indexOf(int a, int b, int c) {
-            return indexOf(a, b) * dimensions[2] + c;
-        }
-
-        public int indexOf(int a, int b, int c, int d) {
-            return indexOf(a, b, c) * dimensions[3] + d;
-        }
-
-        public int indexOf(int a, int b, int c, int d, int e) {
-            return indexOf(a, b, c, d) * dimensions[4] + e;
-        }
-
-        public boolean isValid(int a, int d) {
-            return dimensions[d] > a && a >= 0;
-        }
-
-        public boolean isValidIndex(int a) {
-            return isValid(a, 0);
-        }
-
-        public boolean isValidIndex(int a, int b) {
-            return isValidIndex(a) && isValid(b, 1);
-        }
-
-        public boolean isValidIndex(int a, int b, int c) {
-            return isValidIndex(a, b) && isValid(c, 2);
-        }
-
-        public boolean isValidIndex(int a, int b, int c, int d) {
-            return isValidIndex(a, b, c) && isValid(d, 3);
-        }
-
-        public int indexOfSpecifiedDimension(int index, int d) {
-            return indexOfSpecifiedDimension0(index, d, dimensions.length - 1);
-        }
-
-        private int indexOfSpecifiedDimension0(int index, int t, int now) {
-            return now == t ? index % dimensions[now] : indexOfSpecifiedDimension0(index / dimensions[now], t, now - 1);
-        }
-    }
-
-    /**
-     * 模运算
-     */
-    public static class Modular {
-        int m;
-
-        public Modular(int m) {
-            this.m = m;
-        }
-
-        public int valueOf(int x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
+        static void union(Node a, Node b) {
+            a = a.find();
+            b = b.find();
+            if (a == b) {
+                return;
             }
-            return x;
-        }
-
-        public int valueOf(long x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
+            if (a.rank == b.rank) {
+                a.rank++;
             }
-            return (int) x;
-        }
-
-        public int mul(int x, int y) {
-            return valueOf((long) x * y);
-        }
-
-        public int plus(int x, int y) {
-            return valueOf(x + y);
-        }
-
-        @Override
-        public String toString() {
-            return "mod " + m;
-        }
-    }
-
-    public static class BitOperator {
-        public int bitAt(int x, int i) {
-            return (x >> i) & 1;
-        }
-
-        public int bitAt(long x, int i) {
-            return (int) ((x >> i) & 1);
-        }
-
-        public int setBit(int x, int i, boolean v) {
-            if (v) {
-                x |= 1 << i;
+            if (a.rank > b.rank) {
+                b.p = a;
             } else {
-                x &= ~(1 << i);
+                a.p = b;
             }
-            return x;
         }
+    }
 
-        public long setBit(long x, int i, boolean v) {
-            if (v) {
-                x |= 1L << i;
-            } else {
-                x &= ~(1L << i);
+    public static class Edge {
+        Node a;
+        Node b;
+        int len;
+        boolean selected;
+
+        static Comparator<Edge> sortByLen = new Comparator<Edge>() {
+            @Override
+            public int compare(Edge o1, Edge o2) {
+                return o1.len - o2.len;
             }
-            return x;
-        }
-
-        /**
-         * Determine whether x is subset of y
-         */
-        public boolean subset(long x, long y) {
-            return intersect(x, y) == x;
-        }
-
-        /**
-         * Merge two set
-         */
-        public long merge(long x, long y) {
-            return x | y;
-        }
-
-        public long intersect(long x, long y) {
-            return x & y;
-        }
-
-        public long differ(long x, long y) {
-            return x - intersect(x, y);
-        }
+        };
     }
 
     public static class FastIO {
@@ -605,6 +419,207 @@ public class CFContest {
             }
             outputName(name);
             System.out.println(Arrays.deepToString(x));
+        }
+    }
+
+    /**
+     * Created by dalt on 2018/5/20.
+     */
+    public static class LCTNode {
+        public static final LCTNode NIL = new LCTNode();
+
+        static {
+            NIL.left = NIL;
+            NIL.right = NIL;
+            NIL.father = NIL;
+            NIL.treeFather = NIL;
+        }
+
+        LCTNode left = NIL;
+        LCTNode right = NIL;
+        LCTNode father = NIL;
+        LCTNode treeFather = NIL;
+        boolean reverse;
+        int id;
+        int w = -1;
+        int first;
+        int second;
+
+        public static void access(LCTNode x) {
+            LCTNode last = NIL;
+            while (x != NIL) {
+                splay(x);
+                x.right.father = NIL;
+                x.right.treeFather = x;
+                x.setRight(last);
+                x.pushUp();
+
+                last = x;
+                x = x.treeFather;
+            }
+        }
+
+        public static void makeRoot(LCTNode x) {
+            access(x);
+            splay(x);
+            x.reverse();
+        }
+
+        public static void cut(LCTNode y, LCTNode x) {
+            makeRoot(y);
+            access(x);
+            splay(y);
+            y.right.treeFather = NIL;
+            y.right.father = NIL;
+            y.setRight(NIL);
+            y.pushUp();
+        }
+
+        public static void join(LCTNode y, LCTNode x) {
+            makeRoot(x);
+            x.treeFather = y;
+        }
+
+        public static void findRoute(LCTNode x, LCTNode y) {
+            makeRoot(y);
+            access(x);
+        }
+
+        public static void splay(LCTNode x) {
+            if (x == NIL) {
+                return;
+            }
+            LCTNode y, z;
+            while ((y = x.father) != NIL) {
+                if ((z = y.father) == NIL) {
+                    y.pushDown();
+                    x.pushDown();
+                    if (x == y.left) {
+                        zig(x);
+                    } else {
+                        zag(x);
+                    }
+                } else {
+                    z.pushDown();
+                    y.pushDown();
+                    x.pushDown();
+                    if (x == y.left) {
+                        if (y == z.left) {
+                            zig(y);
+                            zig(x);
+                        } else {
+                            zig(x);
+                            zag(x);
+                        }
+                    } else {
+                        if (y == z.left) {
+                            zag(x);
+                            zig(x);
+                        } else {
+                            zag(y);
+                            zag(x);
+                        }
+                    }
+                }
+            }
+
+            x.pushDown();
+            x.pushUp();
+        }
+
+        public static void zig(LCTNode x) {
+            LCTNode y = x.father;
+            LCTNode z = y.father;
+            LCTNode b = x.right;
+
+            y.setLeft(b);
+            x.setRight(y);
+            z.changeChild(y, x);
+
+            y.pushUp();
+        }
+
+        public static void zag(LCTNode x) {
+            LCTNode y = x.father;
+            LCTNode z = y.father;
+            LCTNode b = x.left;
+
+            y.setRight(b);
+            x.setLeft(y);
+            z.changeChild(y, x);
+
+            y.pushUp();
+        }
+
+        public static LCTNode findRoot(LCTNode x) {
+            x.pushDown();
+            while (x.left != NIL) {
+                x = x.left;
+                x.pushDown();
+            }
+            splay(x);
+            return x;
+        }
+
+        @Override
+        public String toString() {
+            return "" + id;
+        }
+
+        public void pushDown() {
+            if (reverse) {
+                reverse = false;
+
+                LCTNode tmpNode = left;
+                left = right;
+                right = tmpNode;
+
+                left.reverse();
+                right.reverse();
+            }
+
+            left.treeFather = treeFather;
+            right.treeFather = treeFather;
+        }
+
+        public void reverse() {
+            reverse = !reverse;
+        }
+
+        public void setLeft(LCTNode x) {
+            left = x;
+            x.father = this;
+        }
+
+        public void setRight(LCTNode x) {
+            right = x;
+            x.father = this;
+        }
+
+        public void changeChild(LCTNode y, LCTNode x) {
+            if (left == y) {
+                setLeft(x);
+            } else {
+                setRight(x);
+            }
+        }
+
+        public void pushUp() {
+            first = w;
+            second = -1;
+            pushVal(left.first);
+            pushVal(left.second);
+            pushVal(right.first);
+            pushVal(right.second);
+        }
+
+        private void pushVal(int x) {
+            if (x > first) {
+                second = first;
+                first = x;
+            } else if (x < first && x > second) {
+                second = x;
+            }
         }
     }
 }
