@@ -342,7 +342,19 @@ public class MathUtils {
             return valueOf((long) x * y);
         }
 
+        public int mul(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x * y);
+        }
+
         public int plus(int x, int y) {
+            return valueOf(x + y);
+        }
+
+        public int plus(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
             return valueOf(x + y);
         }
 
@@ -821,7 +833,15 @@ public class MathUtils {
                 }
             }
         }
-
+        /**
+         * 找到所有所有因子，每个因子可以表示为素数的幂次。
+         * <br>
+         * p1 => p1^c1
+         * <br>
+         * ...
+         * <br>
+         * pk => pk^ck
+         */
         public Map<Integer, Integer> findAllFactors(int n) {
             Map<Integer, Integer> map = new HashMap();
             findAllFactors(map, n);

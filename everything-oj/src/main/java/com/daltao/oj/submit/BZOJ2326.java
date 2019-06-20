@@ -4,11 +4,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
-public class BZOJ1977 {
+public class BZOJ2326 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -50,112 +53,215 @@ public class BZOJ1977 {
         }
 
         public void solve() {
-            int n = io.readInt();
+            long n = io.readLong();
             int m = io.readInt();
-            Node[] nodes = new Node[n + 1];
-
-            for (int i = 1; i <= n; i++) {
-                nodes[i] = new Node();
-                nodes[i].index = i;
+            Modular modular = new Modular(m);
+            boolean over = n == (long) 1e18;
+            if (over) {
+                n--;
             }
 
-            Edge[] edges = new Edge[m];
-            for (int i = 0; i < m; i++) {
-                Edge edge = new Edge();
-                edge.a = nodes[io.readInt()];
-                edge.b = nodes[io.readInt()];
-                edge.len = io.readInt();
-                edges[i] = edge;
+
+            Helper helper = new Helper(n);
+            ModMatrix vector = new ModMatrix(3, 1);
+            vector.mat[0][0] = 0;
+            vector.mat[1][0] = 1;
+            vector.mat[2][0] = 1;
+            while (helper.hasNext()) {
+                helper.next();
+                ModMatrix t = new ModMatrix(new int[][]{
+                        {modular.valueOf(helper.pow), 1, 0},
+                        {0, 1, 1},
+                        {0, 0, 1}
+                });
+
+                vector = ModMatrix.mul(ModMatrix.pow(t, helper.max - helper.min + 1, modular), vector, modular);
             }
 
-            Arrays.sort(edges, Edge.sortByLen);
-            for (Edge edge : edges) {
-                if (edge.a.find() != edge.b.find()) {
-                    Node.union(edge.a, edge.b);
-                    edge.selected = true;
-                }
+            int ans = vector.mat[0][0];
+            if (over) {
+                ans = modular.mul(ans, (long) 1e18);
+                ans = modular.mul(ans, 10);
+                ans = modular.plus(ans, (long) 1e18);
             }
 
-            LCTNode[] tree = new LCTNode[n + 1];
-            for (int i = 1; i <= n; i++) {
-                tree[i] = new LCTNode();
-                nodes[i].tree = tree[i];
-            }
-
-            long sum = 0;
-            for (Edge edge : edges) {
-                if (!edge.selected) {
-                    continue;
-                }
-                LCTNode edgeRepr = new LCTNode();
-                edgeRepr.w = edge.len;
-                edgeRepr.pushUp();
-                LCTNode.join(edgeRepr, edge.a.tree);
-                LCTNode.join(edge.b.tree, edgeRepr);
-                sum += edge.len;
-            }
-
-            long min = (long) 1e18;
-            for (Edge edge : edges) {
-                if (edge.selected) {
-                    continue;
-                }
-                LCTNode a = edge.a.tree;
-                LCTNode b = edge.b.tree;
-                LCTNode.findRoute(a, b);
-                LCTNode.splay(a);
-                if (a.first != -1 && a.first < edge.len) {
-                    min = Math.min(min, sum + edge.len - a.first);
-                }
-                if (a.second != -1 && a.second < edge.len) {
-                    min = Math.min(min, sum + edge.len - a.second);
-                }
-            }
-
-            io.cache.append(min);
+            io.cache.append(ans);
         }
     }
 
-    public static class Node {
-        Node p = this;
-        int rank;
-        int index;
-        LCTNode tree;
+    public static class Helper {
+        long min;
+        long max;
+        int digit;
+        long n;
+        long pow;
 
-        Node find() {
-            return p == p.p ? p : p.find();
+        public Helper(long n) {
+            min = max = 0;
+            digit = 0;
+            pow = 1;
+            this.n = n;
         }
 
-        static void union(Node a, Node b) {
-            a = a.find();
-            b = b.find();
-            if (a == b) {
-                return;
-            }
-            if (a.rank == b.rank) {
-                a.rank++;
-            }
-            if (a.rank > b.rank) {
-                b.p = a;
-            } else {
-                a.p = b;
-            }
+        public boolean hasNext() {
+            return max < n;
+        }
+
+        public void next() {
+            min = max + 1;
+            max = Math.min(min * 10 - 1, n);
+            digit += 1;
+            pow *= 10;
         }
     }
 
-    public static class Edge {
-        Node a;
-        Node b;
-        int len;
-        boolean selected;
 
-        static Comparator<Edge> sortByLen = new Comparator<Edge>() {
-            @Override
-            public int compare(Edge o1, Edge o2) {
-                return o1.len - o2.len;
+    public static class ModMatrix {
+        int[][] mat;
+        int n;
+        int m;
+
+        public ModMatrix(ModMatrix model) {
+            n = model.n;
+            m = model.m;
+            mat = new int[n][m];
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < m; j++) {
+                    mat[i][j] = model.mat[i][j];
+                }
             }
-        };
+        }
+
+        public ModMatrix(int n, int m) {
+            this.n = n;
+            this.m = m;
+            mat = new int[n][m];
+        }
+
+        public ModMatrix(int[][] mat) {
+            this.n = mat.length;
+            this.m = mat[0].length;
+            this.mat = mat;
+        }
+
+        public void fill(int v) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < m; j++) {
+                    mat[i][j] = v;
+                }
+            }
+        }
+
+        public void asStandard() {
+            fill(0);
+            for (int i = 0; i < n && i < m; i++) {
+                mat[i][i] = 1;
+            }
+        }
+
+        public static ModMatrix mul(ModMatrix a, ModMatrix b, Modular modular) {
+            ModMatrix c = new ModMatrix(a.n, b.m);
+            for (int i = 0; i < c.n; i++) {
+                for (int j = 0; j < c.m; j++) {
+                    for (int k = 0; k < a.m; k++) {
+                        c.mat[i][j] = modular.plus(c.mat[i][j], modular.mul(a.mat[i][k], b.mat[k][j]));
+                    }
+                }
+            }
+            return c;
+        }
+
+        public static ModMatrix pow(ModMatrix x, long n, Modular modular) {
+            if (n == 0) {
+                ModMatrix r = new ModMatrix(x.n, x.m);
+                r.asStandard();
+                return r;
+            }
+            ModMatrix r = pow(x, n >> 1, modular);
+            r = ModMatrix.mul(r, r, modular);
+            if (n % 2 == 1) {
+                r = ModMatrix.mul(r, x, modular);
+            }
+            return r;
+        }
+
+        static ModMatrix transposition(ModMatrix x, Modular modular) {
+            int n = x.n;
+            int m = x.m;
+            ModMatrix t = new ModMatrix(m, n);
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < m; j++) {
+                    t.mat[j][i] = x.mat[i][j];
+                }
+            }
+            return t;
+        }
+
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < m; j++) {
+                    builder.append(mat[i][j]).append(' ');
+                }
+                builder.append('\n');
+            }
+            return builder.toString();
+        }
     }
+
+
+    /**
+     * 模运算
+     */
+    public static class Modular {
+        int m;
+
+        public Modular(int m) {
+            this.m = m;
+        }
+
+        public int valueOf(int x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
+            }
+            return x;
+        }
+
+        public int valueOf(long x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
+            }
+            return (int) x;
+        }
+
+        public int mul(int x, int y) {
+            return valueOf((long) x * y);
+        }
+
+        public int mul(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x * y);
+        }
+
+        public int plus(int x, int y) {
+            return valueOf(x + y);
+        }
+
+        public int plus(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x + y);
+        }
+
+        @Override
+        public String toString() {
+            return "mod " + m;
+        }
+    }
+
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder();
@@ -445,207 +551,6 @@ public class BZOJ1977 {
             }
             outputName(name);
             System.out.println(Arrays.deepToString(x));
-        }
-    }
-
-    /**
-     * Created by dalt on 2018/5/20.
-     */
-    public static class LCTNode {
-        public static final LCTNode NIL = new LCTNode();
-
-        static {
-            NIL.left = NIL;
-            NIL.right = NIL;
-            NIL.father = NIL;
-            NIL.treeFather = NIL;
-        }
-
-        LCTNode left = NIL;
-        LCTNode right = NIL;
-        LCTNode father = NIL;
-        LCTNode treeFather = NIL;
-        boolean reverse;
-        int id;
-        int w = -1;
-        int first;
-        int second;
-
-        public static void access(LCTNode x) {
-            LCTNode last = NIL;
-            while (x != NIL) {
-                splay(x);
-                x.right.father = NIL;
-                x.right.treeFather = x;
-                x.setRight(last);
-                x.pushUp();
-
-                last = x;
-                x = x.treeFather;
-            }
-        }
-
-        public static void makeRoot(LCTNode x) {
-            access(x);
-            splay(x);
-            x.reverse();
-        }
-
-        public static void cut(LCTNode y, LCTNode x) {
-            makeRoot(y);
-            access(x);
-            splay(y);
-            y.right.treeFather = NIL;
-            y.right.father = NIL;
-            y.setRight(NIL);
-            y.pushUp();
-        }
-
-        public static void join(LCTNode y, LCTNode x) {
-            makeRoot(x);
-            x.treeFather = y;
-        }
-
-        public static void findRoute(LCTNode x, LCTNode y) {
-            makeRoot(y);
-            access(x);
-        }
-
-        public static void splay(LCTNode x) {
-            if (x == NIL) {
-                return;
-            }
-            LCTNode y, z;
-            while ((y = x.father) != NIL) {
-                if ((z = y.father) == NIL) {
-                    y.pushDown();
-                    x.pushDown();
-                    if (x == y.left) {
-                        zig(x);
-                    } else {
-                        zag(x);
-                    }
-                } else {
-                    z.pushDown();
-                    y.pushDown();
-                    x.pushDown();
-                    if (x == y.left) {
-                        if (y == z.left) {
-                            zig(y);
-                            zig(x);
-                        } else {
-                            zig(x);
-                            zag(x);
-                        }
-                    } else {
-                        if (y == z.left) {
-                            zag(x);
-                            zig(x);
-                        } else {
-                            zag(y);
-                            zag(x);
-                        }
-                    }
-                }
-            }
-
-            x.pushDown();
-            x.pushUp();
-        }
-
-        public static void zig(LCTNode x) {
-            LCTNode y = x.father;
-            LCTNode z = y.father;
-            LCTNode b = x.right;
-
-            y.setLeft(b);
-            x.setRight(y);
-            z.changeChild(y, x);
-
-            y.pushUp();
-        }
-
-        public static void zag(LCTNode x) {
-            LCTNode y = x.father;
-            LCTNode z = y.father;
-            LCTNode b = x.left;
-
-            y.setRight(b);
-            x.setLeft(y);
-            z.changeChild(y, x);
-
-            y.pushUp();
-        }
-
-        public static LCTNode findRoot(LCTNode x) {
-            x.pushDown();
-            while (x.left != NIL) {
-                x = x.left;
-                x.pushDown();
-            }
-            splay(x);
-            return x;
-        }
-
-        @Override
-        public String toString() {
-            return "" + id;
-        }
-
-        public void pushDown() {
-            if (reverse) {
-                reverse = false;
-
-                LCTNode tmpNode = left;
-                left = right;
-                right = tmpNode;
-
-                left.reverse();
-                right.reverse();
-            }
-
-            left.treeFather = treeFather;
-            right.treeFather = treeFather;
-        }
-
-        public void reverse() {
-            reverse = !reverse;
-        }
-
-        public void setLeft(LCTNode x) {
-            left = x;
-            x.father = this;
-        }
-
-        public void setRight(LCTNode x) {
-            right = x;
-            x.father = this;
-        }
-
-        public void changeChild(LCTNode y, LCTNode x) {
-            if (left == y) {
-                setLeft(x);
-            } else {
-                setRight(x);
-            }
-        }
-
-        public void pushUp() {
-            first = w;
-            second = -1;
-            pushVal(left.first);
-            pushVal(left.second);
-            pushVal(right.first);
-            pushVal(right.second);
-        }
-
-        private void pushVal(int x) {
-            if (x > first) {
-                second = first;
-                first = x;
-            } else if (x < first && x > second) {
-                second = x;
-            }
         }
     }
 }
