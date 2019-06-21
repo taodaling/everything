@@ -375,6 +375,19 @@ public class GeometryUtils {
             super(points);
         }
 
+        public boolean inside(Point2D pt, boolean includeOnLinePoint) {
+            for (Line2D line : data) {
+                int side = line.whichSideIs(pt);
+                if (side == -1) {
+                    return false;
+                }
+                if (side == 0 && !includeOnLinePoint) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public PointConvexHull asPoints() {
             int n = data.size();
             List<Point2D> deque = new ArrayList<>(n);

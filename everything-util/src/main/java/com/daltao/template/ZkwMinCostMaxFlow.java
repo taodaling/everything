@@ -7,13 +7,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MinCostMaxFlow {
+public class ZkwMinCostMaxFlow {
     Node[] nodes;
     Deque<Node> deque;
     Node source;
     Node target;
     int nodeNum;
-    final static double INF = 1e50;
+    double fee = 0;
+    double flow = 0;
+    final static double INF = 1e14;
 
     static class ID {
         int src;
@@ -42,7 +44,7 @@ public class MinCostMaxFlow {
 
     Map<ID, DirectFeeChannel> channelMap = new HashMap();
 
-    public MinCostMaxFlow(int nodeNum) {
+    public ZkwMinCostMaxFlow(int nodeNum) {
         this.nodeNum = nodeNum;
         nodes = new Node[nodeNum + 1];
         for (int i = 1; i <= nodeNum; i++) {
@@ -80,57 +82,65 @@ public class MinCostMaxFlow {
         return dfc;
     }
 
+    private double send(Node root, double flow) {
+        if (root == target) {
+            return flow;
+        }
+        if (root.inque) {
+            return 0;
+        }
+        root.inque = true;
+        double totalSent = 0;
+        for (FeeChannel channel : root.channelList) {
+            Node node = channel.getDst();
+            if (channel.getCapacity() == channel.getFlow()
+                    || node.distance + channel.getFee() != root.distance) {
+                continue;
+            }
+            double f = send(node, Math.min(flow, channel.getCapacity() - channel.getFlow()));
+            if (f == 0) {
+                continue;
+            }
+            flow -= f;
+            channel.sendFlow(f);
+            fee += channel.getFee() * f;
+            totalSent += f;
+        }
+        return totalSent;
+    }
+
     /**
      * reuslt[0] store how much flow could be sent and result[1] represents the fee
      */
-    public double[] send(double flow) {
-        double totalFee = 0;
-        double totalFlow = 0;
-
+    public void send(double flow) {
         while (flow > 0) {
             spfa();
-
-            if (target.distance == INF) {
+            if (source.distance == INF) {
                 break;
             }
-
-
-            double feeSum = target.distance;
-            double minFlow = flow;
-
-            Node trace = target;
-            while (trace != source) {
-                FeeChannel last = trace.last;
-                minFlow = Math.min(minFlow, last.getCapacity() - last.getFlow());
-                trace = last.getSrc();
+            while (true) {
+                for (int i = 1; i <= nodeNum; i++) {
+                    nodes[i].inque = false;
+                }
+                double f = send(source, flow);
+                if (f == 0) {
+                    break;
+                }
+                flow -= f;
+                this.flow += f;
             }
-
-            flow -= minFlow;
-
-            trace = target;
-            while (trace != source) {
-                FeeChannel last = trace.last;
-                last.sendFlow(minFlow);
-                trace = last.getSrc();
-            }
-
-            totalFee += feeSum * minFlow;
-            totalFlow += minFlow;
         }
-
-        return new double[]{totalFlow, totalFee};
     }
 
     private void spfa() {
         for (int i = 1; i <= nodeNum; i++) {
             nodes[i].distance = INF;
             nodes[i].inque = false;
-            nodes[i].last = null;
         }
 
-        deque.addLast(source);
-        source.distance = 0;
-        source.inque = true;
+        deque.addLast(target);
+        target.distance = 0;
+        target.inque = true;
         double sumOfDistance = 0;
 
         while (!deque.isEmpty()) {
@@ -142,17 +152,17 @@ public class MinCostMaxFlow {
             sumOfDistance -= head.distance;
             head.inque = false;
             for (FeeChannel channel : head.channelList) {
+                channel = channel.inverse();
                 if (channel.getFlow() == channel.getCapacity()) {
                     continue;
                 }
-                Node dst = channel.getDst();
+                Node dst = channel.getSrc();
                 double oldDist = dst.distance;
                 double newDist = head.distance + channel.getFee();
                 if (oldDist <= newDist) {
                     continue;
                 }
                 dst.distance = newDist;
-                dst.last = channel;
                 if (dst.inque) {
                     sumOfDistance -= oldDist;
                     sumOfDistance += newDist;
@@ -305,8 +315,7 @@ public class MinCostMaxFlow {
         final int id;
         double distance;
         boolean inque;
-        FeeChannel last;
-        List<FeeChannel> channelList = new ArrayList(1);
+        List<FeeChannel> channelList = new ArrayList(2);
 
         public Node(int id) {
             this.id = id;
