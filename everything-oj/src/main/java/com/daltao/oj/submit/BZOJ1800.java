@@ -1,4 +1,4 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-public class OJCodeTemplate {
+public class BZOJ1800 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -49,6 +49,28 @@ public class OJCodeTemplate {
         }
 
         public void solve() {
+            int n = io.readInt();
+
+            int[] dists = new int[n + 1];
+            for (int i = 1; i <= n; i++) {
+                dists[i] = dists[i - 1] + io.readInt();
+            }
+            if (dists[n] % 2 == 1) {
+                io.cache.append(0);
+                return;
+            }
+            int half = dists[n] / 2;
+            int pair = 0;
+            for (int i = 0; i < n; i++) {
+                for (int j = i + 1; j < n; j++) {
+                    if (dists[j] - dists[i] == half) {
+                        pair++;
+                        break;
+                    }
+                }
+            }
+
+            io.cache.append(pair * (pair - 1) / 2);
         }
     }
 

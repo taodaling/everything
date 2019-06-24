@@ -36,6 +36,8 @@ public abstract class InteractiveTask implements Runnable {
             recorder.record("result", r ? '1' : '0');
             sysout.print(recorder.toString());
             service.shutdownNow();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         } finally {
             System.setIn(sysin);
             System.setOut(sysout);
@@ -58,5 +60,5 @@ public abstract class InteractiveTask implements Runnable {
         }
     }
 
-    protected abstract boolean interact(FastIO progIO, FastIO sysin);
+    protected abstract boolean interact(FastIO progIO, FastIO sysin) throws Exception;
 }
