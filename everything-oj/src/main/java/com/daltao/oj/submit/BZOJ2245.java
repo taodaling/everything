@@ -77,7 +77,7 @@ public class BZOJ2245 {
         public void solve() {
             m = io.readInt();
             n = io.readInt();
-            MinCostMaxFlow costFlow = new MinCostMaxFlow(idOfDst());
+            ZkwMinCostMaxFlow costFlow = new ZkwMinCostMaxFlow(idOfDst());
             for (int i = 0; i < n; i++) {
                 costFlow.addChannel(idOfSrc(), idOfProduct(i), 0).modify(io.readInt(), 0);
             }
@@ -113,28 +113,30 @@ public class BZOJ2245 {
 
             costFlow.setSource(idOfSrc());
             costFlow.setTarget(idOfDst());
-            long[] flow = costFlow.send(inf);
-            long cost = flow[1];
-            debug.debug("flow", costFlow);
-            io.cache.append(cost);
+             costFlow.send(inf);
+            double cost = costFlow.fee;
+            //debug.debug("flow", costFlow);
+            io.cache.append((long)(cost + 0.5));
         }
 
     }
 
-    public static class MinCostMaxFlow {
+    public static class ZkwMinCostMaxFlow {
         Node[] nodes;
         Deque<Node> deque;
         Node source;
         Node target;
         int nodeNum;
-        final static long INF = (long) 1e18;
+        double fee = 0;
+        double flow = 0;
+        final static double INF = 1e14;
 
         static class ID {
             int src;
             int dst;
-            long fee;
+            double fee;
 
-            ID(int src, int dst, long fee) {
+            ID(int src, int dst, double fee) {
                 this.src = src;
                 this.dst = dst;
                 this.fee = fee;
@@ -142,7 +144,7 @@ public class BZOJ2245 {
 
             @Override
             public int hashCode() {
-                return (int) ((src * 31L + dst) * 31 + fee);
+                return (int) ((src * 31L + dst) * 31 + Double.doubleToLongBits(fee));
             }
 
             @Override
@@ -156,7 +158,7 @@ public class BZOJ2245 {
 
         Map<ID, DirectFeeChannel> channelMap = new HashMap();
 
-        public MinCostMaxFlow(int nodeNum) {
+        public ZkwMinCostMaxFlow(int nodeNum) {
             this.nodeNum = nodeNum;
             nodes = new Node[nodeNum + 1];
             for (int i = 1; i <= nodeNum; i++) {
@@ -175,7 +177,7 @@ public class BZOJ2245 {
 
         ID id = new ID(0, 0, 0);
 
-        public DirectFeeChannel getChannel(int src, int dst, long fee) {
+        public DirectFeeChannel getChannel(int src, int dst, double fee) {
             id.src = src;
             id.dst = dst;
             id.fee = fee;
@@ -187,65 +189,73 @@ public class BZOJ2245 {
             return channel;
         }
 
-        private DirectFeeChannel addChannel(int src, int dst, long fee) {
+        private DirectFeeChannel addChannel(int src, int dst, double fee) {
             DirectFeeChannel dfc = new DirectFeeChannel(nodes[src], nodes[dst], fee);
             nodes[src].channelList.add(dfc);
             nodes[dst].channelList.add(dfc.inverse());
             return dfc;
         }
 
+        private double send(Node root, double flow) {
+            if (root == target) {
+                return flow;
+            }
+            if (root.inque) {
+                return 0;
+            }
+            root.inque = true;
+            double totalSent = 0;
+            for (FeeChannel channel : root.channelList) {
+                Node node = channel.getDst();
+                if (channel.getCapacity() == channel.getFlow()
+                        || node.distance + channel.getFee() != root.distance) {
+                    continue;
+                }
+                double f = send(node, Math.min(flow, channel.getCapacity() - channel.getFlow()));
+                if (f == 0) {
+                    continue;
+                }
+                flow -= f;
+                channel.sendFlow(f);
+                fee += channel.getFee() * f;
+                totalSent += f;
+            }
+            return totalSent;
+        }
+
         /**
          * reuslt[0] store how much flow could be sent and result[1] represents the fee
          */
-        public long[] send(long flow) {
-            long totalFee = 0;
-            long totalFlow = 0;
-
+        public void send(double flow) {
             while (flow > 0) {
                 spfa();
-
-                if (target.distance == INF) {
+                if (source.distance == INF) {
                     break;
                 }
-
-
-                long feeSum = target.distance;
-                long minFlow = flow;
-
-                Node trace = target;
-                while (trace != source) {
-                    FeeChannel last = trace.last;
-                    minFlow = Math.min(minFlow, last.getCapacity() - last.getFlow());
-                    trace = last.getSrc();
+                while (true) {
+                    for (int i = 1; i <= nodeNum; i++) {
+                        nodes[i].inque = false;
+                    }
+                    double f = send(source, flow);
+                    if (f == 0) {
+                        break;
+                    }
+                    flow -= f;
+                    this.flow += f;
                 }
-
-                flow -= minFlow;
-
-                trace = target;
-                while (trace != source) {
-                    FeeChannel last = trace.last;
-                    last.sendFlow(minFlow);
-                    trace = last.getSrc();
-                }
-
-                totalFee += feeSum * minFlow;
-                totalFlow += minFlow;
             }
-
-            return new long[]{totalFlow, totalFee};
         }
 
         private void spfa() {
             for (int i = 1; i <= nodeNum; i++) {
                 nodes[i].distance = INF;
                 nodes[i].inque = false;
-                nodes[i].last = null;
             }
 
-            deque.addLast(source);
-            source.distance = 0;
-            source.inque = true;
-            long sumOfDistance = 0;
+            deque.addLast(target);
+            target.distance = 0;
+            target.inque = true;
+            double sumOfDistance = 0;
 
             while (!deque.isEmpty()) {
                 Node head = deque.removeFirst();
@@ -256,17 +266,17 @@ public class BZOJ2245 {
                 sumOfDistance -= head.distance;
                 head.inque = false;
                 for (FeeChannel channel : head.channelList) {
+                    channel = channel.inverse();
                     if (channel.getFlow() == channel.getCapacity()) {
                         continue;
                     }
-                    Node dst = channel.getDst();
-                    long oldDist = dst.distance;
-                    long newDist = head.distance + channel.getFee();
+                    Node dst = channel.getSrc();
+                    double oldDist = dst.distance;
+                    double newDist = head.distance + channel.getFee();
                     if (oldDist <= newDist) {
                         continue;
                     }
                     dst.distance = newDist;
-                    dst.last = channel;
                     if (dst.inque) {
                         sumOfDistance -= oldDist;
                         sumOfDistance += newDist;
@@ -288,31 +298,31 @@ public class BZOJ2245 {
 
             public Node getDst();
 
-            public long getCapacity();
+            public double getCapacity();
 
-            public long getFlow();
+            public double getFlow();
 
-            public void sendFlow(long volume);
+            public void sendFlow(double volume);
 
             public FeeChannel inverse();
 
-            public long getFee();
+            public double getFee();
         }
 
         public static class DirectFeeChannel implements FeeChannel {
             final Node src;
             final Node dst;
-            long capacity;
-            long flow;
+            double capacity;
+            double flow;
             FeeChannel inverse;
-            final long fee;
+            final double fee;
 
             @Override
-            public long getFee() {
+            public double getFee() {
                 return fee;
             }
 
-            public DirectFeeChannel(Node src, Node dst, long fee) {
+            public DirectFeeChannel(Node src, Node dst, double fee) {
                 this.src = src;
                 this.dst = dst;
                 this.fee = fee;
@@ -340,26 +350,26 @@ public class BZOJ2245 {
             }
 
             @Override
-            public long getCapacity() {
+            public double getCapacity() {
                 return capacity;
             }
 
             @Override
-            public long getFlow() {
+            public double getFlow() {
                 return flow;
             }
 
             @Override
-            public void sendFlow(long volume) {
+            public void sendFlow(double volume) {
                 flow += volume;
             }
 
-            public void reset(long cap, long flow) {
+            public void reset(double cap, double flow) {
                 this.capacity = cap;
                 this.flow = flow;
             }
 
-            public void modify(long cap, long flow) {
+            public void modify(double cap, double flow) {
                 this.capacity += cap;
                 this.flow += flow;
             }
@@ -373,7 +383,7 @@ public class BZOJ2245 {
             }
 
             @Override
-            public long getFee() {
+            public double getFee() {
                 return -inner.getFee();
             }
 
@@ -394,17 +404,17 @@ public class BZOJ2245 {
             }
 
             @Override
-            public long getCapacity() {
+            public double getCapacity() {
                 return inner.getFlow();
             }
 
             @Override
-            public long getFlow() {
+            public double getFlow() {
                 return 0;
             }
 
             @Override
-            public void sendFlow(long volume) {
+            public void sendFlow(double volume) {
                 inner.sendFlow(-volume);
             }
 
@@ -417,10 +427,9 @@ public class BZOJ2245 {
 
         public static class Node {
             final int id;
-            long distance;
+            double distance;
             boolean inque;
-            FeeChannel last;
-            List<FeeChannel> channelList = new ArrayList(1);
+            List<FeeChannel> channelList = new ArrayList(2);
 
             public Node(int id) {
                 this.id = id;
@@ -440,14 +449,10 @@ public class BZOJ2245 {
                     builder.append(channel).append('\n');
                 }
             }
-            for (DirectFeeChannel channel : channelMap.values()) {
-                if (channel.getFlow() == 0) {
-                    builder.append(channel).append('\n');
-                }
-            }
             return builder.toString();
         }
     }
+
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder();
