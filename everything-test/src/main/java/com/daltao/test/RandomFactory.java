@@ -20,6 +20,7 @@ public abstract class RandomFactory implements Factory<Input> {
         }
         return builder.toString();
     }
+
     protected double nextDouble()
     {
         return random.nextDouble();
