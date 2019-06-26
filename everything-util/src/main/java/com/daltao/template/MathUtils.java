@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Random;
 
 public class MathUtils {
-    private static Random random = new Random(123456789);
+    private static Random random = new Random();
 
     public static class ExtLucasFactorial {
         int exp;
