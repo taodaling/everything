@@ -5,11 +5,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Comparator;
+import java.util.List;
 
-public class LOJ122 {
+public class BZOJ3669 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -47,108 +48,172 @@ public class LOJ122 {
 
         @Override
         public void run() {
-            solve();
+            try {
+                solve();
+            }catch (IndexOutOfBoundsException e)
+            {}
+        }
+
+        LCTNode[] nodes;
+        int n;
+        int m;
+        int xyLimit = 50000;
+
+        public void addEdge(Edge edge) {
+            LCTNode a = nodes[edge.a];
+            LCTNode b = nodes[edge.b];
+
+            LCTNode edgeNode = new LCTNode();
+            edgeNode.y = edge.y;
+            edgeNode.a = a;
+            edgeNode.b = b;
+            edgeNode.pushUp();
+
+            LCTNode.findRoute(a, b);
+            LCTNode.splay(a);
+            if (LCTNode.findRoot(a) != b) {
+                LCTNode.join(a, edgeNode);
+                LCTNode.join(edgeNode, b);
+                return;
+            }
+
+            LCTNode.splay(a);
+            LCTNode rep = a.maxYNode;
+            if (edge.y >= rep.maxYNode.y) {
+                return;
+            }
+
+            LCTNode.cut(rep, rep.a);
+            LCTNode.cut(rep.b, rep);
+
+            LCTNode.join(a, edgeNode);
+            LCTNode.join(edgeNode, b);
+            return;
+        }
+
+        public void removeEdge(Edge e) {
+
+        }
+
+        public boolean isConnected(LCTNode a, LCTNode b, int y) {
+            LCTNode.findRoute(a, b);
+            LCTNode.splay(a);
+            if (LCTNode.findRoot(a) != b) {
+                return false;
+            }
+            LCTNode.splay(a);
+            LCTNode rep = a.maxYNode;
+            return rep.y <= y;
         }
 
         public void solve() {
-            int n = io.readInt();
-            int m = io.readInt();
+            n = io.readInt();
+            m = io.readInt();
 
-            LCTNode[] nodes = new LCTNode[n + 1];
+            nodes = new LCTNode[n + 1];
             for (int i = 1; i <= n; i++) {
-                nodes[i] = new LCTNode();
-                nodes[i].id = i;
-                nodes[i].time = Integer.MAX_VALUE;
-                nodes[i].pushUp();
+                LCTNode node = new LCTNode();
+                node.id = i;
+                node.y = -1;
+                nodes[i] = node;
             }
 
-            Map<Pair, Integer> disappearTimeMap = new HashMap<>();
-            int[][] operations = new int[m][4];
-            int[] deletionTime = new int[m];
+            List<Edge>[] edgeIndexByX = new List[xyLimit + 1];
+            List<Edge>[] edgeIndexByY = new List[xyLimit + 1];
+            for (int i = 0; i <= xyLimit; i++) {
+                edgeIndexByX[i] = new ArrayList();
+                edgeIndexByY[i] = new ArrayList();
+            }
+
+            Edge[] edges = new Edge[m];
             for (int i = 0; i < m; i++) {
-                for (int j = 0; j < 3; j++) {
-                    operations[i][j] = io.readInt();
-                }
+                Edge edge = new Edge();
+                edge.a = io.readInt();
+                edge.b = io.readInt();
+                edge.x = io.readInt();
+                edge.y = io.readInt();
+                edges[i] = edge;
             }
 
-            for (int i = m - 1; i >= 0; i--) {
-                if (operations[i][0] == 0) {
-                    deletionTime[i] = disappearTimeMap.getOrDefault(Pair.create(operations[i][1], operations[i][2]), Integer.MAX_VALUE);
-                } else if (operations[i][0] == 1) {
-                    disappearTimeMap.put(Pair.create(operations[i][1], operations[i][2]), i);
-                }
-            }
-
+            Arrays.sort(edges, Edge.sortByY);
             for (int i = 0; i < m; i++) {
-                LCTNode a = nodes[operations[i][1]];
-                LCTNode b = nodes[operations[i][2]];
-                LCTNode.findRoute(a, b);
-                if (operations[i][0] == 0) {
-                    LCTNode edge = new LCTNode();
-                    edge.time = deletionTime[i];
-                    edge.id = 10000 * a.id + b.id;
-                    edge.pushUp();
-                    edge.a = a;
-                    edge.b = b;
-                    LCTNode.splay(a);
-                    if (LCTNode.findRoot(a) != b) {
-                        LCTNode.join(a, edge);
-                        LCTNode.join(edge, b);
-                    } else {
-                        LCTNode.splay(a);
-                        LCTNode replacement = a.minTimeNode;
-                        if (replacement.time < edge.time) {
-                            LCTNode.cut(replacement, replacement.a);
-                            LCTNode.cut(replacement, replacement.b);
-                            LCTNode.join(a, edge);
-                            LCTNode.join(edge, b);
+                Edge edge = edges[i];
+                edgeIndexByX[edge.x].add(edge);
+            }
+
+            Arrays.sort(edges, Edge.sortByX);
+            for (int i = 0; i < m; i++) {
+                Edge edge = edges[i];
+                edgeIndexByY[edge.y].add(edge);
+            }
+
+            int minSum = Integer.MAX_VALUE;
+            int x = -1;
+            int y = xyLimit;
+            boolean status = false;
+            while (y >= 0 && x <= xyLimit) {
+                if (!status) {
+                    x++;
+                    if (x > xyLimit) {
+                        break;
+                    }
+                    for (Edge edge : edgeIndexByX[x]) {
+                        if (edge.y > y) {
+                            break;
                         }
+                        addEdge(edge);
                     }
-                } else if (operations[i][0] == 1) {
-
                 } else {
-                    int time = a.minTimeNode.time;
-                    LCTNode.splay(a);
-                    if (LCTNode.findRoot(a) != b || time < i) {
-                        io.cache.append("N\n");
-                    } else {
-                        io.cache.append("Y\n");
+                    for (Edge edge : edgeIndexByY[y]) {
+                        if (edge.x > x) {
+                            break;
+                        }
+                        removeEdge(edge);
+                    }
+                    y--;
+                    if (y < 0) {
+                        break;
                     }
                 }
+                status = isConnected(nodes[1], nodes[n], y);
+                if (status) {
+                    minSum = Math.min(x + y, minSum);
+                }
+            }
+
+            if (minSum == Integer.MAX_VALUE) {
+                io.cache.append(-1);
+            } else {
+                io.cache.append(minSum);
             }
         }
     }
 
-    public static class Pair {
-        final Integer a;
-        final Integer b;
+    public static class Edge {
+        int x;
+        int y;
+        int a;
+        int b;
 
-        public Pair(Integer a, Integer b) {
-            this.a = a;
-            this.b = b;
-        }
-
-        public static Pair create(Integer a, Integer b) {
-            if (a > b) {
-                Integer t = a;
-                a = b;
-                b = t;
+        public static Comparator<Edge> sortByX = new Comparator<Edge>() {
+            @Override
+            public int compare(Edge o1, Edge o2) {
+                return o1.x - o2.x;
             }
-            return new Pair(a, b);
-        }
+        };
+        public static Comparator<Edge> sortByY = new Comparator<Edge>() {
+            @Override
+            public int compare(Edge o1, Edge o2) {
+                return o1.y - o2.y;
+            }
+        };
 
         @Override
-        public int hashCode() {
-            return a * 31 + b;
-        }
-
-
-        @Override
-        public boolean equals(Object obj) {
-            Pair p = (Pair) obj;
-            return a.equals(p.a) && b.equals(p.b);
+        public String toString() {
+            return String.format("(%d,%d)[%d,%d]", a, b, x, y);
         }
     }
+
 
     /**
      * Created by dalt on 2018/5/20.
@@ -161,8 +226,8 @@ public class LOJ122 {
             NIL.right = NIL;
             NIL.father = NIL;
             NIL.treeFather = NIL;
-            NIL.time = Integer.MAX_VALUE;
-            NIL.minTimeNode = NIL;
+            NIL.y = -1;
+            NIL.maxYNode = NIL;
         }
 
         LCTNode left = NIL;
@@ -171,9 +236,8 @@ public class LOJ122 {
         LCTNode treeFather = NIL;
         boolean reverse;
         int id;
-        int time;
-        LCTNode minTimeNode;
-
+        int y;
+        LCTNode maxYNode;
         LCTNode a;
         LCTNode b;
 
@@ -337,12 +401,12 @@ public class LOJ122 {
         }
 
         public void pushUp() {
-            minTimeNode = this;
-            if (minTimeNode.time > left.minTimeNode.time) {
-                minTimeNode = left.minTimeNode;
+            maxYNode = this;
+            if (left.maxYNode.y > maxYNode.y) {
+                maxYNode = left.maxYNode;
             }
-            if (minTimeNode.time > right.minTimeNode.time) {
-                minTimeNode = right.minTimeNode;
+            if (right.maxYNode.y > maxYNode.y) {
+                maxYNode = right.maxYNode;
             }
         }
     }
