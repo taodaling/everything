@@ -48,13 +48,18 @@ public class ISAP {
         return channelMap.values();
     }
 
+    public DirectChannel addChannel(int src, int dst) {
+        DirectChannel channel = new DirectChannel(nodes[src], nodes[dst], 0, 0);
+        nodes[src].channelList.add(channel);
+        nodes[dst].channelList.add(channel.getInverse());
+        return channel;
+    }
+
     public DirectChannel getChannel(int src, int dst) {
         Long id = (((long) src) << 32) | dst;
         DirectChannel channel = channelMap.get(id);
         if (channel == null) {
-            channel = new DirectChannel(nodes[src], nodes[dst], 0, id.hashCode());
-            nodes[src].channelList.add(channel);
-            nodes[dst].channelList.add(channel.getInverse());
+            channel = addChannel(src, dst);
             channelMap.put(id, channel);
         }
         return channel;
