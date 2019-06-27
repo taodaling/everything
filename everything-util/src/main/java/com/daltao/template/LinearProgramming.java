@@ -16,7 +16,7 @@ package com.daltao.template;
  * </pre>
  */
 public class LinearProgramming {
-    private final double PREC = 1e-12;
+    private final double PREC;
     private final double INF = 1e50;
     double[][] mat;
     int[] basicVariables;
@@ -27,7 +27,8 @@ public class LinearProgramming {
     int n;
     int m;
 
-    public LinearProgramming(int n, int m) {
+    public LinearProgramming(int n, int m, double prec) {
+        this.PREC = prec;
         this.n = n;
         this.m = m + n;
         mat = new double[n + 1][this.m + 2];
@@ -59,7 +60,7 @@ public class LinearProgramming {
         mat[0][variableId] = c;
     }
 
-    public double bestSolution() {
+    public double maxSolution() {
         return mat[0][0];
     }
 
@@ -240,5 +241,68 @@ public class LinearProgramming {
             builder.append("<=").append(mat[i][0]).append("\n");
         }
         return builder.toString();
+    }
+
+    public static class DualLinearProgramming {
+        LinearProgramming lp;
+        int n;
+        int m;
+
+        public DualLinearProgramming(int n, int m, double prec) {
+            this.n = n;
+            this.m = m;
+            lp = new LinearProgramming(m, n, prec);
+        }
+
+        public void setConstraintConstant(int constraintId, double noMoreThan) {
+            lp.setTargetCoefficient(constraintId, noMoreThan);
+        }
+
+        public void setConstraintCoefficient(int constraintId, int variableId, double c) {
+            lp.setConstraintCoefficient(variableId, constraintId, c);
+        }
+
+        public void setTargetConstant(double c) {
+            lp.setTargetConstant(c);
+        }
+
+        public void setTargetCoefficient(int variableId, double c) {
+            lp.setConstraintConstant(variableId, c);
+        }
+
+        public void solve() {
+            lp.solve();
+        }
+
+        public double minSolution() {
+            return lp.maxSolution();
+        }
+
+        public boolean isInfeasible() {
+            return lp.isUnbound();
+        }
+
+        public boolean isUnbound() {
+            return lp.isInfeasible();
+        }
+
+        public double getAssignmentValueForVariable(int i) {
+            if (i + n <= lp.m) {
+                return -lp.mat[0][i + n];
+            } else {
+                return 0;
+            }
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 1; i <= m; i++) {
+                double val = getAssignmentValueForVariable(i);
+                builder.append("x").append(i).append("=").append(val).append('\n');
+            }
+            builder.append("min=").append(minSolution());
+            return builder.toString();
+        }
     }
 }
