@@ -79,7 +79,7 @@ public class MathUtils {
     }
 
     /**
-     * 扩展卢卡斯算法
+     * Extend lucas algorithm
      */
     public static class ExtLucas {
         PollardRho pr = new PollardRho();
@@ -105,7 +105,7 @@ public class MathUtils {
     }
 
     /**
-     * 扩展卢卡斯算法
+     * Extend lucas algorithm long version
      */
     public static class LongExtLucas {
         LongPollardRho pr = new LongPollardRho();
@@ -131,7 +131,7 @@ public class MathUtils {
     }
 
     /**
-     * 扩展欧几里得
+     * Extend gcd
      */
     public static class ExtGCD {
         private long x;
@@ -196,7 +196,7 @@ public class MathUtils {
     }
 
     /**
-     * 欧拉筛
+     * Euler sieve for filter primes
      */
     public static class EulerSieve {
         int[] primes;
@@ -223,7 +223,7 @@ public class MathUtils {
     }
 
     /**
-     * 欧拉筛
+     * Euler sieve for multiplicative function
      */
     public static class MultiplicativeFunctionSieve {
         int[] primes;
@@ -313,7 +313,7 @@ public class MathUtils {
     }
 
     /**
-     * 模运算
+     * Mod operations
      */
     public static class Modular {
         int m;
@@ -365,7 +365,7 @@ public class MathUtils {
     }
 
     /**
-     * 位运算
+     * Bit operations
      */
     public static class BitOperator {
         public int bitAt(int x, int i) {
@@ -418,7 +418,7 @@ public class MathUtils {
     }
 
     /**
-     * 幂运算
+     * Power operations
      */
     public static class Power {
         final Modular modular;
@@ -457,7 +457,7 @@ public class MathUtils {
     }
 
     /**
-     * 对数
+     * Log operations
      */
     public static class Log2 {
         public int ceilLog(int x) {
@@ -478,7 +478,7 @@ public class MathUtils {
     }
 
     /**
-     * 乘法逆元
+     * Find all inverse number
      */
     public static class InverseNumber {
         int[] inv;
@@ -500,7 +500,7 @@ public class MathUtils {
     }
 
     /**
-     * 排列
+     * Factorial
      */
     public static class Factorial {
         int[] fact;
@@ -522,7 +522,7 @@ public class MathUtils {
     }
 
     /**
-     * 组合
+     * Composition
      */
     public static class Composite {
         final Factorial factorial;
@@ -546,14 +546,14 @@ public class MathUtils {
     }
 
     /**
-     * 大素数测试
+     * Test whether a number is primes
      */
     public static class MillerRabin {
         Modular modular;
         Power power;
 
         /**
-         * 判断n是否是素数
+         * Check whether n is a prime s times
          */
         public boolean mr(int n, int s) {
             if (n == 2) {
@@ -589,7 +589,9 @@ public class MathUtils {
         }
     }
 
-
+    /**
+     * Modular operation for long version
+     */
     public static class LongModular {
         final long m;
 
@@ -639,14 +641,14 @@ public class MathUtils {
     }
 
     /**
-     * 大素数测试
+     * Test whether a number is primes
      */
     public static class LongMillerRabin {
         LongModular modular;
         LongPower power;
 
         /**
-         * 判断n是否是素数
+         * Check whether n is a prime s times
          */
         public boolean mr(long n, int s) {
             if (n == 2) {
@@ -754,7 +756,7 @@ public class MathUtils {
     }
 
     /**
-     * 扩展中国余数定理
+     * Extend chinese remainder theory
      */
     public static class ExtCRT {
         /**
@@ -794,7 +796,7 @@ public class MathUtils {
     }
 
     /**
-     * 卢卡斯定理
+     * Lucas algorithm
      */
     public static class Lucas {
         private final Composite composite;
@@ -815,7 +817,7 @@ public class MathUtils {
     }
 
     /**
-     * 因式分解
+     * Find all factors of a number
      */
     public static class PollardRho {
         MillerRabin mr = new MillerRabin();
@@ -833,8 +835,9 @@ public class MathUtils {
                 }
             }
         }
+
         /**
-         * 找到所有所有因子，每个因子可以表示为素数的幂次。
+         * Find all prime factor of n
          * <br>
          * p1 => p1^c1
          * <br>
@@ -909,7 +912,7 @@ public class MathUtils {
     }
 
     /**
-     * 用于优化\sum_{i=1}^nf(\lfloor m/i \rfloor)
+     * \sum_{i=1}^{limit}f(\lfloor n/i \rfloor)
      */
     public static class FloorDivisionOptimizer {
         int l;
