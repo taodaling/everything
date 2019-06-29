@@ -1,13 +1,13 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.Arrays;
+import java.util.*;
 
-public class BZOJ1031 {
+public class LUOGU3377 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -49,17 +49,146 @@ public class BZOJ1031 {
         }
 
         public void solve() {
-            String s = io.readString();
-            int n = s.length();
-            SuffixArray sa = new SuffixArray((s + s).toCharArray(), 0, 128);
-            for (SuffixArray.Suffix suffix : sa.orderedSuffix) {
-                if (suffix.suffixStartIndex >= n) {
-                    continue;
-                }
-                int index = suffix.suffixStartIndex;
-                int tail = (index + n - 1) % n;
-                io.cache.append(s.charAt(tail));
+            int n = io.readInt();
+            int m = io.readInt();
+            Node[] nodes = new Node[n + 1];
+            for (int i = 1; i <= n; i++) {
+                nodes[i] = new Node();
+                nodes[i].k1 = io.readInt();
+                nodes[i].k2 = i;
+                nodes[i].ls = new LeftSideTree<>(nodes[i]);
             }
+
+            for (int i = 0; i < m; i++) {
+                int t = io.readInt();
+                if (t == 1) {
+                    int x = io.readInt();
+                    int y = io.readInt();
+                    if (nodes[x].deleted || nodes[y].deleted) {
+                        continue;
+                    }
+                    Node.union(nodes[x], nodes[y]);
+                } else {
+                    int x = io.readInt();
+                    if (nodes[x].deleted) {
+                        io.cache.append(-1).append('\n');
+                        continue;
+                    }
+                    Node node = nodes[x].find();
+                    io.cache.append(node.ls.peek().k1).append('\n');
+                    node.ls.peek().deleted = true;
+                    node.ls = LeftSideTree.pop(node.ls, Node.sortByKey);
+                }
+            }
+        }
+    }
+
+    public static class Node {
+        Node p = this;
+        int rank;
+        LeftSideTree<Node> ls;
+        int k1;
+        int k2;
+        boolean deleted;
+        static Comparator<Node> sortByKey = (a, b) -> a.k1 == b.k1 ? Integer.compare(a.k2, b.k2) :
+                Integer.compare(a.k1, b.k1);
+
+        public Node find() {
+            return p.p == p ? p : (p = p.find());
+        }
+
+        public static void union(Node a, Node b) {
+            a = a.find();
+            b = b.find();
+            if (a == b) {
+                return;
+            }
+            if (a.rank == b.rank) {
+                a.rank++;
+            }
+            if (a.rank < b.rank) {
+                Node tmp = a;
+                a = b;
+                b = tmp;
+            }
+            b.p = a;
+            a.ls = LeftSideTree.merge(a.ls, b.ls, sortByKey);
+        }
+    }
+
+    public static class LeftSideTree<K> {
+        public static final LeftSideTree NIL = new LeftSideTree<>(null);
+
+        static {
+            NIL.left = NIL;
+            NIL.right = NIL;
+            NIL.dist = -1;
+        }
+
+        LeftSideTree<K> left = NIL;
+        LeftSideTree<K> right = NIL;
+        int dist;
+        K key;
+
+        public LeftSideTree(K key) {
+            this.key = key;
+        }
+
+        public static <K> LeftSideTree<K> create(Collection<LeftSideTree<K>> trees, Comparator<K> cmp) {
+            Deque<LeftSideTree<K>> deque = new ArrayDeque<>(trees);
+            while (deque.size() > 1) {
+                deque.addLast(merge(deque.removeFirst(), deque.removeFirst(), cmp));
+            }
+            return deque.removeLast();
+        }
+
+        public static <K> LeftSideTree<K> merge(LeftSideTree<K> a, LeftSideTree<K> b, Comparator<K> cmp) {
+            if (a == NIL) {
+                return b;
+            } else if (b == NIL) {
+                return a;
+            }
+            if (cmp.compare(a.key, b.key) > 0) {
+                LeftSideTree<K> tmp = a;
+                a = b;
+                b = tmp;
+            }
+            a.right = merge(a.right, b, cmp);
+            if (a.left.dist < a.right.dist) {
+                LeftSideTree<K> tmp = a.left;
+                a.left = a.right;
+                a.right = tmp;
+            }
+            a.dist = a.right.dist + 1;
+            return a;
+        }
+
+        public boolean isEmpty() {
+            return this == NIL;
+        }
+
+        public K peek() {
+            return key;
+        }
+
+        public static <K> LeftSideTree<K> pop(LeftSideTree<K> root, Comparator<K> cmp) {
+            return merge(root.left, root.right, cmp);
+        }
+
+        private void toStringDfs(StringBuilder builder) {
+            if (this == NIL) {
+                return;
+            }
+            builder.append(key).append(' ');
+            left.toStringDfs(builder);
+            right.toStringDfs(builder);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            toStringDfs(builder);
+            return builder.toString();
         }
     }
 
@@ -347,163 +476,6 @@ public class BZOJ1031 {
             }
             outputName(name);
             System.out.println(Arrays.deepToString(x));
-        }
-    }
-
-
-    public static class SuffixArray {
-        Suffix[] orderedSuffix;
-        Suffix[] originalSuffix;
-        int[] heights;
-        char[] data;
-
-        public SuffixArray(char[] s, int rangeFrom, int rangeTo) {
-            this.data = s;
-
-            int n = s.length;
-            int range = n + 1;
-            Loop<int[]> rankLoop = new Loop(new int[3][n + 1]);
-
-            Suffix[] originalSuffix = new Suffix[n + 1];
-            int[] firstRanks = rankLoop.get(0);
-            for (int i = 0; i < n; i++) {
-                originalSuffix[i] = new Suffix();
-                originalSuffix[i].suffixStartIndex = i;
-                firstRanks[i] = s[i] - rangeFrom + 1;
-            }
-            originalSuffix[n] = new Suffix();
-            originalSuffix[n].suffixStartIndex = n;
-            originalSuffix[n].rank = 0;
-            Loop<Suffix[]> suffixLoop = new Loop(new Suffix[][]{
-                    originalSuffix.clone(), new Suffix[n + 1]
-            });
-
-            sort(suffixLoop.get(0), suffixLoop.get(1), rankLoop.get(0), rangeTo - rangeFrom + 1);
-            assignRank(suffixLoop.turn(), rankLoop.get(0), rankLoop.get(0), rankLoop.turn());
-
-            for (int i = 1; i < n; i <<= 1) {
-                System.arraycopy(rankLoop.get(0), i, rankLoop.get(1), 0, range - i);
-                Arrays.fill(rankLoop.get(1), range - i, range, 0);
-                sort(suffixLoop.get(0), suffixLoop.turn(), rankLoop.get(1), range);
-                sort(suffixLoop.get(0), suffixLoop.turn(), rankLoop.get(0), range);
-                assignRank(suffixLoop.get(0), rankLoop.get(0), rankLoop.get(1), rankLoop.turn(2));
-            }
-
-            firstRanks = rankLoop.get(0);
-            for (int i = 0; i < range; i++) {
-                originalSuffix[i].rank = firstRanks[i];
-            }
-
-            this.originalSuffix = originalSuffix;
-            this.orderedSuffix = suffixLoop.get();
-
-            heights = new int[n + 1];
-            for (int i = 0; i < n; i++) {
-                Suffix suffix = originalSuffix[i];
-                if (suffix.rank == 0) {
-                    heights[suffix.rank] = 0;
-                    continue;
-                }
-                int startIndex = suffix.suffixStartIndex;
-                int former = startIndex - 1;
-                int h = 0;
-                if (former >= 0) {
-                    h = Math.max(h, heights[originalSuffix[former].rank] - 1);
-                }
-                int anotherStartIndex = orderedSuffix[suffix.rank - 1].suffixStartIndex;
-                for (; startIndex + h < n && anotherStartIndex + h < n && s[startIndex + h] == s[anotherStartIndex + h]; h++)
-                    ;
-                heights[suffix.rank] = h;
-            }
-        }
-
-        private static void assignRank(Suffix[] seq, int[] firstKeys, int[] secondKeys, int[] rankOutput) {
-            int cnt = 0;
-            rankOutput[0] = 0;
-            for (int i = 1, bound = seq.length; i < bound; i++) {
-                int lastIndex = seq[i - 1].suffixStartIndex;
-                int index = seq[i].suffixStartIndex;
-                if (firstKeys[lastIndex] != firstKeys[index] ||
-                        secondKeys[lastIndex] != secondKeys[index]) {
-                    cnt++;
-                }
-                rankOutput[index] = cnt;
-            }
-        }
-
-        private static void sort(Suffix[] oldSeq, Suffix[] newSeq, int[] withRank, int range) {
-            int[] counters = new int[range];
-            for (int rank : withRank) {
-                counters[rank]++;
-            }
-            int[] ranks = new int[range];
-            ranks[0] = 0;
-            for (int i = 1; i < range; i++) {
-                ranks[i] = ranks[i - 1] + (counters[i] > 0 ? 1 : 0);
-                counters[i] += counters[i - 1];
-            }
-
-            for (int i = oldSeq.length - 1; i >= 0; i--) {
-                int newPos = --counters[withRank[oldSeq[i].suffixStartIndex]];
-                newSeq[newPos] = oldSeq[i];
-            }
-        }
-
-        /**
-         * 获取第rank大的后缀，最小的后缀的排名为1
-         */
-        public Suffix getSuffixByRank(int rank) {
-            return orderedSuffix[rank];
-        }
-
-        /**
-         * 获取以startIndex开始的后缀对应的后缀对象
-         */
-        public Suffix getSuffixByStartIndex(int startIndex) {
-            return originalSuffix[startIndex];
-        }
-
-        /**
-         * 计算第i大的后缀和第i-1大的后缀的最长公共前缀长度
-         */
-        public int longestCommonPrefixOf(int i) {
-            return heights[i];
-        }
-
-        private static class Loop<T> {
-            T[] loops;
-            int offset;
-
-            public Loop(T[] initVal) {
-                loops = initVal;
-            }
-
-            public T get(int index) {
-                return loops[(offset + index) % loops.length];
-            }
-
-            public T get() {
-                return get(0);
-            }
-
-            public T turn(int degree) {
-                offset += degree;
-                return get(0);
-            }
-
-            public T turn() {
-                return turn(1);
-            }
-        }
-
-        public class Suffix {
-            int suffixStartIndex;
-            int rank;
-
-            @Override
-            public String toString() {
-                return String.valueOf(data, suffixStartIndex, data.length - suffixStartIndex);//suffixStartIndex + ":" + rank;
-            }
         }
     }
 }
