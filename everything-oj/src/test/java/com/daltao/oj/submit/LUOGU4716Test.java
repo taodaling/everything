@@ -33,8 +33,8 @@ public class LUOGU4716Test {
         @Override
         public Input newInstance() {
             QueueInput input = new QueueInput();
-            int n = nextInt(10000, 10000);
-            int m = nextInt(100000, 100000);
+            int n = nextInt(100, 100);
+            int m = nextInt(10000, 10000);
             int r = nextInt(1, n);
             input.add(n).add(m).add(r);
             for (int i = 0; i < m; i++) {

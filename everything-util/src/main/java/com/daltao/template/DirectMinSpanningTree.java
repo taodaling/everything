@@ -11,7 +11,7 @@ public class DirectMinSpanningTree {
         Node src;
         Node dst;
         long weight;
-        long fixWeight;
+        long fixedWeight;
 
         @Override
         public String toString() {
@@ -21,11 +21,10 @@ public class DirectMinSpanningTree {
 
     public static class Node {
         int id = -1;
-        List<Edge> outEdges = new ArrayList<>(2);
         List<Edge> inEdges = new ArrayList<>(2);
         LeftSideTree queue = LeftSideTree.NIL;
         Node parent;
-        Edge out;
+        Edge outEdge;
         Node outNode;
         int visited;
 
@@ -33,15 +32,15 @@ public class DirectMinSpanningTree {
         Node circleP = this;
         int circleRank;
 
-        Node proxy = this;
+        Node currentLevel = this;
 
-        Node findCircle() {
-            return circleP.circleP == circleP ? circleP : (circleP = circleP.findCircle());
+        Node find() {
+            return circleP.circleP == circleP ? circleP : (circleP = circleP.find());
         }
 
-        static void mergeCircle(Node a, Node b) {
-            a = a.findCircle();
-            b = b.findCircle();
+        static void merge(Node a, Node b) {
+            a = a.find();
+            b = b.find();
             if (a == b) {
                 return;
             }
@@ -50,10 +49,8 @@ public class DirectMinSpanningTree {
             }
             if (a.circleRank > b.circleRank) {
                 b.circleP = a;
-                a.queue = LeftSideTree.merge(a.queue, b.queue);
             } else {
                 a.circleP = b;
-                b.queue = LeftSideTree.merge(a.queue, b.queue);
             }
         }
 
@@ -67,33 +64,31 @@ public class DirectMinSpanningTree {
         if (nodes.length == 1) {
             return Collections.emptyList();
         }
-
         now++;
         Node root = nodes[rootId];
         List<Edge> result = new ArrayList<>();
-        dfs(root, result);
+        dismantle0(root, result);
         return result;
     }
 
-    private void dfs(Node root, List<Edge> result) {
+    private void dismantle0(Node root, List<Edge> result) {
         if (root == top || root.visited == now) {
             return;
         }
         root.visited = now;
         Node trace = root;
         while (true) {
-            Node bottom = trace.out.dst;
-            Node next = trace.outNode;
-            if (next == root) {
+            Node front = trace.outNode;
+            Node frontRoot = trace.outEdge.dst;
+            if (front == root) {
                 break;
             }
-            result.add(trace.out);
-            next.visited = now;
-            dfs(bottom, result);
-            trace = next;
+            result.add(trace.outEdge);
+            front.visited = now;
+            dismantle0(frontRoot, result);
+            trace = front;
         }
-
-        dfs(root.parent, result);
+        dismantle0(root.parent, result);
     }
 
     public void contract() {
@@ -101,58 +96,57 @@ public class DirectMinSpanningTree {
         Deque<LeftSideTree> deque = new ArrayDeque<>();
         for (Node node : nodes) {
             for (Edge edge : node.inEdges) {
-                edge.fixWeight = edge.weight;
+                edge.fixedWeight = edge.weight;
                 deque.addLast(new LeftSideTree(edge));
             }
             node.queue = LeftSideTree.createFromDeque(deque);
         }
 
-        int remain = nodes.length;
         Deque<Node> stack = new ArrayDeque<>();
-        List<Node> waitList = new ArrayList<>();
         stack.addLast(nodes[0]);
-        stack.peekFirst().visited = now;
+        nodes[0].visited = now;
+        int remain = nodes.length;
         while (remain > 1) {
-            Node tail = stack.peekLast().findCircle();
-            Edge out = null;
-            while (out == null) {
-                Edge min = tail.queue.peek();
+            Node tail = stack.peekLast().currentLevel;
+            Edge minInEdge = null;
+            while (true) {
+                minInEdge = tail.queue.peek();
                 tail.queue = LeftSideTree.pop(tail.queue);
                 //self loop
-                if (min.src.findCircle() == min.dst.findCircle()) {
-                    continue;
-                }
-                out = min;
-            }
-
-            Node src = out.src.findCircle().proxy;
-            //No loop
-            if (src.visited != now) {
-                src.visited = now;
-                src.out = out;
-                stack.addLast(src);
-                continue;
-            }
-            //Find loop, merge them together
-            Node proxy = new Node();
-            proxy.visited = now;
-            proxy.out = src.out;
-            src.out = out;
-            Node last = src;
-            while (true) {
-                Node trace = stack.removeLast().findCircle().proxy;
-                trace.parent = proxy;
-                last.outNode = trace;
-                trace.findCircle().queue.modify(-last.out.fixWeight);
-                Node.mergeCircle(proxy, trace);
-                remain--;
-                last = trace;
-                if (trace == src) {
+                if (minInEdge.src.find() != minInEdge.dst.find()) {
                     break;
                 }
             }
-            proxy.findCircle().proxy = proxy;
-            stack.addLast(proxy);
+
+            Node x = minInEdge.src.find().currentLevel;
+            //No loop
+            if (x.visited != now) {
+                x.visited = now;
+                x.outEdge = minInEdge;
+                stack.addLast(x);
+                continue;
+            }
+            //Find loop, merge them together
+            Node p = new Node();
+            p.visited = now;
+            p.outEdge = x.outEdge;
+            x.outEdge = minInEdge;
+            Node last = x;
+            while (true) {
+                Node t = stack.removeLast();
+                t.parent = p;
+                last.outNode = t;
+                t.queue.modify(-last.outEdge.fixedWeight);
+                p.queue = LeftSideTree.merge(t.queue, p.queue);
+                Node.merge(p, t);
+                last = t;
+                remain--;
+                if (t == x) {
+                    break;
+                }
+            }
+            p.find().currentLevel = p;
+            stack.addLast(p);
             remain++;
         }
         top = stack.removeLast();
@@ -165,7 +159,6 @@ public class DirectMinSpanningTree {
         edge.src = nodes[s];
         edge.dst = nodes[t];
         edge.weight = weight;
-        edge.src.outEdges.add(edge);
         edge.dst.inEdges.add(edge);
     }
 
@@ -207,17 +200,12 @@ public class DirectMinSpanningTree {
             if (this == NIL) {
                 return;
             }
-            key.fixWeight += k;
+            key.fixedWeight += k;
             mod += k;
         }
 
-
         public LeftSideTree(DirectMinSpanningTree.Edge key) {
             this.key = key;
-        }
-
-        public static LeftSideTree createFromCollection(Collection<LeftSideTree> trees) {
-            return createFromDeque(new ArrayDeque<>(trees));
         }
 
         public static LeftSideTree createFromDeque(Deque<LeftSideTree> deque) {
@@ -235,7 +223,7 @@ public class DirectMinSpanningTree {
             }
             a.pushDown();
             b.pushDown();
-            if (a.key.fixWeight > b.key.fixWeight) {
+            if (a.key.fixedWeight > b.key.fixedWeight) {
                 LeftSideTree tmp = a;
                 a = b;
                 b = tmp;
@@ -250,10 +238,6 @@ public class DirectMinSpanningTree {
             return a;
         }
 
-        public boolean isEmpty() {
-            return this == NIL;
-        }
-
         public DirectMinSpanningTree.Edge peek() {
             return key;
         }
@@ -261,22 +245,6 @@ public class DirectMinSpanningTree {
         public static LeftSideTree pop(LeftSideTree root) {
             root.pushDown();
             return merge(root.left, root.right);
-        }
-
-        private void toStringDfs(StringBuilder builder) {
-            if (this == NIL) {
-                return;
-            }
-            builder.append(key).append(' ');
-            left.toStringDfs(builder);
-            right.toStringDfs(builder);
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            toStringDfs(builder);
-            return builder.toString();
         }
     }
 }
