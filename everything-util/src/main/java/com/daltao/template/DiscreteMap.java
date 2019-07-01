@@ -35,4 +35,12 @@ public class DiscreteMap {
     public int iThElement(int i) {
         return val[f + i];
     }
+
+    public int minRank() {
+        return 0;
+    }
+
+    public int maxRank() {
+        return t - f - 1;
+    }
 }
