@@ -43,7 +43,7 @@ public class LUOGU2893 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        double dInf = 1e14;
+        long dInf = (long)1e18;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -58,10 +58,12 @@ public class LUOGU2893 {
         public void solve() {
             n = io.readInt();
             int[] data = new int[n];
+            int[] rev = new int[n];
             for (int i = 0; i < n; i++) {
-                data[i] = io.readInt();
+                rev[n - i - 1] = data[i] = io.readInt();
             }
-
+            long res = Math.min(minCost(data), minCost(rev));
+            io.cache.append(res);
         }
 
 
@@ -83,7 +85,7 @@ public class LUOGU2893 {
             return idOfSrc() + 1;
         }
 
-        public double minCost(int[] data) {
+        public long minCost(int[] data) {
             ZkwMinCostMaxFlow flow = new ZkwMinCostMaxFlow(n * 2 + 2);
             for (int i = 0; i < n - 1; i++) {
                 flow.getChannel(idOfSrc(), idOfIn(i), 0)
@@ -96,6 +98,10 @@ public class LUOGU2893 {
             }
             flow.getChannel(idOfOut(0), idOfDst(), 0).modify(dInf, 0);
             flow.getChannel(idOfIn(n - 1), idOfDst(), 0).modify(dInf, 0);
+            flow.setSource(idOfSrc());
+            flow.setTarget(idOfDst());
+            flow.send(dInf);
+            return flow.fee;
         }
     }
 
@@ -106,16 +112,16 @@ public class LUOGU2893 {
         Node source;
         Node target;
         int nodeNum;
-        double fee = 0;
-        double flow = 0;
-        final static double INF = 1e14;
+        long fee = 0;
+        long flow = 0;
+        final static long INF = (long)1e18;
 
         static class ID {
             int src;
             int dst;
-            double fee;
+            long fee;
 
-            ID(int src, int dst, double fee) {
+            ID(int src, int dst, long fee) {
                 this.src = src;
                 this.dst = dst;
                 this.fee = fee;
@@ -123,7 +129,7 @@ public class LUOGU2893 {
 
             @Override
             public int hashCode() {
-                return (int) ((src * 31L + dst) * 31 + Double.doubleToLongBits(fee));
+                return (int) ((src * 31L + dst) * 31 + fee);
             }
 
             @Override
@@ -156,7 +162,7 @@ public class LUOGU2893 {
 
         ID id = new ID(0, 0, 0);
 
-        public DirectFeeChannel getChannel(int src, int dst, double fee) {
+        public DirectFeeChannel getChannel(int src, int dst, long fee) {
             id.src = src;
             id.dst = dst;
             id.fee = fee;
@@ -168,14 +174,14 @@ public class LUOGU2893 {
             return channel;
         }
 
-        private DirectFeeChannel addChannel(int src, int dst, double fee) {
+        private DirectFeeChannel addChannel(int src, int dst, long fee) {
             DirectFeeChannel dfc = new DirectFeeChannel(nodes[src], nodes[dst], fee);
             nodes[src].channelList.add(dfc);
             nodes[dst].channelList.add(dfc.inverse());
             return dfc;
         }
 
-        private double send(Node root, double flow) {
+        private long send(Node root, long flow) {
             if (root == target) {
                 return flow;
             }
@@ -183,14 +189,14 @@ public class LUOGU2893 {
                 return 0;
             }
             root.inque = true;
-            double totalSent = 0;
+            long totalSent = 0;
             for (FeeChannel channel : root.channelList) {
                 Node node = channel.getDst();
                 if (channel.getCapacity() == channel.getFlow()
                         || node.distance + channel.getFee() != root.distance) {
                     continue;
                 }
-                double f = send(node, Math.min(flow, channel.getCapacity() - channel.getFlow()));
+                long f = send(node, Math.min(flow, channel.getCapacity() - channel.getFlow()));
                 if (f == 0) {
                     continue;
                 }
@@ -205,7 +211,7 @@ public class LUOGU2893 {
         /**
          * reuslt[0] store how much flow could be sent and result[1] represents the fee
          */
-        public void send(double flow) {
+        public void send(long flow) {
             while (flow > 0) {
                 spfa();
                 if (source.distance == INF) {
@@ -215,7 +221,7 @@ public class LUOGU2893 {
                     for (int i = 1; i <= nodeNum; i++) {
                         nodes[i].inque = false;
                     }
-                    double f = send(source, flow);
+                    long f = send(source, flow);
                     if (f == 0) {
                         break;
                     }
@@ -234,7 +240,7 @@ public class LUOGU2893 {
             deque.addLast(target);
             target.distance = 0;
             target.inque = true;
-            double sumOfDistance = 0;
+            long sumOfDistance = 0;
 
             while (!deque.isEmpty()) {
                 Node head = deque.removeFirst();
@@ -250,8 +256,8 @@ public class LUOGU2893 {
                         continue;
                     }
                     Node dst = channel.getSrc();
-                    double oldDist = dst.distance;
-                    double newDist = head.distance + channel.getFee();
+                    long oldDist = dst.distance;
+                    long newDist = head.distance + channel.getFee();
                     if (oldDist <= newDist) {
                         continue;
                     }
@@ -277,31 +283,31 @@ public class LUOGU2893 {
 
             public Node getDst();
 
-            public double getCapacity();
+            public long getCapacity();
 
-            public double getFlow();
+            public long getFlow();
 
-            public void sendFlow(double volume);
+            public void sendFlow(long volume);
 
             public FeeChannel inverse();
 
-            public double getFee();
+            public long getFee();
         }
 
         public static class DirectFeeChannel implements FeeChannel {
             final Node src;
             final Node dst;
-            double capacity;
-            double flow;
+            long capacity;
+            long flow;
             FeeChannel inverse;
-            final double fee;
+            final long fee;
 
             @Override
-            public double getFee() {
+            public long getFee() {
                 return fee;
             }
 
-            public DirectFeeChannel(Node src, Node dst, double fee) {
+            public DirectFeeChannel(Node src, Node dst, long fee) {
                 this.src = src;
                 this.dst = dst;
                 this.fee = fee;
@@ -329,26 +335,26 @@ public class LUOGU2893 {
             }
 
             @Override
-            public double getCapacity() {
+            public long getCapacity() {
                 return capacity;
             }
 
             @Override
-            public double getFlow() {
+            public long getFlow() {
                 return flow;
             }
 
             @Override
-            public void sendFlow(double volume) {
+            public void sendFlow(long volume) {
                 flow += volume;
             }
 
-            public void reset(double cap, double flow) {
+            public void reset(long cap, long flow) {
                 this.capacity = cap;
                 this.flow = flow;
             }
 
-            public void modify(double cap, double flow) {
+            public void modify(long cap, long flow) {
                 this.capacity += cap;
                 this.flow += flow;
             }
@@ -362,7 +368,7 @@ public class LUOGU2893 {
             }
 
             @Override
-            public double getFee() {
+            public long getFee() {
                 return -inner.getFee();
             }
 
@@ -383,17 +389,17 @@ public class LUOGU2893 {
             }
 
             @Override
-            public double getCapacity() {
+            public long getCapacity() {
                 return inner.getFlow();
             }
 
             @Override
-            public double getFlow() {
+            public long getFlow() {
                 return 0;
             }
 
             @Override
-            public void sendFlow(double volume) {
+            public void sendFlow(long volume) {
                 inner.sendFlow(-volume);
             }
 
@@ -406,7 +412,7 @@ public class LUOGU2893 {
 
         public static class Node {
             final int id;
-            double distance;
+            long distance;
             boolean inque;
             List<FeeChannel> channelList = new ArrayList(2);
 
