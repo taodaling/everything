@@ -3,7 +3,7 @@ package com.daltao.template;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-public class SlopeOptimize {
+public class SlopeOptimizer {
     private static class Point {
         final long x;
         final long y;
@@ -15,10 +15,22 @@ public class SlopeOptimize {
             this.id = id;
         }
     }
+
     Deque<Point> deque = new ArrayDeque();
+
     private double slope(Point a, Point b) {
+        if (b.x == a.x) {
+            if (b.y == a.y) {
+                return 0;
+            } else if (b.y > a.y) {
+                return 1e50;
+            } else {
+                return 1e-50;
+            }
+        }
         return (double) (b.y - a.y) / (b.x - a.x);
     }
+
     Point add(long y, long x, int id) {
         Point t1 = new Point(x, y, id);
         while (deque.size() >= 2) {
@@ -32,6 +44,7 @@ public class SlopeOptimize {
         deque.addLast(t1);
         return t1;
     }
+
     int getBestChoice(long s) {
         while (deque.size() >= 2) {
             Point h1 = deque.removeFirst();
