@@ -62,7 +62,7 @@ public class BIT2D {
         StringBuilder builder = new StringBuilder();
         for (int i = 1; i <= n; i++) {
             for (int j = 1; j <= m; j++) {
-                builder.append(query(i, j) + query(i - 1, j - 1) - query(i - 1, j) - query(i, j - 1));
+                builder.append(query(i, j) + query(i - 1, j - 1) - query(i - 1, j) - query(i, j - 1)).append(' ');
             }
             builder.append('\n');
         }
