@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-public class ModifiableMoOnTree {
+public class MoOnTree {
     private static class Node {
         List<Node> next = new ArrayList(2);
         int id;
@@ -22,7 +22,7 @@ public class ModifiableMoOnTree {
 
     Node[] nodes;
 
-    public ModifiableMoOnTree(int n) {
+    public MoOnTree(int n) {
         nodes = new Node[n];
         for (int i = 0; i < n; i++) {
             nodes[i] = new Node();
@@ -75,10 +75,10 @@ public class ModifiableMoOnTree {
         eulerTrace[eulerTraceTail++] = root;
     }
 
-    public void solve(Query[] queries, Modification[] modifications, Assistant assistant, int now) {
+    public void solve(Query[] queries, Assistant assistant) {
         preHandle();
 
-        final int blockSize = Math.max((int) Math.pow(nodes.length, 2.0 / 3), 1);
+        final int blockSize = nodes.length / Math.max((int) Math.sqrt(queries.length), 1);
 
         for (Query q : queries) {
             Node u = nodes[q.u];
@@ -103,9 +103,6 @@ public class ModifiableMoOnTree {
             public int compare(Query a, Query b) {
                 int r = a.l / blockSize - b.l / blockSize;
                 if (r == 0) {
-                    r = a.version / blockSize - b.version / blockSize;
-                }
-                if (r == 0) {
                     r = a.r - b.r;
                 }
                 return r;
@@ -118,32 +115,7 @@ public class ModifiableMoOnTree {
             node.added = false;
         }
 
-
         for (Query q : queries) {
-            while (now < q.version) {
-                Modification m = modifications[now];
-                Node x = nodes[m.x];
-                if (x.added) {
-                    assistant.remove(x.id);
-                }
-                assistant.apply(m);
-                if (x.added) {
-                    assistant.add(x.id);
-                }
-                now++;
-            }
-            while (now > q.version) {
-                now--;
-                Modification m = modifications[now];
-                Node x = nodes[m.x];
-                if (x.added) {
-                    assistant.remove(x.id);
-                }
-                assistant.revoke(m);
-                if (x.added) {
-                    assistant.add(x.id);
-                }
-            }
             while (r < q.r) {
                 r++;
                 Node x = eulerTrace[r];
@@ -206,7 +178,6 @@ public class ModifiableMoOnTree {
     public static class Query {
         int l;
         int r;
-        int version;
         int u;
         int v;
         int answer;
@@ -214,26 +185,11 @@ public class ModifiableMoOnTree {
 
         @Override
         public String toString() {
-            return "(" + u + "," + v + ")[" + version + "]";
-        }
-    }
-
-    public static class Modification {
-        int x;
-        int from;
-        int to;
-
-        @Override
-        public String toString() {
-            return x + "[" + from + "->" + to + "]";
+            return "(" + u + "," + v + ")";
         }
     }
 
     public interface Assistant {
-        void apply(Modification m);
-
-        void revoke(Modification m);
-
         void add(int i);
 
         void remove(int i);
