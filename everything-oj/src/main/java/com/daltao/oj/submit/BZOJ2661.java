@@ -53,37 +53,64 @@ public class BZOJ2661 {
         int a;
         int b;
 
-        int idOfInNode(int i) {
+
+        int idOfNode(int i) {
             return i - a + 1;
         }
 
-        int idOfOutNode(int i) {
-            return idOfInNode(i) + (b - a + 1);
-        }
-
         int idOfSrc() {
-            return idOfOutNode(b) + 1;
+            return idOfNode(b) + 1;
         }
 
         int idOfDst() {
             return idOfSrc() + 1;
         }
 
+        public boolean biparty(Node root, int color) {
+            if (root.color != -1) {
+                return root.color == color;
+            }
+            root.color = color;
+            for (Node node : root.next) {
+                if (!biparty(node, color ^ 1)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public void solve() {
             a = io.readInt();
             b = io.readInt();
+
+            Node[] nodes = new Node[b + 1];
+            for (int i = a; i <= b; i++) {
+                nodes[i] = new Node();
+                nodes[i].id = i;
+            }
+
             int multiplier = 10000;
             ZkwMinCostMaxFlow km = new ZkwMinCostMaxFlow((b - a + 1) * 2 + 2);
             for (int i = a; i <= b; i++) {
-                km.getChannel(idOfInNode(i), idOfOutNode(i), 0).modify(1, 0);
-                km.getChannel(idOfSrc(), idOfInNode(i), 0).modify(1, 0);
-                km.getChannel(idOfOutNode(i), idOfDst(), 0).modify(1, 0);
-            }
-            for (int i = a; i <= b; i++) {
                 for (int j = i + 1; j <= b; j++) {
                     if (gcd.gcd(i, j) == 1 && isPower2(i, j)) {
-                        km.getChannel(idOfOutNode(i), idOfInNode(j), -multiplier - i - j).modify(1, 0);
+                        nodes[i].next.add(nodes[j]);
+                        nodes[j].next.add(nodes[i]);
                     }
+                }
+            }
+
+            for (int i = a; i <= b; i++) {
+                if (nodes[i].color == -1) {
+                    debug.assertTrue(biparty(nodes[i], 0));
+                }
+                if (nodes[i].color == 0) {
+                    km.getChannel(idOfSrc(), idOfNode(i), -i).modify(1, 0);
+                    for (Node node : nodes[i].next) {
+                        km.getChannel(idOfNode(i), idOfNode(node.id), 0).modify(1, 0);
+                    }
+                } else {
+                    km.getChannel(idOfNode(i), idOfDst(), -i).modify(1, 0);
                 }
             }
 
@@ -91,9 +118,10 @@ public class BZOJ2661 {
             km.setTarget(idOfDst());
             km.send(inf);
 
-            int totalFee = (int)(-km.fee + 0.5);
-            io.cache.append(totalFee / multiplier).append(' ')
-                    .append(totalFee % multiplier);
+            int totalFlow = (int)(km.flow + 0.5);
+            int totalFee = (int) (-km.fee + 0.5);
+            io.cache.append(totalFlow).append(' ')
+                    .append(totalFee);
         }
 
         private boolean isPower2(int a, int b) {
@@ -106,6 +134,12 @@ public class BZOJ2661 {
             int y = (int) (x + 0.5);
             return y * y + a * a == b * b;
         }
+    }
+
+    public static class Node {
+        List<Node> next = new ArrayList(2);
+        int id;
+        int color = -1;
     }
 
 
