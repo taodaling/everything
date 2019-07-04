@@ -1,6 +1,7 @@
 package com.daltao.template;
 
-public class PersistentSegment implements Cloneable{
+public class PersistentSegment implements Cloneable {
+    private static final PersistentSegment NIL = new PersistentSegment(0, 0);
     private PersistentSegment left;
     private PersistentSegment right;
 
