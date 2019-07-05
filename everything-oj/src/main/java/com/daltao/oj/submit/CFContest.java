@@ -6,9 +6,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
+
 
 public class CFContest {
     public static void main(String[] args) throws Exception {
@@ -39,32 +38,9 @@ public class CFContest {
     public static class Task implements Runnable {
         final FastIO io;
         final Debug debug;
-        int inf = (int) 1e8;
-        int mod = (int) 1e9 + 7;
-
-        public int mod(int val) {
-            val %= mod;
-            if (val < 0) {
-                val += mod;
-            }
-            return val;
-        }
-
-        public int mod(long val) {
-            val %= mod;
-            if (val < 0) {
-                val += mod;
-            }
-            return (int) val;
-        }
-
-        int bitAt(int x, int i) {
-            return (x >> i) & 1;
-        }
-
-        int bitAt(long x, int i) {
-            return (int) ((x >> i) & 1);
-        }
+        int inf = (int) 1e9 + 2;
+        BitOperator bitOperator = new BitOperator();
+        Modular modular = new Modular((int) 1e9 + 7);
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -76,65 +52,268 @@ public class CFContest {
             solve();
         }
 
+        int n;
+        int t;
+        int[] songTimes;
+        int[] songTypes;
+        int mask;
+        int[] cnts = new int[4];
+        int[][][][] perm;
+        int ct1 ;
+        int ct2 ;
+        int ct3 ;
         public void solve() {
-            int m = io.readInt();
-            int n = io.readInt();
-            Set<Integer>[] sets = new Set[m];
-            for (int i = 0; i < m; i++) {
-                sets[i] = new HashSet<>();
-                int k = io.readInt();
-                for (int j = 0; j < k; j++) {
-                    sets[i].add(io.readInt());
-                }
+            n = io.readInt();
+            t = io.readInt();
+
+
+            songTimes = new int[n + 1];
+            songTypes = new int[n + 1];
+            for (int i = 1; i <= n; i++) {
+                songTimes[i] = io.readInt();
+                songTypes[i] = io.readInt();
+                cnts[songTypes[i]]++;
             }
 
-            for (int i = 0; i < m; i++) {
-                for (int j = i + 1; j < m; j++) {
-                    if (!intersect(sets[i], sets[j])) {
-                        io.cache.append("impossible");
-                        return;
+            ct1 = cnts[1];
+            ct2 = cnts[2];
+            ct3 = cnts[3];
+            ArrayIndex arrayIndex = new ArrayIndex(ct1 + 1, ct2 + 1, ct3 + 1, t + 1);
+
+            int[] fr = new int[(ct1 + 1) * (ct2 + 1) * (ct3 + 1) * (t + 1)];
+            int[] fw = new int[fr.length];
+            fr[0] = 1;
+            int[] abc = new int[4];
+            for (int i = 1; i <= n; i++) {
+                for (abc[1] = 0; abc[1] <= ct1; abc[1]++) {
+                    for (abc[2] = 0; abc[2] <= ct2; abc[2]++) {
+                        for (abc[3] = 0; abc[3] <= ct3; abc[3]++) {
+                            int a = abc[1];
+                            int b = abc[2];
+                            int c = abc[3];
+                            for (int d = 0; d <= t; d++) {
+                                int index = arrayIndex.indexOf(a, b, c, d);
+                                fw[index] = fr[index];
+                                if (abc[songTypes[i]] > 0 && d >= songTimes[i]) {
+                                    abc[songTypes[i]]--;
+                                    fw[index] = modular.plus(fw[index],
+                                            fr[arrayIndex.indexOf(abc[1], abc[2], abc[3], d - songTimes[i])]);
+                                    abc[songTypes[i]]++;
+                                }
+                            }
+                        }
+                    }
+                }
+                int[] tmp = fr;
+                fr = fw;
+                fw = tmp;
+            }
+
+            perm = new int[ct1 + 1][ct2 + 1][ct3 + 1][4];
+            for (int a = 0; a <= ct1; a++) {
+                for (int b = 0; b <= ct2; b++) {
+                    for (int c = 0; c <= ct3; c++) {
+                        for (int d = 0; d < 4; d++) {
+                            perm[a][b][c][d] = -1;
+                        }
+                    }
+                }
+            }
+            perm[0][0][0][0] = 1;
+
+            int ans = 0;
+            for (int a = 0; a <= ct1; a++) {
+                for (int b = 0; b <= ct2; b++) {
+                    for (int c = 0; c <= ct3; c++) {
+                        int index = arrayIndex.indexOf(a, b, c, t);
+                        for (int d = 0; d < 4; d++) {
+                            int p = modular.mul(fr[index], perm(a, b, c, d));
+                            ans = modular.plus(ans, p);
+                        }
                     }
                 }
             }
 
-            io.cache.append("possible");
+            io.cache.append(ans);
         }
 
-        public boolean intersect(Set<Integer> a, Set<Integer> b) {
-            for (Integer x : a) {
-                if (b.contains(x)) {
-                    return true;
-                }
+        int perm(int a, int b, int c, int d) {
+            if (a < 0 || b < 0 || c < 0) {
+                return 0;
             }
-            return false;
+            if (perm[a][b][c][d] == -1) {
+                perm[a][b][c][d] = 0;
+                int aa = a;
+                int bb = b;
+                int cc = c;
+                if (d == 0) {
+                    return perm[a][b][c][d];
+                }
+                int mul = 1;
+                if (d == 1) {
+                    mul = a;
+                    aa--;
+                } else if (d == 2) {
+                    mul = b;
+                    bb--;
+                } else if (d == 3) {
+                    mul = c;
+                    cc--;
+                }
+
+                for (int k = 0; k < 4; k++) {
+                    if (k == d) {
+                        continue;
+                    }
+                    perm[a][b][c][d] = modular.plus(perm[a][b][c][d],
+                            perm(aa, bb, cc, k));
+                }
+                perm[a][b][c][d] = modular.mul(perm[a][b][c][d], mul);
+            }
+
+            return perm[a][b][c][d];
         }
     }
 
-    public static class Node {
-        Node p = this;
-        int rank = 0;
-        int size = 1;
+    public static class ArrayIndex {
+        int[] dimensions;
 
-        public Node find() {
-            return p.p == p ? p : (p = p.find());
+        public ArrayIndex(int... dimensions) {
+            this.dimensions = dimensions;
         }
 
-        static void union(Node a, Node b) {
-            a = a.find();
-            b = b.find();
-            if (a == b) {
-                return;
+        public int indexOf(int a, int b) {
+            return a * dimensions[1] + b;
+        }
+
+        public int indexOf(int a, int b, int c) {
+            return indexOf(a, b) * dimensions[2] + c;
+        }
+
+        public int indexOf(int a, int b, int c, int d) {
+            return indexOf(a, b, c) * dimensions[3] + d;
+        }
+
+        public int indexOf(int a, int b, int c, int d, int e) {
+            return indexOf(a, b, c, d) * dimensions[4] + e;
+        }
+
+        public boolean isValid(int a, int d) {
+            return dimensions[d] > a && a >= 0;
+        }
+
+        public boolean isValidIndex(int a) {
+            return isValid(a, 0);
+        }
+
+        public boolean isValidIndex(int a, int b) {
+            return isValidIndex(a) && isValid(b, 1);
+        }
+
+        public boolean isValidIndex(int a, int b, int c) {
+            return isValidIndex(a, b) && isValid(c, 2);
+        }
+
+        public boolean isValidIndex(int a, int b, int c, int d) {
+            return isValidIndex(a, b, c) && isValid(d, 3);
+        }
+
+        public int indexOfSpecifiedDimension(int index, int d) {
+            return indexOfSpecifiedDimension0(index, d, dimensions.length - 1);
+        }
+
+        private int indexOfSpecifiedDimension0(int index, int t, int now) {
+            return now == t ? index % dimensions[now] : indexOfSpecifiedDimension0(index / dimensions[now], t, now - 1);
+        }
+    }
+
+    /**
+     * 模运算
+     */
+    public static class Modular {
+        int m;
+
+        public Modular(int m) {
+            this.m = m;
+        }
+
+        public int valueOf(int x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
             }
-            if (a.rank == b.rank) {
-                a.rank++;
+            return x;
+        }
+
+        public int valueOf(long x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
             }
-            if (a.rank > b.rank) {
-                b.p = a;
-                a.size += b.size;
+            return (int) x;
+        }
+
+        public int mul(int x, int y) {
+            return valueOf((long) x * y);
+        }
+
+        public int plus(int x, int y) {
+            return valueOf(x + y);
+        }
+
+        @Override
+        public String toString() {
+            return "mod " + m;
+        }
+    }
+
+    public static class BitOperator {
+        public int bitAt(int x, int i) {
+            return (x >> i) & 1;
+        }
+
+        public int bitAt(long x, int i) {
+            return (int) ((x >> i) & 1);
+        }
+
+        public int setBit(int x, int i, boolean v) {
+            if (v) {
+                x |= 1 << i;
             } else {
-                a.p = b;
-                b.size += a.size;
+                x &= ~(1 << i);
             }
+            return x;
+        }
+
+        public long setBit(long x, int i, boolean v) {
+            if (v) {
+                x |= 1L << i;
+            } else {
+                x &= ~(1L << i);
+            }
+            return x;
+        }
+
+        /**
+         * Determine whether x is subset of y
+         */
+        public boolean subset(long x, long y) {
+            return intersect(x, y) == x;
+        }
+
+        /**
+         * Merge two set
+         */
+        public long merge(long x, long y) {
+            return x | y;
+        }
+
+        public long intersect(long x, long y) {
+            return x & y;
+        }
+
+        public long differ(long x, long y) {
+            return x - intersect(x, y);
         }
     }
 
@@ -426,258 +605,6 @@ public class CFContest {
             }
             outputName(name);
             System.out.println(Arrays.deepToString(x));
-        }
-    }
-
-    public static class Randomized {
-        static Random random = new Random(12345678);
-
-        public static double nextDouble(double min, double max) {
-            return random.nextDouble() * (max - min) + min;
-        }
-
-        public static void randomizedArray(int[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                int tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static void randomizedArray(long[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                long tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static void randomizedArray(double[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                double tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static void randomizedArray(float[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                float tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static <T> void randomizedArray(T[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                T tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static int nextInt(int l, int r) {
-            return random.nextInt(r - l + 1) + l;
-        }
-    }
-
-    public static class Mathematics {
-
-        public static int ceilPowerOf2(int x) {
-            return 32 - Integer.numberOfLeadingZeros(x - 1);
-        }
-
-        public static int floorPowerOf2(int x) {
-            return 31 - Integer.numberOfLeadingZeros(x);
-        }
-
-        public static long modmul(long a, long b, long mod) {
-            return b == 0 ? 0 : ((modmul(a, b >> 1, mod) << 1) % mod + a * (b & 1)) % mod;
-        }
-
-        /**
-         * Get the greatest common divisor of a and b
-         */
-        public static int gcd(int a, int b) {
-            return a >= b ? gcd0(a, b) : gcd0(b, a);
-        }
-
-        private static int gcd0(int a, int b) {
-            return b == 0 ? a : gcd0(b, a % b);
-        }
-
-        public static int extgcd(int a, int b, int[] coe) {
-            if (a >= b) {
-                return extgcd0(a, b, coe);
-            } else {
-                int g = extgcd0(b, a, coe);
-                int tmp = coe[0];
-                coe[0] = coe[1];
-                coe[1] = tmp;
-                return g;
-            }
-        }
-
-        private static int extgcd0(int a, int b, int[] coe) {
-            if (b == 0) {
-                coe[0] = 1;
-                coe[1] = 0;
-                return a;
-            }
-            int g = extgcd0(b, a % b, coe);
-            int n = coe[0];
-            int m = coe[1];
-            coe[0] = m;
-            coe[1] = n - m * (a / b);
-            return g;
-        }
-
-        /**
-         * Get the greatest common divisor of a and b
-         */
-        public static long gcd(long a, long b) {
-            return a >= b ? gcd0(a, b) : gcd0(b, a);
-        }
-
-        private static long gcd0(long a, long b) {
-            return b == 0 ? a : gcd0(b, a % b);
-        }
-
-        public static long extgcd(long a, long b, long[] coe) {
-            if (a >= b) {
-                return extgcd0(a, b, coe);
-            } else {
-                long g = extgcd0(b, a, coe);
-                long tmp = coe[0];
-                coe[0] = coe[1];
-                coe[1] = tmp;
-                return g;
-            }
-        }
-
-        private static long extgcd0(long a, long b, long[] coe) {
-            if (b == 0) {
-                coe[0] = 1;
-                coe[1] = 0;
-                return a;
-            }
-            long g = extgcd0(b, a % b, coe);
-            long n = coe[0];
-            long m = coe[1];
-            coe[0] = m;
-            coe[1] = n - m * (a / b);
-            return g;
-        }
-
-        /**
-         * Get y where x * y = 1 (% mod)
-         */
-        public static int inverse(int x, int mod) {
-            return pow(x, mod - 2, mod);
-        }
-
-        /**
-         * Get x^n(% mod)
-         */
-        public static int pow(int x, int n, int mod) {
-            int bit = 31 - Integer.numberOfLeadingZeros(n);
-            long product = 1;
-            for (; bit >= 0; bit--) {
-                product = product * product % mod;
-                if (((1 << bit) & n) != 0) {
-                    product = product * x % mod;
-                }
-            }
-            return (int) product;
-        }
-
-        public static long longpow(long x, long n, long mod) {
-            if (n == 0) {
-                return 1;
-            }
-            long prod = longpow(x, n >> 1, mod);
-            prod = modmul(prod, prod, mod);
-            if ((n & 1) == 1) {
-                prod = modmul(prod, x, mod);
-            }
-            return prod;
-        }
-
-        /**
-         * Get x % mod
-         */
-        public static int mod(int x, int mod) {
-            x %= mod;
-            if (x < 0) {
-                x += mod;
-            }
-            return x;
-        }
-
-        public static int mod(long x, int mod) {
-            x %= mod;
-            if (x < 0) {
-                x += mod;
-            }
-            return (int) x;
-        }
-
-        /**
-         * Get n!/(n-m)!
-         */
-        public static long permute(int n, int m) {
-            return m == 0 ? 1 : n * permute(n - 1, m - 1);
-        }
-
-        /**
-         * Put all primes less or equal to limit into primes after offset
-         */
-        public static int eulerSieve(int limit, int[] primes, int offset) {
-            boolean[] isComp = new boolean[limit + 1];
-            int wpos = offset;
-            for (int i = 2; i <= limit; i++) {
-                if (!isComp[i]) {
-                    primes[wpos++] = i;
-                }
-                for (int j = offset, until = limit / i; j < wpos && primes[j] <= until; j++) {
-                    int pi = primes[j] * i;
-                    isComp[pi] = true;
-                    if (i % primes[j] == 0) {
-                        break;
-                    }
-                }
-            }
-            return wpos - offset;
-        }
-
-        /**
-         * Round x into integer
-         */
-        public static int intRound(double x) {
-            if (x < 0) {
-                return -(int) (-x + 0.5);
-            }
-            return (int) (x + 0.5);
-        }
-
-        /**
-         * Round x into long
-         */
-        public static long longRound(double x) {
-            if (x < 0) {
-                return -(long) (-x + 0.5);
-            }
-            return (long) (x + 0.5);
         }
     }
 }

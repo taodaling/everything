@@ -5,7 +5,7 @@ import java.util.List;
 
 public class KMAlgo {
     public static class Node {
-        List<Node> nodes = new ArrayList<>();
+        List<Node> nodes = new ArrayList(2);
         int visited;
         Node partner;
         int id;
@@ -21,13 +21,13 @@ public class KMAlgo {
     int version;
 
     public KMAlgo(int l, int r) {
-        leftSides = new Node[l + 1];
-        for (int i = 1; i <= l; i++) {
+        leftSides = new Node[l];
+        for (int i = 0; i < l; i++) {
             leftSides[i] = new Node();
             leftSides[i].id = i;
         }
-        rightSides = new Node[r + 1];
-        for (int i = 1; i <= r; i++) {
+        rightSides = new Node[r];
+        for (int i = 0; i < r; i++) {
             rightSides[i] = new Node();
             rightSides[i].id = i;
         }
@@ -65,7 +65,7 @@ public class KMAlgo {
     }
 
     private boolean findPartner(Node src) {
-        if (src.visited != version) {
+        if (src.visited == version) {
             return false;
         }
         src.visited = version;
@@ -81,7 +81,7 @@ public class KMAlgo {
     }
 
     private boolean tryRelease(Node src) {
-        if (src.visited != version) {
+        if (src.visited == version) {
             return false;
         }
         src.visited = version;

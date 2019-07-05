@@ -11,6 +11,7 @@ import com.daltao.test.TestCaseExecutor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,7 +37,7 @@ public class CF1158ETest {
 
     public static class Counter extends InteractiveTask {
         @Override
-        protected boolean interact(FastIO progIO, FastIO sysin) {
+        protected boolean interact(FastIO progIO, FastIO sysin) throws IOException {
             int n = sysin.readInt();
             progIO.cache.append(n).append('\n');
             progIO.flush();

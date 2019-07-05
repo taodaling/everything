@@ -1,6 +1,7 @@
 package com.daltao.oj.old.submit.bzoj;
 
 
+import com.daltao.oj.submit.BZOJ1010;
 import com.daltao.oj.tool.OJMainSolution;
 import com.daltao.template.FastIO;
 import com.daltao.test.Input;
@@ -54,7 +55,7 @@ public class BZOJ1010Test {
         @Override
         public Input newInstance() {
             QueueInput input = new QueueInput();
-            int n = nextInt(1, 500);
+            int n = nextInt(1, 30);
             input.add(n);
             input.add(nextInt(1, 10000000));
             for (int i = 0; i < n; i++) {

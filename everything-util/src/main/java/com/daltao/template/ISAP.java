@@ -48,13 +48,18 @@ public class ISAP {
         return channelMap.values();
     }
 
+    public DirectChannel addChannel(int src, int dst) {
+        DirectChannel channel = new DirectChannel(nodes[src], nodes[dst], 0, 0);
+        nodes[src].channelList.add(channel);
+        nodes[dst].channelList.add(channel.getInverse());
+        return channel;
+    }
+
     public DirectChannel getChannel(int src, int dst) {
         Long id = (((long) src) << 32) | dst;
         DirectChannel channel = channelMap.get(id);
         if (channel == null) {
-            channel = new DirectChannel(nodes[src], nodes[dst], 0, id.hashCode());
-            nodes[src].channelList.add(channel);
-            nodes[dst].channelList.add(channel.getInverse());
+            channel = addChannel(src, dst);
             channelMap.put(id, channel);
         }
         return channel;
@@ -189,9 +194,14 @@ public class ISAP {
             inverse = new InverseChannelWrapper(this);
         }
 
-        public void modify(double cap, double flow) {
+        public void reset(double cap, double flow) {
             this.flow = flow;
             this.capacity = cap;
+        }
+
+        public void modify(double cap, double flow) {
+            this.capacity += cap;
+            this.flow += flow;
         }
 
         @Override
@@ -298,6 +308,16 @@ public class ISAP {
     public String toString() {
         StringBuilder builder = new StringBuilder();
         for (DirectChannel channel : getChannels()) {
+            if (channel.getFlow() == 0) {
+                continue;
+            }
+            builder.append(channel).append('\n');
+        }
+
+        for (DirectChannel channel : getChannels()) {
+            if (channel.getFlow() != 0) {
+                continue;
+            }
             builder.append(channel).append('\n');
         }
         return builder.toString();

@@ -60,7 +60,7 @@ public class StableMarriage {
         return boys[id].fere.id;
     }
 
-    public void combine(Boy boy, Girl girl) {
+    private void combine(Boy boy, Girl girl) {
         boy.fere = girl;
         girl.fere = boy;
     }

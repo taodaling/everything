@@ -29,10 +29,41 @@ public class DiscreteMap {
         return Arrays.binarySearch(val, f, t, x) - f;
     }
 
+    public int floorRankOf(int x) {
+        int index = Arrays.binarySearch(val, f, t, x);
+        if (index >= 0) {
+            return index - f;
+        }
+        index = -(index + 1);
+        return index - 1 - f;
+    }
+
+    public int ceilRankOf(int x) {
+        int index = Arrays.binarySearch(val, f, t, x);
+        if (index >= 0) {
+            return index - f;
+        }
+        index = -(index + 1);
+        return index - f;
+    }
+
     /**
      * Get the i-th smallest element
      */
     public int iThElement(int i) {
         return val[f + i];
+    }
+
+    public int minRank() {
+        return 0;
+    }
+
+    public int maxRank() {
+        return t - f - 1;
+    }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(Arrays.copyOfRange(val, f, t));
     }
 }

@@ -23,7 +23,7 @@ public class FastIO {
         this.charset = charset;
     }
 
-    public FastIO(){
+    public FastIO() {
         this(System.in, System.out);
     }
 
@@ -190,10 +190,10 @@ public class FastIO {
         try {
             os.write(cache.toString().getBytes(charset));
             os.flush();
-            cache.setLength(0);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        cache.setLength(0);
     }
 
     public boolean hasMore() {

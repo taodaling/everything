@@ -81,7 +81,7 @@ public class ChangingDigits {
                 resetRank(main, minor, orderLoop.get(0), curRank);
             }
 
-            //modify status of i + 1
+            //reset status of i + 1
             for (int j = 0; j < k; j++) {
                 int k10 = j * 10;
                 for (int t = 0; t < 10; t++) {
