@@ -1,14 +1,17 @@
-package com.daltao.template;
+package com.daltao.oj.submit;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
+import java.util.List;
 
-public class POJ2774 {
-
+public class POJ2230 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -50,181 +53,138 @@ public class POJ2774 {
         }
 
         public void solve() {
-            char[] data = new char[100000 + 1 + 100000];
-            int a = io.readString(data, 0);
-            data[a] = '$';
-            int b = io.readString(data, a + 1);
-            int n = a + b + 1;
-            SuffixArray sa = new SuffixArray(Arrays.copyOf(data, n), 0, 128);
-            int max = 0;
-            for (int i = 1; i <= n; i++) {
-                if (sa.orderedSuffix[i].suffixStartIndex <= a
-                        && sa.orderedSuffix[i - 1].suffixStartIndex <= a
-                        || sa.orderedSuffix[i].suffixStartIndex > a &&
-                        sa.orderedSuffix[i - 1].suffixStartIndex > a) {
-                    continue;
-                }
-                max = Math.max(max, sa.heights[i]);
+            int n = io.readInt();
+            int m = io.readInt();
+            DirectedEulerTrace trace = new DirectedEulerTrace(n);
+            for (int i = 0; i < m; i++) {
+                int a = io.readInt() - 1;
+                int b = io.readInt() - 1;
+                trace.addEdge(a, b);
+                trace.addEdge(b, a);
             }
-
-            io.cache.append(max);
+            trace.findEulerTraceSince(trace.nodes[0]);
+            for (DirectedEulerTrace.Node node : trace.getEulerTrace()) {
+                io.cache.append(node.id + 1).append('\n');
+            }
         }
     }
 
-    public static class SuffixArray {
-        Suffix[] orderedSuffix;
-        Suffix[] originalSuffix;
-        int[] heights;
-        char[] data;
-
-        public SuffixArray(char[] s, int rangeFrom, int rangeTo) {
-            this.data = s;
-
-            int n = s.length;
-            int range = n + 1;
-            Loop<int[]> rankLoop = new Loop(new int[3][n + 1]);
-
-            Suffix[] originalSuffix = new Suffix[n + 1];
-            int[] firstRanks = rankLoop.get(0);
-            for (int i = 0; i < n; i++) {
-                originalSuffix[i] = new Suffix();
-                originalSuffix[i].suffixStartIndex = i;
-                firstRanks[i] = s[i] - rangeFrom + 1;
-            }
-            originalSuffix[n] = new Suffix();
-            originalSuffix[n].suffixStartIndex = n;
-            originalSuffix[n].rank = 0;
-            Loop<Suffix[]> suffixLoop = new Loop(new Suffix[][]{
-                    originalSuffix.clone(), new Suffix[n + 1]
-            });
-
-            sort(suffixLoop.get(0), suffixLoop.get(1), rankLoop.get(0), rangeTo - rangeFrom + 1);
-            assignRank(suffixLoop.turn(), rankLoop.get(0), rankLoop.get(0), rankLoop.turn());
-
-            for (int i = 1; i < n; i <<= 1) {
-                System.arraycopy(rankLoop.get(0), i, rankLoop.get(1), 0, range - i);
-                Arrays.fill(rankLoop.get(1), range - i, range, 0);
-                sort(suffixLoop.get(0), suffixLoop.turn(), rankLoop.get(1), range);
-                sort(suffixLoop.get(0), suffixLoop.turn(), rankLoop.get(0), range);
-                assignRank(suffixLoop.get(0), rankLoop.get(0), rankLoop.get(1), rankLoop.turn(2));
-            }
-
-            firstRanks = rankLoop.get(0);
-            for (int i = 0; i < range; i++) {
-                originalSuffix[i].rank = firstRanks[i];
-            }
-
-            this.originalSuffix = originalSuffix;
-            this.orderedSuffix = suffixLoop.get();
-
-            heights = new int[n + 1];
-            for (int i = 0; i < n; i++) {
-                Suffix suffix = originalSuffix[i];
-                if (suffix.rank == 0) {
-                    heights[suffix.rank] = 0;
-                    continue;
-                }
-                int startIndex = suffix.suffixStartIndex;
-                int former = startIndex - 1;
-                int h = 0;
-                if (former >= 0) {
-                    h = Math.max(h, heights[originalSuffix[former].rank] - 1);
-                }
-                int anotherStartIndex = orderedSuffix[suffix.rank - 1].suffixStartIndex;
-                for (; startIndex + h < n && anotherStartIndex + h < n && s[startIndex + h] == s[anotherStartIndex + h]; h++) ;
-                heights[suffix.rank] = h;
-            }
-        }
-
-        private static void assignRank(Suffix[] seq, int[] firstKeys, int[] secondKeys, int[] rankOutput) {
-            int cnt = 0;
-            rankOutput[0] = 0;
-            for (int i = 1, bound = seq.length; i < bound; i++) {
-                int lastIndex = seq[i - 1].suffixStartIndex;
-                int index = seq[i].suffixStartIndex;
-                if (firstKeys[lastIndex] != firstKeys[index] ||
-                        secondKeys[lastIndex] != secondKeys[index]) {
-                    cnt++;
-                }
-                rankOutput[index] = cnt;
-            }
-        }
-
-        private static void sort(Suffix[] oldSeq, Suffix[] newSeq, int[] withRank, int range) {
-            int[] counters = new int[range];
-            for (int rank : withRank) {
-                counters[rank]++;
-            }
-            int[] ranks = new int[range];
-            ranks[0] = 0;
-            for (int i = 1; i < range; i++) {
-                ranks[i] = ranks[i - 1] + (counters[i] > 0 ? 1 : 0);
-                counters[i] += counters[i - 1];
-            }
-
-            for (int i = oldSeq.length - 1; i >= 0; i--) {
-                int newPos = --counters[withRank[oldSeq[i].suffixStartIndex]];
-                newSeq[newPos] = oldSeq[i];
-            }
-        }
-
-        /**
-         * 获取第rank大的后缀，最小的后缀的排名为1
-         */
-        public Suffix getSuffixByRank(int rank) {
-            return orderedSuffix[rank];
-        }
-
-        /**
-         * 获取以startIndex开始的后缀对应的后缀对象
-         */
-        public Suffix getSuffixByStartIndex(int startIndex) {
-            return originalSuffix[startIndex];
-        }
-
-        /**
-         * 计算第i大的后缀和第i-1大的后缀的最长公共前缀长度
-         */
-        public int longestCommonPrefixOf(int i) {
-            return heights[i];
-        }
-
-        private static class Loop<T> {
-            T[] loops;
-            int offset;
-
-            public Loop(T[] initVal) {
-                loops = initVal;
-            }
-
-            public T get(int index) {
-                return loops[(offset + index) % loops.length];
-            }
-
-            public T get() {
-                return get(0);
-            }
-
-            public T turn(int degree) {
-                offset += degree;
-                return get(0);
-            }
-
-            public T turn() {
-                return turn(1);
-            }
-        }
-
-        public  class Suffix {
-            int suffixStartIndex;
-            int rank;
+    /**
+     * Hierholzer algorithm, used to search euler trace
+     */
+    public static class DirectedEulerTrace {
+        private static class Node {
+            List<Node> edges = new ArrayList(2);
+            Deque<Node> deque = new ArrayDeque();
+            int id;
+            int inDegree;
 
             @Override
             public String toString() {
-                return String.valueOf(data, suffixStartIndex, data.length - suffixStartIndex);//suffixStartIndex + ":" + rank;
+                return "" + id;
             }
         }
+
+        Node[] nodes;
+        int edgeNum;
+
+        public DirectedEulerTrace(int n) {
+            nodes = new Node[n];
+            for (int i = 0; i < n; i++) {
+                nodes[i] = new Node();
+                nodes[i].id = i;
+            }
+        }
+
+        public void addEdge(int a, int b) {
+            nodes[a].edges.add(nodes[b]);
+            nodes[b].inDegree++;
+            edgeNum++;
+        }
+
+
+        public boolean isContainEulerTrace() {
+            return containEulerTrace;
+        }
+
+        public boolean isEulerTraceClose() {
+            return isEulerTraceClose;
+        }
+
+        public List<Node> getEulerTrace() {
+            return eulerTrace;
+        }
+
+        boolean containEulerTrace;
+        boolean isEulerTraceClose;
+        List<Node> eulerTrace = new ArrayList();
+
+        private void dfs(Node root) {
+            while (!root.deque.isEmpty()) {
+                Node tail = root.deque.removeFirst();
+                dfs(tail);
+            }
+            eulerTrace.add(root);
+        }
+
+        public boolean findEulerTraceSince(Node root) {
+            eulerTrace.clear();
+            containEulerTrace = false;
+            isEulerTraceClose = false;
+            for (Node node : nodes) {
+                node.deque.clear();
+                node.deque.addAll(node.edges);
+            }
+            dfs(root);
+            containEulerTrace = eulerTrace.size() == edgeNum + 1;
+            if (!containEulerTrace) {
+                return false;
+            }
+            isEulerTraceClose = eulerTrace.get(eulerTrace.size() - 1)
+                    == eulerTrace.get(0);
+
+            return true;
+        }
+
+        public boolean findTrace() {
+            eulerTrace.clear();
+            containEulerTrace = false;
+            isEulerTraceClose = false;
+
+            Node p1 = null;
+            Node p2 = null;
+            for (Node node : nodes) {
+                if (node.edges.size() != node.inDegree) {
+                    if (p1 == null) {
+                        p1 = node;
+                    } else if (p2 == null) {
+                        p2 = node;
+                    } else {
+                        containEulerTrace = false;
+                        return false;
+                    }
+                }
+            }
+
+            if (p1 != null && p2 != null) {
+                if (findEulerTraceSince(p1)) {
+                    return true;
+                }
+                if (findEulerTraceSince(p2)) {
+                    return true;
+                }
+            }
+
+            for (Node node : nodes) {
+                if (node.edges.size() > 0) {
+                    return findEulerTraceSince(node);
+                }
+            }
+
+            return true;
+        }
     }
+
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder();
