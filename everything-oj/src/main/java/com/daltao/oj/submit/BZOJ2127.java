@@ -186,7 +186,7 @@ public class BZOJ2127 {
         Node source;
         Node target;
         int nodeNum;
-        Map<Long, DirectChannel> channelMap = new HashMap();
+        Map<Long, DirectChannel> channelMap = new HashMap(60000);
         Deque<Node> deque;
         boolean bfsFlag = false;
 
@@ -244,8 +244,8 @@ public class BZOJ2127 {
         }
 
         public int sendFlow(int flow) {
-            bfs();
             int flowSnapshot = flow;
+            bfs();
             while (flow > 0 && source.distance < nodeNum) {
                 flow -= send(source, flow);
             }
@@ -462,7 +462,7 @@ public class BZOJ2127 {
             int id;
             int distance;
             boolean visited;
-            List<Channel> channelList = new ArrayList(1);
+            List<Channel> channelList = new ArrayList(8);
 
             @Override
             public String toString() {
