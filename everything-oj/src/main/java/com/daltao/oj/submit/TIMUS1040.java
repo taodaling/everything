@@ -73,34 +73,12 @@ public class TIMUS1040 {
             }
 
 
-            allocation = m;
             for (int i = 1; i <= n; i++) {
-                Node root = nodes[i];
-                now++;
-                while (findLoop(root, null)) {
-                    for (Edge edge : stack) {
-                        Node.merge(edge.a, edge.b);
-                    }
-
-                    while (!stack.isEmpty()) {
-                        Edge tail = stack.removeLast();
-                        tail.allocated = allocate();
-                        mergeEdges(tail.a);
-                        mergeEdges(tail.b);
-                    }
-                    now++;
-                }
+                tarjan(nodes[i], null);
             }
 
-            now++;
             for (int i = 1; i <= n; i++) {
-                Node node = nodes[i].find();
-                if (node.find() != node) {
-                    continue;
-                }
-                if (node.edges.stream().filter(x -> x.a.find() != x.b.find()).count() <= 1) {
-                    dfs(node);
-                }
+                dfs(nodes[i].set);
             }
 
             io.cache.append("YES\n");
@@ -109,87 +87,101 @@ public class TIMUS1040 {
             }
         }
 
-        public void dfs(Node root) {
-            root = root.find();
-            if (root.version == now) {
+        public void dismantle(Node root, Edge father) {
+            if (root.visited) {
                 return;
             }
-            root.version = now;
+            root.visited = true;
             for (Edge edge : root.edges) {
-                Node node = edge.other(root);
+                if (edge == father || edge.a.set != edge.b.set) {
+                    continue;
+                }
                 if (edge.allocated == 0) {
                     edge.allocated = allocate();
                 }
-                dfs(node);
+                Node other = edge.a == root ? edge.b : edge.a;
+                dismantle(other, father);
             }
         }
 
-        Deque<Edge> stack = new ArrayDeque<>(50);
-        int now;
-        int allocation;
+        public void dfs(Node root) {
+            if (root.setVisited) {
+                return;
+            }
+            root.setVisited = true;
+            dismantle(root, null);
+            for (Edge edge : root.setEdges) {
+                if (edge.a.set == edge.b.set) {
+                    continue;
+                }
+                if (edge.allocated == 0) {
+                    edge.allocated = allocate();
+                }
+                Node other = edge.a.set == root ? edge.b.set : edge.a.set;
+                dfs(other);
+            }
+        }
+
+        int allocation = 1;
 
         public int allocate() {
-            return allocation--;
+            return allocation++;
         }
 
-        public boolean findLoop(Node root, Edge last) {
-            if (root.version == now) {
-                //Find a loop
-                while (stack.peekLast() != root) {
+        int now;
+        int dfn;
 
-                }
+        int getDfn() {
+            return ++dfn;
+        }
+
+        Deque<Node> stack = new ArrayDeque<>();
+
+        public void tarjan(Node root, Edge father) {
+            if (root.dfn != 0) {
+                return;
             }
-            root.version = now;
+            root.dfn = root.low = getDfn();
+            stack.addLast(root);
             for (Edge edge : root.edges) {
+                if (father == edge) {
+                    continue;
+                }
                 Node node = edge.other(root);
-                if (edge == last) {
-                    continue;
-                }
-                if (node.find() == root) {
-                    continue;
-                }
-                stack.addLast(edge);
-                if (findLoop(node, edge)) {
-                    return true;
-                }
-                if (stack.peekLast() == edge) {
-                    stack.removeLast();
+                tarjan(node, edge);
+                if (node.instk && root.low > node.low) {
+                    root.low = node.low;
                 }
             }
-            return false;
+            if (root.low == root.dfn) {
+                while (true) {
+                    Node tail = stack.removeLast();
+                    tail.set = root;
+                    root.setEdges.addAll(tail.edges);
+                    root.inSet.add(tail);
+                    if (tail == root) {
+                        break;
+                    }
+                }
+            }
         }
     }
 
     public static class Node {
         List<Edge> edges = new ArrayList<>(2);
-        int version;
-        Node p = this;
-        int rank;
         int id;
+        int dfn;
+        int low;
+        boolean instk;
+        Node set;
+        boolean visited;
+        boolean setVisited;
+        List<Node> inSet = new ArrayList<>();
+        List<Edge> setEdges = new ArrayList<>();
 
         @Override
         public String toString() {
             return "" + id;
-        }
-
-        Node find() {
-            return p.p == p ? p : (p = p.find());
-        }
-
-        static void merge(Node a, Node b) {
-            a = a.find();
-            b = b.find();
-            if (a == b) {
-                return;
-            }
-            if (a.rank == b.rank) {
-                a.rank++;
-            }
-            if (a.rank > b.rank) {
-                b.p = a;
-            } else {
-                a.p = b;
-            }
         }
     }
 
