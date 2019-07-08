@@ -6,7 +6,7 @@ import java.util.Deque;
 import java.util.List;
 
 /**
- * Hierholzer algorithm, used to search euler trace
+ * Hierholzer algorithm, searching euler trace
  */
 public class DirectedEulerTrace {
     private static class Node {
