@@ -5,12 +5,12 @@ import java.util.Map;
 
 public class ModLagrangeInterpolation {
     private Map<Integer, Integer> points = new LinkedHashMap<>();
-    private MathUtils.Modular modular;
-    private MathUtils.Power power;
+    private NumberTheory.Modular modular;
+    private NumberTheory.Power power;
 
-    public ModLagrangeInterpolation(MathUtils.Modular modular) {
+    public ModLagrangeInterpolation(NumberTheory.Modular modular) {
         this.modular = modular;
-        this.power = new MathUtils.Power(modular);
+        this.power = new NumberTheory.Power(modular);
     }
 
 

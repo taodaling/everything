@@ -15,14 +15,17 @@ public class FastFourierTransform {
         reverse(r, m);
         dft(r, a, m);
         dft(r, b, m);
-        int n = 1 << m;
-        for (int i = 0; i < n; i++) {
-            mul(a[i][0], a[i][1], b[i][0], b[i][1], a[i]);
-        }
+        dotMul(a, b, m);
         idft(r, a, m);
     }
 
-    private static void reverse(int[] r, int b) {
+    public static void dotMul(double[][] a, double[][] b, int m) {
+        for (int i = 0, n = 1 << m; i < n; i++) {
+            mul(a[i][0], a[i][1], b[i][0], b[i][1], a[i]);
+        }
+    }
+
+    public static void reverse(int[] r, int b) {
         int n = 1 << b;
         r[0] = 0;
         for (int i = 1; i < n; i++) {
@@ -35,7 +38,9 @@ public class FastFourierTransform {
 
         for (int i = 0; i < n; i++) {
             if (r[i] > i) {
-                Memory.swap(p, i, r[i]);
+                double[] temp = p[i];
+                p[i] = p[r[i]];
+                p[r[i]] = temp;
             }
         }
 
