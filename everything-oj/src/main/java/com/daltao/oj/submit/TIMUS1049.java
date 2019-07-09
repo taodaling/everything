@@ -4,14 +4,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-public class TIMUS1040 {
+public class TIMUS1049 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -53,81 +52,28 @@ public class TIMUS1040 {
         }
 
         public void solve() {
-
-        }
-
-        public void dfs(Node root) {
-            root = root.find();
-            if (root.version == now) {
-                return;
-            }
-            root.version = now;
-            for (Edge edge : root.edges) {
-                Node node = edge.other(root);
-                if (edge.allocated == 0) {
-                    edge.allocated = allocate();
+            int[] factors = new int[10000 + 1];
+            for (int i = 0; i < 10; i++) {
+                int num = io.readInt();
+                for (int j = 2; num > 1; j++) {
+                    while (num % j == 0) {
+                        factors[j]++;
+                        num /= j;
+                    }
                 }
-                dfs(node);
             }
-        }
-
-        Deque<Edge> stack = new ArrayDeque<>(50);
-        int now;
-        int allocation;
-
-        public int allocate() {
-            return allocation--;
-        }
-
-    }
-
-    public static class Node {
-        List<Edge> edges = new ArrayList<>(2);
-        int version;
-        Node p = this;
-        int rank;
-        int id;
-
-        @Override
-        public String toString() {
-            return "" + id;
-        }
-
-        Node find() {
-            return p.p == p ? p : (p = p.find());
-        }
-
-        static void merge(Node a, Node b) {
-            a = a.find();
-            b = b.find();
-            if (a == b) {
-                return;
+            BigInteger ans = BigInteger.ONE;
+            for (int f : factors) {
+                if (f == 0) {
+                    continue;
+                }
+                ans = ans.multiply(BigInteger.valueOf(1 + f));
             }
-            if (a.rank == b.rank) {
-                a.rank++;
-            }
-            if (a.rank > b.rank) {
-                b.p = a;
-            } else {
-                a.p = b;
-            }
+
+            io.cache.append(ans.mod(BigInteger.valueOf(10)));
         }
     }
 
-    public static class Edge {
-        Node a;
-        Node b;
-        int allocated;
-
-        Node other(Node x) {
-            return a == x ? b : a;
-        }
-
-        @Override
-        public String toString() {
-            return a + " -> " + b;
-        }
-    }
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder();

@@ -4,18 +4,18 @@ public class ModGussianElimination {
     int[][] mat;
     int[] solutions;
     int rank;
-    MathUtils.Power power;
-    MathUtils.Modular modular;
+    NumberTheory.Power power;
+    NumberTheory.Modular modular;
     int n;
     int m;
 
-    public ModGussianElimination(int n, int m, MathUtils.Modular modular) {
+    public ModGussianElimination(int n, int m, NumberTheory.Modular modular) {
         this.n = n;
         this.m = m;
         mat = new int[n + 1][m + 1];
         solutions = mat[n];
         this.modular = modular;
-        power = new MathUtils.Power(modular);
+        power = new NumberTheory.Power(modular);
     }
 
     public void clear(int n, int m) {

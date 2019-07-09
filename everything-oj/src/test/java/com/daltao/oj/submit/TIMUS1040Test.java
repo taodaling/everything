@@ -3,7 +3,7 @@ package com.daltao.oj.submit;
 import com.daltao.oj.tool.MainMethod2Runnable;
 import com.daltao.oj.tool.Runnable2OJSolution;
 import com.daltao.template.FastIO;
-import com.daltao.template.MathUtils;
+import com.daltao.template.NumberTheory;
 import com.daltao.test.Checker;
 import com.daltao.test.Input;
 import com.daltao.test.QueueInput;
@@ -64,7 +64,7 @@ public class TIMUS1040Test {
                 edges[a][b] = edges[b][a] = w;
             }
 
-            MathUtils.Gcd gcd = new MathUtils.Gcd();
+            NumberTheory.Gcd gcd = new NumberTheory.Gcd();
             for (int i = 1; i <= n; i++) {
                 int g = 0;
                 int nonZeroCnt = 0;

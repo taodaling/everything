@@ -5,13 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
-import java.util.List;
 
-public class TIMUS1040 {
+public class LG4238 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -53,79 +49,6 @@ public class TIMUS1040 {
         }
 
         public void solve() {
-
-        }
-
-        public void dfs(Node root) {
-            root = root.find();
-            if (root.version == now) {
-                return;
-            }
-            root.version = now;
-            for (Edge edge : root.edges) {
-                Node node = edge.other(root);
-                if (edge.allocated == 0) {
-                    edge.allocated = allocate();
-                }
-                dfs(node);
-            }
-        }
-
-        Deque<Edge> stack = new ArrayDeque<>(50);
-        int now;
-        int allocation;
-
-        public int allocate() {
-            return allocation--;
-        }
-
-    }
-
-    public static class Node {
-        List<Edge> edges = new ArrayList<>(2);
-        int version;
-        Node p = this;
-        int rank;
-        int id;
-
-        @Override
-        public String toString() {
-            return "" + id;
-        }
-
-        Node find() {
-            return p.p == p ? p : (p = p.find());
-        }
-
-        static void merge(Node a, Node b) {
-            a = a.find();
-            b = b.find();
-            if (a == b) {
-                return;
-            }
-            if (a.rank == b.rank) {
-                a.rank++;
-            }
-            if (a.rank > b.rank) {
-                b.p = a;
-            } else {
-                a.p = b;
-            }
-        }
-    }
-
-    public static class Edge {
-        Node a;
-        Node b;
-        int allocated;
-
-        Node other(Node x) {
-            return a == x ? b : a;
-        }
-
-        @Override
-        public String toString() {
-            return a + " -> " + b;
         }
     }
 

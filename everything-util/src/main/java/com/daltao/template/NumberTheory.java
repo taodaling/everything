@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-public class MathUtils {
-    private static Random random = new Random();
+public class NumberTheory {
+    private static final Random RANDOM = new Random();
 
     public static class ExtLucasFactorial {
         int exp;
@@ -565,7 +565,7 @@ public class MathUtils {
             modular = new Modular(n);
             power = new Power(modular);
             for (int i = 0; i < s; i++) {
-                int x = random.nextInt(n - 2) + 2;
+                int x = RANDOM.nextInt(n - 2) + 2;
                 if (!mr0(x, n)) {
                     return false;
                 }
@@ -660,7 +660,7 @@ public class MathUtils {
             modular = new LongModular(n);
             power = new LongPower(modular);
             for (int i = 0; i < s; i++) {
-                long x = (long) (random.nextDouble() * (n - 2) + 2);
+                long x = (long) (RANDOM.nextDouble() * (n - 2) + 2);
                 if (!mr0(x, n)) {
                     return false;
                 }
@@ -698,7 +698,7 @@ public class MathUtils {
             }
             modular = new LongModular(n);
             while (true) {
-                long f = findFactor0((long) (random.nextDouble() * n), (long) (random.nextDouble() * n), n);
+                long f = findFactor0((long) (RANDOM.nextDouble() * n), (long) (RANDOM.nextDouble() * n), n);
                 if (f != -1) {
                     return f;
                 }
@@ -936,6 +936,82 @@ public class MathUtils {
             l = r + 1;
             r = n / (n / l);
             return n / l;
+        }
+    }
+
+
+    public static class QuadraticResidue {
+        final Modular modular;
+        final BitOperator bitOperator = new BitOperator();
+        Power power;
+        final PollardRho rho = new PollardRho();
+
+
+        public QuadraticResidue(Modular modular) {
+            this.modular = modular;
+            power = new Power(modular);
+        }
+
+        /**
+         * return \sqrt{n} or -1 if it doesn't exist
+         */
+        public int square(int n) {
+            n = modular.valueOf(n);
+            if (n == 0) {
+                return 0;
+            }
+            int p = modular.m;
+            if (power.pow(n, (p - 1) / 2) != 1) {
+                return -1;
+            }
+            while (true) {
+                int a = RANDOM.nextInt(p);
+                int w = modular.plus(modular.mul(a, a), -n);
+                if (power.pow(w, (p - 1) / 2) == 1) {
+                    continue;
+                }
+
+
+                int pow = (p + 1) / 2;
+                int i = 31 - Integer.numberOfLeadingZeros(pow);
+                int real = 1;
+                int img = 0;
+                for (; i >= 0; i--) {
+                    int nReal = modular.plus(modular.mul(real, real),
+                            modular.mul(modular.mul(img, img), w));
+                    int nImg = modular.mul(modular.mul(real, img), 2);
+                    real = nReal;
+                    img = nImg;
+                    if (bitOperator.bitAt(pow, i) == 1) {
+                        nReal = modular.plus(modular.mul(real, a), modular.mul(img, w));
+                        nImg = modular.plus(modular.mul(img, a), real);
+                        real = nReal;
+                        img = nImg;
+                    }
+                }
+
+                return real;
+            }
+        }
+
+        public int minPrimitiveRoot() {
+            if (modular.m == 2) {
+                return 1;
+            }
+            Map<Integer, Integer> factorMap = rho.findAllFactors(modular.m - 1);
+            int[] factors = factorMap.keySet().stream().mapToInt(Integer::intValue).toArray();
+            for (int i = 2; ; i++) {
+                boolean valid = false;
+                for (int factor : factors) {
+                    if (power.pow(i, (modular.m - 1) / factor) == 1) {
+                        valid = false;
+                        break;
+                    }
+                }
+                if (valid) {
+                    return i;
+                }
+            }
         }
     }
 }

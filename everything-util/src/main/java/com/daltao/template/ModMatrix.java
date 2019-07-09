@@ -43,7 +43,7 @@ public class ModMatrix {
         }
     }
 
-    public static ModMatrix mul(ModMatrix a, ModMatrix b, MathUtils.Modular modular) {
+    public static ModMatrix mul(ModMatrix a, ModMatrix b, NumberTheory.Modular modular) {
         ModMatrix c = new ModMatrix(a.n, b.m);
         for (int i = 0; i < c.n; i++) {
             for (int j = 0; j < c.m; j++) {
@@ -55,7 +55,7 @@ public class ModMatrix {
         return c;
     }
 
-    public static ModMatrix pow(ModMatrix x, long n, MathUtils.Modular modular) {
+    public static ModMatrix pow(ModMatrix x, long n, NumberTheory.Modular modular) {
         if (n == 0) {
             ModMatrix r = new ModMatrix(x.n, x.m);
             r.asStandard();
@@ -69,7 +69,7 @@ public class ModMatrix {
         return r;
     }
 
-    static ModMatrix transposition(ModMatrix x, MathUtils.Modular modular) {
+    static ModMatrix transposition(ModMatrix x, NumberTheory.Modular modular) {
         int n = x.n;
         int m = x.m;
         ModMatrix t = new ModMatrix(m, n);
