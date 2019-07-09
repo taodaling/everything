@@ -1,32 +1,27 @@
 package com.daltao.template;
 
-public class NTT {
+public class NumberTheoryTransform {
     private static final NumberTheory.Modular MODULAR = new NumberTheory.Modular(998244353);
     private static final NumberTheory.Power POWER = new NumberTheory.Power(MODULAR);
     private static final int G = 3;
-    private static int[] wCache = new int[24];
-    private static int[] invCache = new int[24];
+    private static int[] wCache = new int[23];
+    private static int[] invCache = new int[23];
 
     static {
         for (int i = 0, until = wCache.length; i < until; i++) {
             int s = 1 << i;
-            wCache[i] = POWER.pow(G, (MODULAR.m - 1) / s);
+            wCache[i] = POWER.pow(G, (MODULAR.m - 1) / 2 / s);
             invCache[i] = POWER.inverse(s);
         }
     }
 
-    public static void fft(int[] r, int[] a, int[] b, int m) {
-        reverse(r, m);
-        dft(r, a, m);
-        dft(r, b, m);
-        int n = 1 << m;
-        for (int i = 0; i < n; i++) {
-            a[i] = MODULAR.mul(a[i], b[i]);
+    public static void dotMul(int[] a, int[] b, int[] c, int m) {
+        for (int i = 0, n = 1 << m; i < n; i++) {
+            c[i] = MODULAR.mul(a[i], b[i]);
         }
-        idft(r, a, m);
     }
 
-    private static void reverse(int[] r, int b) {
+    public static void reverse(int[] r, int b) {
         int n = 1 << b;
         r[0] = 0;
         for (int i = 1; i < n; i++) {
@@ -39,7 +34,9 @@ public class NTT {
 
         for (int i = 0; i < n; i++) {
             if (r[i] > i) {
-                Memory.swap(p, i, r[i]);
+                int tmp = p[i];
+                p[i] = p[r[i]];
+                p[r[i]] = tmp;
             }
         }
 

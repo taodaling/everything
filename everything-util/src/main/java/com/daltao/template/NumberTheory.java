@@ -822,7 +822,7 @@ public class NumberTheory {
     public static class PollardRho {
         MillerRabin mr = new MillerRabin();
         Gcd gcd = new Gcd();
-        Random random = new Random(123456789);
+        Random random = new Random();
 
         public int findFactor(int n) {
             if (mr.mr(n, 10)) {

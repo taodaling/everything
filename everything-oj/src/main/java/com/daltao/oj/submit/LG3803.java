@@ -58,27 +58,27 @@ public class LG3803 {
             NumberTheory.Log2 log2 = new NumberTheory.Log2();
             int proper = log2.ceilLog(n + m + 1);
             int[] a = new int[1 << proper];
-            double[][] a2 = new double[1 << proper][2];
+            //double[][] a2 = new double[1 << proper][2];
             int[] b = new int[1 << proper];
-            double[][] b2 = new double[1 << proper][2];
+            //double[][] b2 = new double[1 << proper][2];
             int[] r = new int[1 << proper];
             for (int i = 0; i <= n; i++) {
                 a[i] = io.readInt();
-                a2[i][0] = a[i];
+                //a2[i][0] = io.readInt();
             }
             for (int i = 0; i <= m; i++) {
                 b[i] = io.readInt();
-                b2[i][0] = b[i];
+                //b2[i][0] = io.readInt();
             }
             NTT.reverse(r, proper);
             NTT.dft(r, a, proper);
-            FastFourierTransform.dft(r, a2, proper);
+            //FastFourierTransform.dft(r, a2, proper);
             NTT.dft(r, b, proper);
-            FastFourierTransform.dft(r, b2, proper);
+            //FastFourierTransform.dft(r, b2, proper);
             NTT.dotMul(a, b, a, proper);
-            FastFourierTransform.dotMul(a2, b2, a2, proper);
+            //FastFourierTransform.dotMul(a2, b2, a2, proper);
             NTT.idft(r, a, proper);
-            FastFourierTransform.idft(r, a2, proper);
+            //FastFourierTransform.idft(r, a2, proper);
             for (int i = 0, until = n + m + 1; i < until; i++) {
                 io.cache.append(a[i]).append(' ');
             }
@@ -377,13 +377,13 @@ public class LG3803 {
         private static final NumberTheory.Modular MODULAR = new NumberTheory.Modular(998244353);
         private static final NumberTheory.Power POWER = new NumberTheory.Power(MODULAR);
         private static final int G = 3;
-        private static int[] wCache = new int[24];
-        private static int[] invCache = new int[24];
+        private static int[] wCache = new int[23];
+        private static int[] invCache = new int[23];
 
         static {
             for (int i = 0, until = wCache.length; i < until; i++) {
                 int s = 1 << i;
-                wCache[i] = POWER.pow(G, (MODULAR.m - 1) / s);
+                wCache[i] = POWER.pow(G, (MODULAR.m - 1) / 2 / s);
                 invCache[i] = POWER.inverse(s);
             }
         }
@@ -558,7 +558,6 @@ public class LG3803 {
             r[1] = i1 / r2;
         }
     }
-
 
     public static class NumberTheory {
         private static final Random RANDOM = new Random();

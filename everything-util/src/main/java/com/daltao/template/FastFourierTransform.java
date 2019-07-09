@@ -1,5 +1,4 @@
 package com.daltao.template;
-
 public class FastFourierTransform {
     private static double[][] wCache = new double[31][2];
 
@@ -11,17 +10,9 @@ public class FastFourierTransform {
         }
     }
 
-    public static void fft(int[] r, double[][] a, double[][] b, int m) {
-        reverse(r, m);
-        dft(r, a, m);
-        dft(r, b, m);
-        dotMul(a, b, m);
-        idft(r, a, m);
-    }
-
-    public static void dotMul(double[][] a, double[][] b, int m) {
+    public static void dotMul(double[][] a, double[][] b, double[][] c, int m) {
         for (int i = 0, n = 1 << m; i < n; i++) {
-            mul(a[i][0], a[i][1], b[i][0], b[i][1], a[i]);
+            mul(a[i][0], a[i][1], b[i][0], b[i][1], c[i]);
         }
     }
 
