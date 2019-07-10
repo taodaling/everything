@@ -1,4 +1,5 @@
 package com.daltao.template;
+
 public class FastFourierTransform {
     private static double[][] wCache = new double[31][2];
 
@@ -89,5 +90,39 @@ public class FastFourierTransform {
     private static void div(double r1, double i1, double r2, double[] r) {
         r[0] = r1 / r2;
         r[1] = i1 / r2;
+    }
+
+    /**
+     * return polynomial g while p * g = 1 (mod x^m).
+     * <br>
+     * You are supposed to guarantee the lengths of all arrays are greater than or equal to 2^{ceil(log2(m)) + 1}
+     */
+    private static void inverse(int[] r, double[][] p, double[][] inv, double[][] buf, int m) {
+        if (m == 0) {
+            div(1, 0, p[0][0], inv[0]);
+            return;
+        }
+        inverse(r, p, inv, buf, m - 1);
+        int n = 1 << (m + 1);
+        for (int i = 0, until = 1 << m; i < until; i++) {
+            buf[i][0] = p[i][0];
+            buf[i][1] = p[i][1];
+        }
+        for (int i = 1 << m, until = 1 << (m + 1); i < until; i++) {
+            buf[i][0] = 0;
+            buf[i][1] = 0;
+        }
+        reverse(r, (m + 1));
+        dft(r, buf, (m + 1));
+        dft(r, inv, (m + 1));
+        for (int i = 0; i < n; i++) {
+            mul(buf[i][0], buf[i][1], inv[i][0], inv[i][1], buf[i]);
+            sub(2, 0, buf[i][0], buf[i][1], buf[i]);
+            mul(inv[i][0], inv[i][1], buf[i][0], buf[i][1], inv[i]);
+        }
+        idft(r, inv, m + 1);
+        for (int i = 1 << m; i < n; i++) {
+            inv[i][0] = inv[i][1] = 0;
+        }
     }
 }
