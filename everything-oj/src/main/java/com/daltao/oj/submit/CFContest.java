@@ -49,7 +49,7 @@ public class CFContest {
             solve();
         }
 
-        int limit = 6;
+        int limit = 5000;
 
         public void solve() {
             int n = io.readInt();
@@ -153,7 +153,7 @@ public class CFContest {
      * Created by dalt on 2018/5/20.
      */
     public static class BIT {
-        private int[] data;
+        private short[] data;
         private int n;
 
         /**
@@ -161,7 +161,7 @@ public class CFContest {
          */
         public BIT(int n) {
             this.n = n;
-            data = new int[n + 1];
+            data = new short[n + 1];
         }
 
         /**
@@ -182,13 +182,6 @@ public class CFContest {
             for (; i <= n; i += i & -i) {
                 data[i] += mod;
             }
-        }
-
-        /**
-         * 将A全部清0
-         */
-        public void clear() {
-            Arrays.fill(data, 0);
         }
 
         @Override
