@@ -1,5 +1,7 @@
 package com.daltao.template;
 
+import java.util.Arrays;
+
 public class NumberTheoryTransform {
     private static final NumberTheory.Modular MODULAR = new NumberTheory.Modular(998244353);
     private static final NumberTheory.Power POWER = new NumberTheory.Power(MODULAR);
@@ -72,6 +74,32 @@ public class NumberTheoryTransform {
             int a = p[n - i];
             p[n - i] = MODULAR.mul(p[i], invN);
             p[i] = MODULAR.mul(a, invN);
+        }
+    }
+
+    /**
+     * return polynomial g while p * g = 1 (mod x^m).
+     * <br>
+     * You are supposed to guarantee the lengths of all arrays are greater than or equal to 2^{ceil(log2(m)) + 1}
+     */
+    private static void inverse(int[] r, int[] p, int[] inv, int[] buf, int m) {
+        if (m == 0) {
+            inv[0] = POWER.inverse(p[0]);
+            return;
+        }
+        inverse(r, p, inv, buf, m - 1);
+        int n = 1 << (m + 1);
+        System.arraycopy(p, 0, buf, 0, 1 << m);
+        Arrays.fill(buf, 1 << m, 1 << (m + 1), 0);
+        reverse(r, (m + 1));
+        dft(r, buf, (m + 1));
+        dft(r, inv, (m + 1));
+        for (int i = 0; i < n; i++) {
+            inv[i] = MODULAR.mul(inv[i], 2 - MODULAR.mul(buf[i], inv[i]));
+        }
+        idft(r, inv, m + 1);
+        for (int i = 1 << m; i < n; i++) {
+            inv[i] = 0;
         }
     }
 }
