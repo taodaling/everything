@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.Arrays;
+import java.util.*;
 
 
 public class CFContest {
@@ -49,40 +49,219 @@ public class CFContest {
             solve();
         }
 
+        int limit = 6;
+
         public void solve() {
             int n = io.readInt();
-            int k = io.readInt();
-            int[] data = new int[n + 1];
-            data[0] = -inf;
-            for (int i = 1; i <= n; i++) {
-                data[i] = io.readInt();
+            List<Line> v = new ArrayList<>();
+            List<Line> h = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                int x1 = io.readInt() + limit + 1;
+                int y1 = io.readInt() + limit + 1;
+                int x2 = io.readInt() + limit + 1;
+                int y2 = io.readInt() + limit + 1;
+                if (x1 > x2) {
+                    int tmp = x1;
+                    x1 = x2;
+                    x2 = tmp;
+                }
+                if (y1 > y2) {
+                    int tmp = y1;
+                    y1 = y2;
+                    y2 = tmp;
+                }
+                if (x1 == x2) {
+                    Line line = new Line();
+                    line.a = y1;
+                    line.b = y2;
+                    line.c = x1;
+                    v.add(line);
+                } else {
+                    Line line = new Line();
+                    line.a = x1;
+                    line.b = x2;
+                    line.c = y1;
+                    h.add(line);
+                }
             }
-            Arrays.sort(data);
 
-            Modular modular = new Modular(998244353);
-            int[] dp = new int[n + 1];
-            int[] preSum = new int[n + 1];
-            preSum[0] = dp[0] = 1;
-            int[] preIndex = new int[n + 1];
-            int total = 0;
-            for (int i = 1; i <= 100000; i++) {
-                for (int j = 1; j <= n; j++) {
-                    while (data[i] - data[preIndex[i]] < i) {
-                        preIndex[i]--;
+            if (v.size() > h.size()) {
+                List<Line> tmp = v;
+                v = h;
+                h = tmp;
+            }
+
+            int x = v.size();
+            int y = h.size();
+            BIT[] bits = new BIT[x];
+            for (int i = 0; i < x; i++) {
+                bits[i] = new BIT(limit * 2 + 1);
+            }
+
+            Line[] hSortByB = h.toArray(new Line[0]);
+            Arrays.sort(hSortByB, (a, b) -> a.b - b.b);
+
+            int hSortByBPos = 0;
+
+            Line[] vArray = v.toArray(new Line[0]);
+            Arrays.sort(vArray, (a, b) -> a.c - b.c);
+
+            for (int j = 0; j < y; j++) {
+                for (int i = 0; i < x; i++) {
+                    if (intersect(vArray[i], hSortByB[j])) {
+                        bits[i].update(hSortByB[j].c, 1);
                     }
                 }
-                for (int j = 1; j <= n; j++) {
-                    dp[i] = preSum[preIndex[i]];
-                    preSum[i] = modular.plus(dp[i], preSum[i - 1]);
+            }
+
+            long total = 0;
+            for (int i = 0; i < x; i++) {
+                Line l = vArray[i];
+                while (hSortByBPos < y && hSortByB[hSortByBPos].b < l.c) {
+                    for (int j = 0; j < i; j++) {
+                        if (intersect(hSortByB[hSortByBPos], vArray[j])) {
+                            bits[j].update(hSortByB[hSortByBPos].c, -1);
+                        }
+                    }
+                    hSortByBPos++;
                 }
-                int actual = modular.plus(preSum[i], -(n + 1));
-                total = modular.plus(actual, total);
+                for (int j = 0; j < i; j++) {
+                    total += choose2(bits[j].query(l.b) - bits[j].query(l.a - 1));
+                }
             }
 
             io.cache.append(total);
         }
+
+        public boolean intersect(Line a, Line b) {
+            return a.c >= b.a && a.c <= b.b
+                    && b.c >= a.a && b.c <= a.b;
+        }
+
+        public long choose2(long n) {
+            return n * (n - 1) / 2;
+        }
     }
 
+    public static class Line {
+        int a;
+        int b;
+        int c;
+    }
+
+    /**
+     * Created by dalt on 2018/5/20.
+     */
+    public static class BIT {
+        private int[] data;
+        private int n;
+
+        /**
+         * 创建大小A[1...n]
+         */
+        public BIT(int n) {
+            this.n = n;
+            data = new int[n + 1];
+        }
+
+        /**
+         * 查询A[1]+A[2]+...+A[i]
+         */
+        public int query(int i) {
+            int sum = 0;
+            for (; i > 0; i -= i & -i) {
+                sum += data[i];
+            }
+            return sum;
+        }
+
+        /**
+         * 将A[i]更新为A[i]+mod
+         */
+        public void update(int i, int mod) {
+            for (; i <= n; i += i & -i) {
+                data[i] += mod;
+            }
+        }
+
+        /**
+         * 将A全部清0
+         */
+        public void clear() {
+            Arrays.fill(data, 0);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 1; i <= n; i++) {
+                builder.append(query(i) - query(i - 1)).append(' ');
+            }
+            return builder.toString();
+        }
+    }
+
+    public static class Randomized {
+        static Random random = new Random();
+
+        public static double nextDouble(double min, double max) {
+            return random.nextDouble() * (max - min) + min;
+        }
+
+        public static void randomizedArray(int[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                int tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(long[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                long tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(double[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                double tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(float[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                float tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static <T> void randomizedArray(T[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                T tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static int nextInt(int l, int r) {
+            return random.nextInt(r - l + 1) + l;
+        }
+    }
 
     /**
      * 模运算
