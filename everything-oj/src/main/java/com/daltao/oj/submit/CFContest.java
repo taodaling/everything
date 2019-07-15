@@ -5,7 +5,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 
 public class CFContest {
@@ -46,303 +49,446 @@ public class CFContest {
 
         @Override
         public void run() {
-            solve();
+            int t = io.readInt();
+            while (t-- > 0)
+                solve();
         }
 
-        int limit = 5000;
+
+        NumberTheory.Modular mod = new NumberTheory.Modular(0);
+        NumberTheory.QuadraticResidue qr = new NumberTheory.QuadraticResidue(mod);
 
         public void solve() {
-            int n = io.readInt();
-            List<Line> v = new ArrayList<>();
-            List<Line> h = new ArrayList<>();
-            for (int i = 0; i < n; i++) {
-                int x1 = io.readInt() + limit + 1;
-                int y1 = io.readInt() + limit + 1;
-                int x2 = io.readInt() + limit + 1;
-                int y2 = io.readInt() + limit + 1;
-                if (x1 > x2) {
-                    int tmp = x1;
-                    x1 = x2;
-                    x2 = tmp;
-                }
-                if (y1 > y2) {
-                    int tmp = y1;
-                    y1 = y2;
-                    y2 = tmp;
-                }
-                if (x1 == x2) {
-                    Line line = new Line();
-                    line.a = y1;
-                    line.b = y2;
-                    line.c = x1;
-                    v.add(line);
+            mod.m = io.readInt();
+            io.cache.append(qr.minPrimitiveRoot()).append('\n');
+        }
+    }
+
+    public static class NumberTheory {
+        private static final Random RANDOM = new Random();
+
+
+        /**
+         * Extend gcd
+         */
+        public static class ExtGCD {
+            private long x;
+            private long y;
+            private long g;
+
+            public long getX() {
+                return x;
+            }
+
+            public long getY() {
+                return y;
+            }
+
+            /**
+             * Get g = Gcd(a, b) and find a way to set x and y to match ax+by=g
+             */
+            public long extgcd(long a, long b) {
+                if (a >= b) {
+                    g = extgcd0(a, b);
                 } else {
-                    Line line = new Line();
-                    line.a = x1;
-                    line.b = x2;
-                    line.c = y1;
-                    h.add(line);
+                    g = extgcd0(b, a);
+                    long tmp = x;
+                    x = y;
+                    y = tmp;
                 }
+                return g;
             }
 
-            if (v.size() > h.size()) {
-                List<Line> tmp = v;
-                v = h;
-                h = tmp;
+
+            private long extgcd0(long a, long b) {
+                if (b == 0) {
+                    x = 1;
+                    y = 0;
+                    return a;
+                }
+                long g = extgcd0(b, a % b);
+                long n = x;
+                long m = y;
+                x = m;
+                y = n - m * (a / b);
+                return g;
+            }
+        }
+
+        public static class Gcd {
+            public long gcd(long a, long b) {
+                return a >= b ? gcd0(a, b) : gcd0(b, a);
             }
 
-            int x = v.size();
-            int y = h.size();
-            BIT[] bits = new BIT[x];
-            for (int i = 0; i < x; i++) {
-                bits[i] = new BIT(limit * 2 + 1);
+            private long gcd0(long a, long b) {
+                return b == 0 ? a : gcd0(b, a % b);
             }
 
-            Line[] hSortByB = h.toArray(new Line[0]);
-            Arrays.sort(hSortByB, (a, b) -> a.b - b.b);
+            public int gcd(int a, int b) {
+                return a >= b ? gcd0(a, b) : gcd0(b, a);
+            }
 
-            int hSortByBPos = 0;
+            private int gcd0(int a, int b) {
+                return b == 0 ? a : gcd0(b, a % b);
+            }
+        }
 
-            Line[] vArray = v.toArray(new Line[0]);
-            Arrays.sort(vArray, (a, b) -> a.c - b.c);
 
-            for (int j = 0; j < y; j++) {
-                for (int i = 0; i < x; i++) {
-                    if (intersect(vArray[i], hSortByB[j])) {
-                        bits[i].update(hSortByB[j].c, 1);
+        /**
+         * Mod operations
+         */
+        public static class Modular {
+            int m;
+
+            public Modular(int m) {
+                this.m = m;
+            }
+
+            public int valueOf(int x) {
+                x %= m;
+                if (x < 0) {
+                    x += m;
+                }
+                return x;
+            }
+
+            public int valueOf(long x) {
+                x %= m;
+                if (x < 0) {
+                    x += m;
+                }
+                return (int) x;
+            }
+
+            public int mul(int x, int y) {
+                return valueOf((long) x * y);
+            }
+
+            public int mul(long x, long y) {
+                x = valueOf(x);
+                y = valueOf(y);
+                return valueOf(x * y);
+            }
+
+            public int plus(int x, int y) {
+                return valueOf(x + y);
+            }
+
+            public int plus(long x, long y) {
+                x = valueOf(x);
+                y = valueOf(y);
+                return valueOf(x + y);
+            }
+
+            @Override
+            public String toString() {
+                return "mod " + m;
+            }
+        }
+
+        /**
+         * Bit operations
+         */
+        public static class BitOperator {
+            public int bitAt(int x, int i) {
+                return (x >> i) & 1;
+            }
+
+            public int bitAt(long x, int i) {
+                return (int) ((x >> i) & 1);
+            }
+
+            public int setBit(int x, int i, boolean v) {
+                if (v) {
+                    x |= 1 << i;
+                } else {
+                    x &= ~(1 << i);
+                }
+                return x;
+            }
+
+            public long setBit(long x, int i, boolean v) {
+                if (v) {
+                    x |= 1L << i;
+                } else {
+                    x &= ~(1L << i);
+                }
+                return x;
+            }
+
+            /**
+             * Determine whether x is subset of y
+             */
+            public boolean subset(long x, long y) {
+                return intersect(x, y) == x;
+            }
+
+            /**
+             * Merge two set
+             */
+            public long merge(long x, long y) {
+                return x | y;
+            }
+
+            public long intersect(long x, long y) {
+                return x & y;
+            }
+
+            public long differ(long x, long y) {
+                return x - intersect(x, y);
+            }
+        }
+
+        /**
+         * Power operations
+         */
+        public static class Power {
+            final Modular modular;
+
+            public Power(Modular modular) {
+                this.modular = modular;
+            }
+
+            public int pow(int x, long n) {
+                if (n == 0) {
+                    return 1;
+                }
+                long r = pow(x, n >> 1);
+                r = modular.valueOf(r * r);
+                if ((n & 1) == 1) {
+                    r = modular.valueOf(r * x);
+                }
+                return (int) r;
+            }
+
+            public int inverse(int x) {
+                return pow(x, modular.m - 2);
+            }
+
+            public int pow2(int x) {
+                return x * x;
+            }
+
+            public long pow2(long x) {
+                return x * x;
+            }
+
+            public double pow2(double x) {
+                return x * x;
+            }
+        }
+
+        /**
+         * Log operations
+         */
+        public static class Log2 {
+            public int ceilLog(int x) {
+                return 32 - Integer.numberOfLeadingZeros(x - 1);
+            }
+
+            public int floorLog(int x) {
+                return 31 - Integer.numberOfLeadingZeros(x);
+            }
+
+            public int ceilLog(long x) {
+                return 64 - Long.numberOfLeadingZeros(x - 1);
+            }
+
+            public int floorLog(long x) {
+                return 63 - Long.numberOfLeadingZeros(x);
+            }
+        }
+
+        /**
+         * Test whether a number is primes
+         */
+        public static class MillerRabin {
+            Modular modular;
+            Power power;
+
+            /**
+             * Check whether n is a prime s times
+             */
+            public boolean mr(int n, int s) {
+                if (n == 2) {
+                    return true;
+                }
+                if (n % 2 == 0) {
+                    return false;
+                }
+                modular = new Modular(n);
+                power = new Power(modular);
+                for (int i = 0; i < s; i++) {
+                    int x = RANDOM.nextInt(n - 2) + 2;
+                    if (!mr0(x, n)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            private boolean mr0(int x, int n) {
+                int exp = n - 1;
+                while (true) {
+                    int y = power.pow(x, exp);
+                    if (y != 1 && y != n - 1) {
+                        return false;
+                    }
+                    if (y != 1 || exp % 2 == 1) {
+                        break;
+                    }
+                    exp = exp / 2;
+                }
+                return true;
+            }
+        }
+
+        /**
+         * Find all factors of a number
+         */
+        public static class PollardRho {
+            MillerRabin mr = new MillerRabin();
+            Gcd gcd = new Gcd();
+            Random random = new Random();
+
+            public int findFactor(int n) {
+                if (mr.mr(n, 10)) {
+                    return n;
+                }
+                while (true) {
+                    int f = findFactor0(random.nextInt(n), random.nextInt(n), n);
+                    if (f != -1) {
+                        return f;
                     }
                 }
             }
 
-            long total = 0;
-            for (int i = 0; i < x; i++) {
-                Line l = vArray[i];
-                while (hSortByBPos < y && hSortByB[hSortByBPos].b < l.c) {
-                    for (int j = 0; j < i; j++) {
-                        if (intersect(hSortByB[hSortByBPos], vArray[j])) {
-                            bits[j].update(hSortByB[hSortByBPos].c, -1);
+            /**
+             * Find all prime factor of n
+             * <br>
+             * p1 => p1^c1
+             * <br>
+             * ...
+             * <br>
+             * pk => pk^ck
+             */
+            public Map<Integer, Integer> findAllFactors(int n) {
+                Map<Integer, Integer> map = new HashMap();
+                findAllFactors(map, n);
+                return map;
+            }
+
+            private void findAllFactors(Map<Integer, Integer> map, int n) {
+                if (n == 1) {
+                    return;
+                }
+                int f = findFactor(n);
+                if (f == n) {
+                    Integer value = map.get(f);
+                    if (value == null) {
+                        value = 1;
+                    }
+                    map.put(f, value * f);
+                    return;
+                }
+                findAllFactors(map, f);
+                findAllFactors(map, n / f);
+            }
+
+            private int findFactor0(int x, int c, int n) {
+                int xi = x;
+                int xj = x;
+                int j = 2;
+                int i = 1;
+                while (i < n) {
+                    i++;
+                    xi = (int) ((long) xi * xi + c) % n;
+                    int g = gcd.gcd(n, Math.abs(xi - xj));
+                    if (g != 1 && g != n) {
+                        return g;
+                    }
+                    if (i == j) {
+                        j = j << 1;
+                        xj = xi;
+                    }
+                }
+                return -1;
+            }
+        }
+
+        public static class QuadraticResidue {
+            final Modular modular;
+            final BitOperator bitOperator = new BitOperator();
+            Power power;
+            final PollardRho rho = new PollardRho();
+
+
+            public QuadraticResidue(Modular modular) {
+                this.modular = modular;
+                power = new Power(modular);
+            }
+
+            /**
+             * return \sqrt{n} or -1 if it doesn't exist
+             */
+            public int square(int n) {
+                n = modular.valueOf(n);
+                if (n == 0) {
+                    return 0;
+                }
+                int p = modular.m;
+                if (power.pow(n, (p - 1) / 2) != 1) {
+                    return -1;
+                }
+                while (true) {
+                    int a = RANDOM.nextInt(p);
+                    int w = modular.plus(modular.mul(a, a), -n);
+                    if (power.pow(w, (p - 1) / 2) == 1) {
+                        continue;
+                    }
+
+
+                    int pow = (p + 1) / 2;
+                    int i = 31 - Integer.numberOfLeadingZeros(pow);
+                    int real = 1;
+                    int img = 0;
+                    for (; i >= 0; i--) {
+                        int nReal = modular.plus(modular.mul(real, real),
+                                modular.mul(modular.mul(img, img), w));
+                        int nImg = modular.mul(modular.mul(real, img), 2);
+                        real = nReal;
+                        img = nImg;
+                        if (bitOperator.bitAt(pow, i) == 1) {
+                            nReal = modular.plus(modular.mul(real, a), modular.mul(img, w));
+                            nImg = modular.plus(modular.mul(img, a), real);
+                            real = nReal;
+                            img = nImg;
                         }
                     }
-                    hSortByBPos++;
-                }
-                for (int j = 0; j < i; j++) {
-                    total += choose2(bits[j].query(l.b) - bits[j].query(l.a - 1));
+
+                    return real;
                 }
             }
 
-            io.cache.append(total);
-        }
-
-        public boolean intersect(Line a, Line b) {
-            return a.c >= b.a && a.c <= b.b
-                    && b.c >= a.a && b.c <= a.b;
-        }
-
-        public long choose2(long n) {
-            return n * (n - 1) / 2;
-        }
-    }
-
-    public static class Line {
-        int a;
-        int b;
-        int c;
-    }
-
-    /**
-     * Created by dalt on 2018/5/20.
-     */
-    public static class BIT {
-        private short[] data;
-        private int n;
-
-        /**
-         * 创建大小A[1...n]
-         */
-        public BIT(int n) {
-            this.n = n;
-            data = new short[n + 1];
-        }
-
-        /**
-         * 查询A[1]+A[2]+...+A[i]
-         */
-        public int query(int i) {
-            int sum = 0;
-            for (; i > 0; i -= i & -i) {
-                sum += data[i];
+            public int minPrimitiveRoot() {
+                if (modular.m == 2) {
+                    return 1;
+                }
+                Map<Integer, Integer> factorMap = rho.findAllFactors(modular.m - 1);
+                int[] factors = factorMap.keySet().stream().mapToInt(Integer::intValue).toArray();
+                for (int i = 2; ; i++) {
+                    boolean valid = true;
+                    for (int factor : factors) {
+                        if (power.pow(i, (modular.m - 1) / factor) == 1) {
+                            valid = false;
+                            break;
+                        }
+                    }
+                    if (valid) {
+                        return i;
+                    }
+                }
             }
-            return sum;
-        }
-
-        /**
-         * 将A[i]更新为A[i]+mod
-         */
-        public void update(int i, int mod) {
-            for (; i <= n; i += i & -i) {
-                data[i] += mod;
-            }
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = 1; i <= n; i++) {
-                builder.append(query(i) - query(i - 1)).append(' ');
-            }
-            return builder.toString();
-        }
-    }
-
-    public static class Randomized {
-        static Random random = new Random();
-
-        public static double nextDouble(double min, double max) {
-            return random.nextDouble() * (max - min) + min;
-        }
-
-        public static void randomizedArray(int[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                int tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static void randomizedArray(long[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                long tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static void randomizedArray(double[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                double tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static void randomizedArray(float[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                float tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static <T> void randomizedArray(T[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                T tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static int nextInt(int l, int r) {
-            return random.nextInt(r - l + 1) + l;
-        }
-    }
-
-    /**
-     * 模运算
-     */
-    public static class Modular {
-        int m;
-
-        public Modular(int m) {
-            this.m = m;
-        }
-
-        public int valueOf(int x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return x;
-        }
-
-        public int valueOf(long x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return (int) x;
-        }
-
-        public int mul(int x, int y) {
-            return valueOf((long) x * y);
-        }
-
-        public int plus(int x, int y) {
-            return valueOf(x + y);
-        }
-
-        @Override
-        public String toString() {
-            return "mod " + m;
-        }
-    }
-
-    public static class BitOperator {
-        public int bitAt(int x, int i) {
-            return (x >> i) & 1;
-        }
-
-        public int bitAt(long x, int i) {
-            return (int) ((x >> i) & 1);
-        }
-
-        public int setBit(int x, int i, boolean v) {
-            if (v) {
-                x |= 1 << i;
-            } else {
-                x &= ~(1 << i);
-            }
-            return x;
-        }
-
-        public long setBit(long x, int i, boolean v) {
-            if (v) {
-                x |= 1L << i;
-            } else {
-                x &= ~(1L << i);
-            }
-            return x;
-        }
-
-        /**
-         * Determine whether x is subset of y
-         */
-        public boolean subset(long x, long y) {
-            return intersect(x, y) == x;
-        }
-
-        /**
-         * Merge two set
-         */
-        public long merge(long x, long y) {
-            return x | y;
-        }
-
-        public long intersect(long x, long y) {
-            return x & y;
-        }
-
-        public long differ(long x, long y) {
-            return x - intersect(x, y);
         }
     }
 

@@ -1001,7 +1001,7 @@ public class NumberTheory {
             Map<Integer, Integer> factorMap = rho.findAllFactors(modular.m - 1);
             int[] factors = factorMap.keySet().stream().mapToInt(Integer::intValue).toArray();
             for (int i = 2; ; i++) {
-                boolean valid = false;
+                boolean valid = true;
                 for (int factor : factors) {
                     if (power.pow(i, (modular.m - 1) / factor) == 1) {
                         valid = false;
