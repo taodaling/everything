@@ -144,7 +144,7 @@ public class CFContest {
         }
 
         public static Comparator<Line> sortByAngle = (a, b) -> {
-            return Math.abs(a.theta - b.theta) < 1e-10 ? 0 : Double.compare(a.theta, b.theta);
+            return Math.abs(a.theta - b.theta) < 1e-12 ? 0 : Double.compare(a.theta, b.theta);
         };
     }
 
