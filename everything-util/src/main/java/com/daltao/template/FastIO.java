@@ -9,8 +9,8 @@ public class FastIO {
     private final InputStream is;
     private final OutputStream os;
     private final Charset charset;
-    private StringBuilder defaultStringBuf = new StringBuilder(1 << 8);
-    public final StringBuilder cache = new StringBuilder();
+    private StringBuilder defaultStringBuf = new StringBuilder(1 << 13);
+    public final StringBuilder cache = new StringBuilder(1 << 13);
 
     private byte[] buf = new byte[1 << 13];
     private int bufLen;
