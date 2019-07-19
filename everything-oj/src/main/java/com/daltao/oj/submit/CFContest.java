@@ -46,21 +46,55 @@ public class CFContest {
 
         @Override
         public void run() {
-            int t = io.readInt();
-            while (t-- > 0)
-                solve();
+            solve();
         }
 
 
         public void solve() {
-            int n = io.readInt();
-            int k = io.readInt();
-            if (n < k || k % 3 != 0) {
-                io.cache.append(n % 3 == 0 ? "Bob" : "Alice").append('\n');
-                return;
+            int t = io.readInt();
+            for (int i = 1; i <= t; i++) {
+                int n = io.readInt();
+                int m = io.readInt();
+                int k = io.readInt();
+                int[][] xys = new int[k + 1][2];
+                for (int j = 0; j <= k; j++) {
+                    for (int q = 0; q < 2; q++) {
+                        xys[j][q] = io.readInt();
+                    }
+                }
+
+                boolean allOdd = true;
+                for (int j = 1; j <= k; j++) {
+                    allOdd = allOdd && isDistOdd(xys[0], xys[j]);
+                }
+
+                if (!allOdd) {
+                    answer(i, false);
+                    continue;
+                }
+
+                if (k == 1 && n != 1 && m != 1) {
+                    answer(i, false);
+                    continue;
+                }
+
+                answer(i, true);
             }
-            int r = n % (k + 1);
-            io.cache.append(r % 3 == 0 && r != k ? "Bob" : "Alice").append('\n');
+        }
+
+        public void answer(int i, boolean result) {
+            io.cache.append("Case #").append(i)
+                    .append(": ")
+                    .append(result ? "Y" : "N").append('\n');
+        }
+
+        public int dist(int[] a, int[] b) {
+            return Math.abs(a[0] - b[0])
+                    + Math.abs(a[1] - b[1]) - 1;
+        }
+
+        public boolean isDistOdd(int[] a, int[] b) {
+            return dist(a, b) % 2 == 1;
         }
     }
 

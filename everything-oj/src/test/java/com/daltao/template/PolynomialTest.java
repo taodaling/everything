@@ -46,4 +46,16 @@ public class PolynomialTest {
                 .addPoint(2, 5).addPoint(3, 14).build();
         System.out.println(p);
     }
+
+    @Test
+    public void test5() {
+        Polynomial p = Polynomial.newBuilder()
+                .addPoint(0, 0).addPoint(1, 0)
+                .addPoint(2, 2).addPoint(3, 8).build();
+        assertNear(p.y(1), 0);
+        assertNear(p.y(4), 20);
+        assertNear(p.y(5), 40);
+        assertNear(p.y(6), 70);
+        System.out.println(p);
+    }
 }
