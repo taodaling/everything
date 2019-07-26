@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class CF1197F {
+public class CF1178F {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -50,179 +50,215 @@ public class CF1197F {
             solve();
         }
 
-        public void solve() {
-            int n = io.readInt();
-            int[] lens = new int[n];
-            for (int i = 0; i < n; i++) {
-                lens[i] = io.readInt();
-            }
-            int m = io.readInt();
-            List<Stone>[] stoneLists = new List[n + 1];
-            for (int i = 1; i <= n; i++) {
-                stoneLists[i] = new ArrayList<>();
-            }
-            for(int i = 0; i < m; i++){
-                int x = io.readInt();
-                Stone s = new Stone();
-                s.index = io.readInt();
-                s.color = io.readInt();
-                stoneLists[x].add(s);
-            }
-            ModMatrix transform = new ModMatrix();
-        }
-
-
-    }
-
-    public static class Stone {
-        int index;
-        int color;
-    }
-
-    public static class NumberTheory {
-        /**
-         * Mod operations
-         */
-        public static class Modular {
-            int m;
-
-            public Modular(int m) {
-                this.m = m;
-            }
-
-            public int valueOf(int x) {
-                x %= m;
-                if (x < 0) {
-                    x += m;
-                }
-                return x;
-            }
-
-            public int valueOf(long x) {
-                x %= m;
-                if (x < 0) {
-                    x += m;
-                }
-                return (int) x;
-            }
-
-            public int mul(int x, int y) {
-                return valueOf((long) x * y);
-            }
-
-            public int mul(long x, long y) {
-                x = valueOf(x);
-                y = valueOf(y);
-                return valueOf(x * y);
-            }
-
-            public int plus(int x, int y) {
-                return valueOf(x + y);
-            }
-
-            public int plus(long x, long y) {
-                x = valueOf(x);
-                y = valueOf(y);
-                return valueOf(x + y);
-            }
-
-            @Override
-            public String toString() {
-                return "mod " + m;
-            }
-        }
-    }
-
-    public static class ModMatrix {
-        int[][] mat;
         int n;
         int m;
+        Segment root;
+        int[] colors;
+        int[] prev;
+        int[] last;
+        int[] first;
 
-        public ModMatrix(ModMatrix model) {
-            n = model.n;
-            m = model.m;
-            mat = new int[n][m];
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    mat[i][j] = model.mat[i][j];
+        Modular mod = new Modular(998244353);
+
+        public void solve() {
+            n = io.readInt();
+            m = io.readInt();
+            colors = new int[m + 1];
+
+            for (int i = 1; i <= m; i++) {
+                colors[i] = io.readInt();
+            }
+
+            prev = new int[m + 1];
+            first = new int[n + 1];
+            last = new int[n + 1];
+            for (int i = 1; i <= m; i++) {
+                prev[i] = last[colors[i]];
+                last[colors[i]] = i;
+                if (first[colors[i]] == 0) {
+                    first[colors[i]] = i;
                 }
             }
+
+            root = new Segment(1, m, colors);
+            Node tree = build(1, m);
+
+            if (invalid) {
+                io.cache.append(0);
+                return;
+            }
+
+            dfs(tree);
+
+            io.cache.append(way);
         }
 
-        public ModMatrix(int n, int m) {
-            this.n = n;
+
+        boolean invalid;
+
+        public Node build(int l, int r) {
+            if (l > r) {
+                return Node.NIL;
+            }
+
+            int minColor = root.query(l, r, 1, m);
+            if (first[minColor] < l || last[minColor] > r) {
+                invalid = true;
+                return Node.NIL;
+            }
+
+            Node node = new Node();
+            node.l = build(l, first[minColor] - 1);
+            node.r = build(last[minColor] + 1, r);
+
+            int x = last[minColor];
+            while (prev[x] != 0) {
+                node.next.add(build(prev[x] + 1, x - 1));
+                x = prev[x];
+            }
+            return node;
+        }
+
+        int way = 1;
+
+        public void dfs(Node root) {
+            dfs0(root);
+            way = mod.mul(way, root.dp[0]);
+        }
+
+
+        public void dfs0(Node root) {
+            if (root == Node.NIL) {
+                return;
+            }
+
+            for (Node node : root.next) {
+                dfs(node);
+            }
+            dfs0(root.l);
+            dfs0(root.r);
+
+
+            for (int i = 0; i <= 500; i++) {
+                for (int j = 0; j + i + 1 <= 500; j++) {
+                    root.dp[i + j + 1] = mod.plus(root.dp[i + j + 1], mod.mul(root.l.dp[i],
+                            root.r.dp[j]));
+                }
+            }
+
+            for (int i = 500 - 1; i >= 0; i--) {
+                root.dp[i] = mod.plus(root.dp[i], root.dp[i + 1]);
+            }
+        }
+    }
+
+    /**
+     * Mod operations
+     */
+    public static class Modular {
+        int m;
+
+        public Modular(int m) {
             this.m = m;
-            mat = new int[n][m];
         }
 
-        public ModMatrix(int[][] mat) {
-            this.n = mat.length;
-            this.m = mat[0].length;
-            this.mat = mat;
-        }
-
-        public void fill(int v) {
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    mat[i][j] = v;
-                }
+        public int valueOf(int x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
             }
+            return x;
         }
 
-        public void asStandard() {
-            fill(0);
-            for (int i = 0; i < n && i < m; i++) {
-                mat[i][i] = 1;
+        public int valueOf(long x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
             }
+            return (int) x;
         }
 
-        public static ModMatrix mul(ModMatrix a, ModMatrix b, NumberTheory.Modular modular) {
-            ModMatrix c = new ModMatrix(a.n, b.m);
-            for (int i = 0; i < c.n; i++) {
-                for (int j = 0; j < c.m; j++) {
-                    for (int k = 0; k < a.m; k++) {
-                        c.mat[i][j] = modular.plus(c.mat[i][j], modular.mul(a.mat[i][k], b.mat[k][j]));
-                    }
-                }
-            }
-            return c;
+        public int mul(int x, int y) {
+            return valueOf((long) x * y);
         }
 
-        public static ModMatrix pow(ModMatrix x, long n, NumberTheory.Modular modular) {
-            if (n == 0) {
-                ModMatrix r = new ModMatrix(x.n, x.m);
-                r.asStandard();
-                return r;
-            }
-            ModMatrix r = pow(x, n >> 1, modular);
-            r = ModMatrix.mul(r, r, modular);
-            if (n % 2 == 1) {
-                r = ModMatrix.mul(r, x, modular);
-            }
-            return r;
+        public int mul(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x * y);
         }
 
-        static ModMatrix transposition(ModMatrix x, NumberTheory.Modular modular) {
-            int n = x.n;
-            int m = x.m;
-            ModMatrix t = new ModMatrix(m, n);
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    t.mat[j][i] = x.mat[i][j];
-                }
-            }
-            return t;
+        public int plus(int x, int y) {
+            return valueOf(x + y);
         }
 
+        public int plus(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x + y);
+        }
+
+        @Override
         public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    builder.append(mat[i][j]).append(' ');
-                }
-                builder.append('\n');
+            return "mod " + m;
+        }
+    }
+
+    public static class Node {
+        List<Node> next = new ArrayList<>();
+        Node l;
+        Node r;
+        int[] dp = new int[501];
+
+        public static final Node NIL = new Node();
+
+        static {
+            NIL.dp[0] = 1;
+        }
+    }
+
+    public static class Segment implements Cloneable {
+        private Segment left;
+        private Segment right;
+        int min;
+
+        public void pushUp() {
+            min = Math.min(left.min, right.min);
+        }
+
+        public void pushDown() {
+        }
+
+        public Segment(int l, int r, int[] vals) {
+            if (l < r) {
+                int m = (l + r) >> 1;
+                left = new Segment(l, m, vals);
+                right = new Segment(m + 1, r, vals);
+                pushUp();
+            } else {
+                min = vals[l];
             }
-            return builder.toString();
+        }
+
+        private boolean covered(int ll, int rr, int l, int r) {
+            return ll <= l && rr >= r;
+        }
+
+        private boolean noIntersection(int ll, int rr, int l, int r) {
+            return ll > r || rr < l;
+        }
+
+        public int query(int ll, int rr, int l, int r) {
+            if (noIntersection(ll, rr, l, r)) {
+                return Integer.MAX_VALUE;
+            }
+            if (covered(ll, rr, l, r)) {
+                return min;
+            }
+            pushDown();
+            int m = (l + r) >> 1;
+            return Math.min(left.query(ll, rr, l, m),
+                    right.query(ll, rr, m + 1, r));
         }
     }
 
