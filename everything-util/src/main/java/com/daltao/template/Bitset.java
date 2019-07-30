@@ -74,11 +74,11 @@ public class Bitset {
     }
 
     public Bitset rightShiftView(int offset) {
-        return new Bitset(this, offset);
+        return new Bitset(this, -offset);
     }
 
     public Bitset leftShiftView(int offset) {
-        return new Bitset(this, -offset);
+        return new Bitset(this, offset);
     }
 
     /**

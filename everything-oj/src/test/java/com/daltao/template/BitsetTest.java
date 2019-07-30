@@ -20,7 +20,7 @@ public class BitsetTest {
         Assertions.assertTrue(bs.leftShiftView(4).get(0));
         Assertions.assertFalse(bs.leftShiftView(1).get(0));
         Assertions.assertTrue(bs.leftShiftView(3).get(1));
-        Assertions.assertFalse(bs.rightShiftView(2).get(4));
+        Assertions.assertFalse(bs.rightShiftView(2).get(3));
     }
 
     @Test
@@ -29,6 +29,6 @@ public class BitsetTest {
         Assertions.assertTrue(Bitset.intersect(bs.leftShiftView(2), bs.leftShiftView(18)));
         Assertions.assertTrue(Bitset.intersect(bs.leftShiftView(1), bs.leftShiftView(3)));
         Assertions.assertFalse(Bitset.intersect(bs.leftShiftView(1), bs.leftShiftView(4)));
-        Assertions.assertFalse(Bitset.intersect(bs.leftShiftView(4), bs.leftShiftView(18)));
+        Assertions.assertFalse(Bitset.intersect(bs.leftShiftView(4), bs.rightShiftView(18)));
     }
 }
