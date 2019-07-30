@@ -47,7 +47,7 @@ public class Permutation {
     }
 
     /**
-     * return a * b^bp
+     * return a^ap * b^bp
      */
     public static Permutation mul(Permutation a, int ap, Permutation b, int bp) {
         int n = a.n;
@@ -58,6 +58,9 @@ public class Permutation {
         return new Permutation(p, n);
     }
 
+    /**
+     * return this^p(x)
+     */
     public int apply(int x, int p) {
         int i = idx[x];
         int dist = (i - l[i]) + p;
