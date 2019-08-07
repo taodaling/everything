@@ -62,4 +62,13 @@ public class IntDeque {
     public void reset() {
         bpos = epos = 0;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for (int i = bpos; i != epos; i = next(i)) {
+            builder.append(data[i]).append(' ');
+        }
+        return builder.toString();
+    }
 }
