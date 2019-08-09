@@ -1,7 +1,5 @@
 package com.daltao.template;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Random;
 
 
@@ -12,43 +10,14 @@ public class Treap implements Cloneable {
 
     static {
         NIL.left = NIL.right = NIL;
+        NIL.size = 0;
     }
 
     Treap left = NIL;
     Treap right = NIL;
-    int size;
+    int size = 1;
     int key;
-
-    public static Treap buildFromSortedData(int[] data, int l, int r) {
-        Deque<Treap> deque = new ArrayDeque(r - l);
-
-        for (int i = l; i < r; i++) {
-            Treap node = new Treap();
-            node.key = data[i];
-            while (!deque.isEmpty()) {
-                if (random.nextBoolean()) {
-                    Treap tail = deque.removeLast();
-                    tail.right = node.left;
-                    node.left = tail;
-                    tail.pushUp();
-                } else {
-                    break;
-                }
-            }
-
-            deque.addLast(node);
-        }
-
-        Treap last = NIL;
-        while (!deque.isEmpty()) {
-            Treap tail = deque.removeLast();
-            tail.right = last;
-            tail.pushUp();
-            last = tail;
-        }
-
-        return last;
-    }
+    int w = random.nextInt();
 
     @Override
     public Treap clone() {
@@ -92,7 +61,7 @@ public class Treap implements Cloneable {
         if (b == NIL) {
             return a;
         }
-        if (random.nextBoolean()) {
+        if (a.w <= b.w) {
             a.pushDown();
             a.right = merge(a.right, b);
             a.pushUp();
