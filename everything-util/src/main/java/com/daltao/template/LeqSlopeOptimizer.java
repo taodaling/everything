@@ -3,7 +3,7 @@ package com.daltao.template;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-public class SlopeOptimizer {
+public class LeqSlopeOptimizer {
     private static class Point {
         final long x;
         final long y;
@@ -55,5 +55,15 @@ public class SlopeOptimizer {
             }
         }
         return deque.peekFirst().id;
+    }
+
+    public void clear() {
+        deque.clear();
+    }
+
+    public void since(int id) {
+        while (!deque.isEmpty() && deque.peekFirst().id < id) {
+            deque.removeFirst();
+        }
     }
 }

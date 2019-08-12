@@ -8,6 +8,7 @@ public class ConnectionChecker {
         nodes = new LCTNode[n];
         for (int i = 0; i < n; i++) {
             nodes[i] = new LCTNode();
+            nodes[i].id = i;
             nodes[i].dieTime = Integer.MAX_VALUE;
             nodes[i].pushUp();
         }
