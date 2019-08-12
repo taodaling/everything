@@ -201,6 +201,14 @@ public class GeometryUtils {
     }
 
     /**
+     * For triangle ABC, the edge is a, b, and c. Return A as result.
+     */
+    public static double triangleAngle(double a, double b, double c) {
+        double cosa = (b * b + c * c - a * a) / (2 * b * c);
+        return Math.acos(cosa);
+    }
+
+    /**
      * 计算两个向量的叉乘
      */
     public static double cross(double x1, double y1, double x2, double y2) {

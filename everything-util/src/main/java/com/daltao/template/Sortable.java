@@ -6,7 +6,14 @@ import java.util.Comparator;
  * Created by dalt on 2018/5/20.
  */
 public class Sortable {
+    private static <T> void swap(T[] data, int i, int j) {
+        T tmp = data[i];
+        data[i] = data[j];
+        data[j] = tmp;
+    }
+
     private static final int THRESHOLD = 4;
+
     public static <T> void insertSort(T[] data, Comparator<T> cmp, int f, int t) {
         for (int i = f + 1; i < t; i++) {
             int j = i;
@@ -24,7 +31,7 @@ public class Sortable {
             insertSort(data, cmp, f, t);
             return data[f + k - 1];
         }
-        Memory.swap(data, f, Randomized.nextInt(f, t - 1));
+        swap(data, f, Randomized.nextInt(f, t - 1));
         int l = f;
         int r = t;
         int m = l + 1;
@@ -33,11 +40,11 @@ public class Sortable {
             if (c == 0) {
                 m++;
             } else if (c < 0) {
-                Memory.swap(data, l, m);
+                swap(data, l, m);
                 l++;
                 m++;
             } else {
-                Memory.swap(data, m, --r);
+                swap(data, m, --r);
             }
         }
         if (l - f >= k) {
