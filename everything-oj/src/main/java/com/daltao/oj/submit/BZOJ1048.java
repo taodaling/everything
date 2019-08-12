@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-public class BZOJ1043 {
+public class BZOJ1048 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -48,15 +48,79 @@ public class BZOJ1043 {
             solve();
         }
 
+        double[][][][][] dp = new double[11][11][11][11][11];
+
+        int a;
+        int b;
+        int n;
+
+        int[][] grids = new int[11][11];
+        double e;
+
         public void solve() {
-            int n = io.readInt();
+            a = io.readInt();
+            b = io.readInt();
+            n = io.readInt();
+            int sum = 0;
+            for (int i = 1; i <= a; i++) {
+                for (int j = 1; j <= b; j++) {
+                    grids[i][j] = io.readInt();
+                    sum += grids[i][j];
+                }
+            }
+            e = sum / (double) n;
 
+            for (int l = 1; l <= a; l++) {
+                for (int r = 1; r <= a; r++) {
+                    for (int t = 1; t <= b; t++) {
+                        for (int bo = 1; bo <= b; bo++) {
+                            for (int k = 0; k <= n; k++) {
+                                dp[l][r][t][bo][k] = -1;
+                            }
+                        }
+                    }
+                }
+            }
+
+            double ans = Math.sqrt(f(1, a, 1, b, n - 1) / n);
+            io.cache.append(String.format("%.2f", ans));
         }
-    }
 
-    public static class Region {
-        double from;
-        d
+        public double f(int l, int r, int t, int b, int k) {
+            if (k < 0 || l > r || t > b) {
+                return inf;
+            }
+            if (dp[l][r][t][b][k] == -1) {
+                if (k == 0) {
+                    int sum = 0;
+                    for (int i = l; i <= r; i++) {
+                        for (int j = t; j <= b; j++) {
+                            sum += grids[i][j];
+                        }
+                    }
+                    dp[l][r][t][b][k] = (sum - e) * (sum - e);
+                    return dp[l][r][t][b][k];
+                }
+
+                dp[l][r][t][b][k] = inf;
+                for (int k1 = 0; k - k1 - 1 >= 0; k1++) {
+                    int k2 = k - k1 - 1;
+                    for (int i = l; i < r; i++) {
+                        dp[l][r][t][b][k] =
+                                Math.min(dp[l][r][t][b][k],
+                                        f(l, i, t, b, k1)
+                                                + f(i + 1, r, t, b, k2));
+                    }
+                    for (int i = t; i < b; i++) {
+                        dp[l][r][t][b][k] =
+                                Math.min(dp[l][r][t][b][k],
+                                        f(l, r, t, i, k1)
+                                                + f(l, r, i + 1, b, k2));
+                    }
+                }
+            }
+            return dp[l][r][t][b][k];
+        }
     }
 
     public static class FastIO {
