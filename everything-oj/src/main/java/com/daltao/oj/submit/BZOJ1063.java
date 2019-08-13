@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
-public class BZOJ1057 {
+public class BZOJ1063 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -37,6 +39,8 @@ public class BZOJ1057 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
+        Modular mod;
+        static int constant;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -51,167 +55,190 @@ public class BZOJ1057 {
         public void solve() {
             int n = io.readInt();
             int m = io.readInt();
-            boolean[][] grids = new boolean[n][m];
-            int[][] spans = new int[n][m];
-            int[][] rowSpans = new int[n][m];
+            int q = io.readInt();
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    grids[i][j] = io.readInt() == 1;
+            mod = new Modular(q);
+
+            Node[] nodes = new Node[n + 1];
+            for (int i = 1; i <= n; i++) {
+                nodes[i] = new Node();
+                nodes[i].id = i;
+            }
+
+            for (int i = 1; i <= m; i++) {
+                Node a = nodes[io.readInt()];
+                Node b = nodes[io.readInt()];
+                a.next.add(b);
+                b.next.add(a);
+            }
+
+            if (m != n - 1) {
+                io.cache.append("-1\n-1");
+                return;
+            }
+
+            findConstant(nodes[1], null);
+            constant = nodes[1].dp2[2];
+            io.cache.append(constant).append('\n');
+
+            dfs(nodes[1]);
+            io.cache.append(nodes[1].dp[2][constant]);
+        }
+
+        public void findConstant(Node root, Node from) {
+            root.next.remove(from);
+            if (root.next.isEmpty()) {
+                for (int i = 0; i < 3; i++) {
+                    root.dp2[i] = 0;
+                }
+                return;
+            }
+
+            for (Node node : root.next) {
+                findConstant(node, root);
+                root.dp2[2] = Math.min(Math.max(root.dp2[2], node.dp2[2] + 1),
+                        Math.max(node.dp2[1], root.dp2[1]));
+                root.dp2[1] = Math.min(Math.max(root.dp2[1], node.dp2[2] + 1), Math.max(node.dp2[1], root.dp2[0]));
+                root.dp2[0] = Math.max(root.dp2[0], node.dp2[2] + 1);
+            }
+
+            for (int i = 1; i < 3; i++) {
+                root.dp2[i] = Math.min(root.dp2[i], root.dp2[i - 1]);
+            }
+        }
+
+        public void dfs(Node root) {
+            if (root.next.isEmpty()) {
+                for (int i = 0; i < 3; i++) {
+                    Arrays.fill(root.dp[i], 1);
+                }
+                return;
+            }
+
+            for (Node node : root.next) {
+                dfs(node);
+            }
+
+            //calc dp[0]
+            for (int i = 1; i <= constant; i++) {
+                root.dp[0][i] = 1;
+            }
+            for (Node node : root.next) {
+                for (int i = 1; i <= constant; i++) {
+                    root.dp[0][i] = mod.mul(root.dp[0][i], node.dp[2][i - 1]);
                 }
             }
 
-            for (int i = 0; i < n; i++) {
-                spans[i][m - 1] = 1;
-                for (int j = m - 2; j >= 0; j--) {
-                    if (grids[i][j] == grids[i][j + 1]) {
-                        spans[i][j] = 1;
-                    } else {
-                        spans[i][j] = spans[i][j + 1] + 1;
-                    }
+            //calc dp[1]
+            for (int i = 1; i <= constant; i++) {
+                int preProd = 1;
+                int ans = 0;
+                for (Node node : root.next) {
+                    ans = mod.mul(ans, node.dp[2][i - 1]);
+                    ans = mod.plus(ans, mod.mul(preProd, node.dp[1][i]));
+                    preProd = mod.mul(preProd, node.dp[2][i - 1]);
                 }
+                root.dp[1][i] = ans;
             }
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    rowSpans[i][j] = 1;
-                }
+            if (root.next.size() == 1) {
+                root.dp[1][0] = root.next.get(0).dp[1][0];
             }
 
-            int originRow;
-            IntDeque increasing = new IntDeque(m);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(0);
-                originRow = 0;
-                for (int i = 1; i < n; i++) {
-                    if (grids[i][j] == grids[i - 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (i - originRow);
-                    } else {
-                        rowSpans[i][j] += (i - increasing.peekLast() - 1);
-                    }
-                    increasing.addLast(i);
+            //calc dp[2]
+            for (int i = 1; i <= constant; i++) {
+                int preProd = 1;
+                int ans1 = 0;
+                int ans2 = 0;
+                for (Node node : root.next) {
+                    ans2 = mod.mul(ans2, node.dp[2][i - 1]);
+                    ans2 = mod.plus(ans2, mod.mul(ans1, node.dp[1][i]));
+                    ans1 = mod.mul(ans1, node.dp[2][i - 1]);
+                    ans1 = mod.plus(ans1, mod.mul(preProd, node.dp[1][i]));
+                    preProd = mod.mul(preProd, node.dp[2][i - 1]);
                 }
+                root.dp[2][i] = ans2;
             }
 
-            debug.debug("rowSpan", rowSpans);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(n - 1);
-                originRow = n - 1;
-                for (int i = n - 2; i >= 0; i--) {
-                    if (grids[i][j] == grids[i + 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (originRow - i);
-                    } else {
-                        rowSpans[i][j] += (increasing.peekLast() - 1 - i);
-                    }
-                    increasing.addLast(i);
-                }
+            if (root.next.size() == 2) {
+                root.dp[2][0] =
+                        mod.mul(root.next.get(0).dp[1][0],
+                                root.next.get(1).dp[1][0]);
             }
 
-            int largestSquareArea = 1;
-            int largestRectArea = 1;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    int squareLen = Math.min(rowSpans[i][j], spans[i][j]);
-                    largestSquareArea = Math.max(largestSquareArea, squareLen * squareLen);
-                    largestRectArea = Math.max(largestRectArea, spans[i][j] * rowSpans[i][j]);
+            for (int i = 1; i < 3; i++) {
+                for (int j = 0; j <= constant; j++) {
+                    root.dp[i][j] = mod.plus(root.dp[i][j], root.dp[i - 1][j]);
                 }
             }
-
-            debug.debug("span", spans);
-            debug.debug("rowSpan", rowSpans);
-            io.cache.append(largestSquareArea).append('\n').append(largestRectArea);
         }
     }
 
-    public static class IntDeque {
-        int[] data;
-        int bpos;
-        int epos;
-        int cap;
+    public static class Node {
+        List<Node> next = new ArrayList(1);
+        boolean visited;
+        int[][] dp = new int[3][20];
+        int[] dp2 = new int[3];
+        int id;
 
-        public IntDeque(int cap) {
-            this.cap = cap + 1;
-            this.data = new int[this.cap];
+        @Override
+        public String toString() {
+            return "" + id;
+        }
+    }
+
+
+    /**
+     * Mod operations
+     */
+    public static class Modular {
+        int m;
+
+        public Modular(int m) {
+            this.m = m;
         }
 
-        public int size() {
-            int s = epos - bpos;
-            if (s < 0) {
-                s += cap;
+        public int valueOf(int x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
             }
-            return s;
+            return x;
         }
 
-        public boolean isEmpty() {
-            return epos == bpos;
+        public int valueOf(long x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
+            }
+            return (int) x;
         }
 
-        public int peekFirst() {
-            return data[bpos];
+        public int mul(int x, int y) {
+            return valueOf((long) x * y);
         }
 
-        private int last(int i) {
-            return (i == 0 ? cap : i) - 1;
+        public int mul(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x * y);
         }
 
-        private int next(int i) {
-            int n = i + 1;
-            return n == cap ? 0 : n;
+        public int plus(int x, int y) {
+            return valueOf(x + y);
         }
 
-        public int peekLast() {
-            return data[last(epos)];
-        }
-
-        public int removeFirst() {
-            int t = bpos;
-            bpos = next(bpos);
-            return data[t];
-        }
-
-        public int removeLast() {
-            return data[epos = last(epos)];
-        }
-
-        public void addLast(int val) {
-            data[epos] = val;
-            epos = next(epos);
-        }
-
-        public void addFirst(int val) {
-            data[bpos = last(bpos)] = val;
-        }
-
-        public void reset() {
-            bpos = epos = 0;
+        public int plus(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x + y);
         }
 
         @Override
         public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = bpos; i != epos; i = next(i)) {
-                builder.append(data[i]).append(' ');
-            }
-            return builder.toString();
+            return "mod " + m;
         }
     }
-
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder(1 << 13);

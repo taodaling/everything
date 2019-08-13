@@ -6,8 +6,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.TreeSet;
 
-public class BZOJ1057 {
+public class BZOJ1058 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -36,7 +37,7 @@ public class BZOJ1057 {
     public static class Task implements Runnable {
         final FastIO io;
         final Debug debug;
-        int inf = (int) 1e8;
+        int inf = (int) 1e9;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -49,166 +50,128 @@ public class BZOJ1057 {
         }
 
         public void solve() {
+            TreeSet<Integer> valueSet = new TreeSet();
+            char[] cmd = new char[128];
             int n = io.readInt();
             int m = io.readInt();
-            boolean[][] grids = new boolean[n][m];
-            int[][] spans = new int[n][m];
-            int[][] rowSpans = new int[n][m];
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    grids[i][j] = io.readInt() == 1;
+            int minGap = inf;
+            int minSortGap = inf;
+            int[] head = new int[n + 1];
+            int[] tail = new int[n + 1];
+            for (int i = 1; i <= n; i++) {
+                int x = io.readInt();
+                if (valueSet.contains(x)) {
+                    minSortGap = 0;
                 }
+                valueSet.add(x);
+                head[i] = tail[i] = x;
             }
 
-            for (int i = 0; i < n; i++) {
-                spans[i][m - 1] = 1;
-                for (int j = m - 2; j >= 0; j--) {
-                    if (grids[i][j] == grids[i][j + 1]) {
-                        spans[i][j] = 1;
-                    } else {
-                        spans[i][j] = spans[i][j + 1] + 1;
-                    }
-                }
+            int[] diff = new int[n];
+            for (int i = 1; i < n; i++) {
+                diff[i] = Math.abs(tail[i] - head[i + 1]);
             }
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    rowSpans[i][j] = 1;
+            Segment segment = n > 1 ? new Segment(1, n - 1, diff)
+                    : new Segment(1, 1, new int[2]);
+            Integer last = null;
+            for (Integer value : valueSet) {
+                if (last == null) {
+                    last = value;
+                    continue;
                 }
+                minSortGap = Math.min(minSortGap, Math.abs(last - value));
+                last = value;
             }
 
-            int originRow;
-            IntDeque increasing = new IntDeque(m);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(0);
-                originRow = 0;
-                for (int i = 1; i < n; i++) {
-                    if (grids[i][j] == grids[i - 1][j]) {
-                        increasing.reset();
-                        originRow = i;
+            for (int i = 1; i <= m; i++) {
+                io.readString(cmd, 0);
+                if (cmd[0] == 'I') {
+                    int index = io.readInt();
+                    int x = io.readInt();
+                    minGap = Math.min(minGap, Math.abs(x - tail[index]));
+                    tail[index] = x;
+                    if (index < n) {
+                        segment.update(index, index, 1, n - 1, Math.abs(tail[index] - head[index + 1]));
                     }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
+                    Integer floor = valueSet.floor(x);
+                    Integer ceil = valueSet.ceiling(x);
+                    if (floor != null) {
+                        minSortGap = Math.min(minSortGap, x - floor);
                     }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (i - originRow);
-                    } else {
-                        rowSpans[i][j] += (i - increasing.peekLast() - 1);
+                    if (ceil != null) {
+                        minSortGap = Math.min(minSortGap, ceil - x);
                     }
-                    increasing.addLast(i);
+                    valueSet.add(x);
+                } else if (cmd[4] == 'G') {
+                    int ans = Math.min(minGap, segment.query(1, n - 1, 1, n - 1));
+                    io.cache.append(ans).append('\n');
+                } else {
+                    io.cache.append(minSortGap).append('\n');
                 }
             }
-
-            debug.debug("rowSpan", rowSpans);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(n - 1);
-                originRow = n - 1;
-                for (int i = n - 2; i >= 0; i--) {
-                    if (grids[i][j] == grids[i + 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (originRow - i);
-                    } else {
-                        rowSpans[i][j] += (increasing.peekLast() - 1 - i);
-                    }
-                    increasing.addLast(i);
-                }
-            }
-
-            int largestSquareArea = 1;
-            int largestRectArea = 1;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    int squareLen = Math.min(rowSpans[i][j], spans[i][j]);
-                    largestSquareArea = Math.max(largestSquareArea, squareLen * squareLen);
-                    largestRectArea = Math.max(largestRectArea, spans[i][j] * rowSpans[i][j]);
-                }
-            }
-
-            debug.debug("span", spans);
-            debug.debug("rowSpan", rowSpans);
-            io.cache.append(largestSquareArea).append('\n').append(largestRectArea);
         }
+
     }
 
-    public static class IntDeque {
-        int[] data;
-        int bpos;
-        int epos;
-        int cap;
+    public static class Segment implements Cloneable {
+        private Segment left;
+        private Segment right;
+        private int min;
 
-        public IntDeque(int cap) {
-            this.cap = cap + 1;
-            this.data = new int[this.cap];
+        public void pushUp() {
+            min = Math.min(left.min, right.min);
         }
 
-        public int size() {
-            int s = epos - bpos;
-            if (s < 0) {
-                s += cap;
+        public void pushDown() {
+        }
+
+        public Segment(int l, int r, int[] vals) {
+            if (l < r) {
+                int m = (l + r) >> 1;
+                left = new Segment(l, m, vals);
+                right = new Segment(m + 1, r, vals);
+                pushUp();
+            } else {
+                min = vals[l];
             }
-            return s;
         }
 
-        public boolean isEmpty() {
-            return epos == bpos;
+        private boolean covered(int ll, int rr, int l, int r) {
+            return ll <= l && rr >= r;
         }
 
-        public int peekFirst() {
-            return data[bpos];
+        private boolean noIntersection(int ll, int rr, int l, int r) {
+            return ll > r || rr < l;
         }
 
-        private int last(int i) {
-            return (i == 0 ? cap : i) - 1;
-        }
-
-        private int next(int i) {
-            int n = i + 1;
-            return n == cap ? 0 : n;
-        }
-
-        public int peekLast() {
-            return data[last(epos)];
-        }
-
-        public int removeFirst() {
-            int t = bpos;
-            bpos = next(bpos);
-            return data[t];
-        }
-
-        public int removeLast() {
-            return data[epos = last(epos)];
-        }
-
-        public void addLast(int val) {
-            data[epos] = val;
-            epos = next(epos);
-        }
-
-        public void addFirst(int val) {
-            data[bpos = last(bpos)] = val;
-        }
-
-        public void reset() {
-            bpos = epos = 0;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = bpos; i != epos; i = next(i)) {
-                builder.append(data[i]).append(' ');
+        public void update(int ll, int rr, int l, int r, int x) {
+            if (noIntersection(ll, rr, l, r)) {
+                return;
             }
-            return builder.toString();
+            if (covered(ll, rr, l, r)) {
+                min = x;
+                return;
+            }
+            pushDown();
+            int m = (l + r) >> 1;
+            left.update(ll, rr, l, m, x);
+            right.update(ll, rr, m + 1, r, x);
+            pushUp();
+        }
+
+        public int query(int ll, int rr, int l, int r) {
+            if (noIntersection(ll, rr, l, r)) {
+                return Integer.MAX_VALUE;
+            }
+            if (covered(ll, rr, l, r)) {
+                return min;
+            }
+            pushDown();
+            int m = (l + r) >> 1;
+            return Math.min(left.query(ll, rr, l, m),
+                    right.query(ll, rr, m + 1, r));
         }
     }
 
