@@ -227,7 +227,11 @@ public class GeometryUtils {
     }
 
     public static class GrahamScan {
-        PointConvexHull convex;
+        private PointConvexHull convex;
+
+        public PointConvexHull getConvex() {
+            return convex;
+        }
 
         public GrahamScan(PointPolygon pointPolygon) {
             final Point2D[] points = pointPolygon.data.toArray(new Point2D[0]);
