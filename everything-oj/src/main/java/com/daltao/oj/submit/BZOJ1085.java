@@ -5,9 +5,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-public class BZOJ1057 {
+public class BZOJ1085 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -37,6 +43,7 @@ public class BZOJ1057 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
+        BitOperator bitOperator = new BitOperator();
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -45,170 +52,221 @@ public class BZOJ1057 {
 
         @Override
         public void run() {
-            solve();
+            int t = io.readInt();
+            while (t-- > 0)
+                solve();
         }
 
         public void solve() {
-            int n = io.readInt();
-            int m = io.readInt();
-            boolean[][] grids = new boolean[n][m];
-            int[][] spans = new int[n][m];
-            int[][] rowSpans = new int[n][m];
+            char[][] map = new char[5][5];
+            for (int i = 0; i < 5; i++) {
+                io.readString(map[i], 0);
+            }
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    grids[i][j] = io.readInt() == 1;
+//            int status = valueOf(map);
+//            if (possible.containsKey(status)) {
+//                io.cache.append(possible.get(status)).append('\n');
+//                return;
+//            } else {
+//                io.cache.append(-1).append('\n');
+//                return;
+//            }
+
+            Set<Integer> dist = new HashSet(10000);
+            {
+                int status = valueOf(map);
+                if (possible.containsKey(status)) {
+                    io.cache.append(possible.get(status)).append('\n');
+                    return;
+                }
+
+
+                deques[0].clear();
+                deques[1].clear();
+                deques[0].addLast(status);
+                dist.add(deques[0].peekFirst());
+            }
+
+            int ans = 100;
+            for (int i = 0; i <= 3; i++) {
+                while (!deques[i & 1].isEmpty()) {
+                    Integer status = deques[i & 1].pollFirst();
+                    int board = boardOf(status);
+                    int r = rowOf(status);
+                    int c = columnOf(status);
+                    int centerId = r * 5 + c;
+                    for (int[] way : ways) {
+                        int nr = r + way[0];
+                        int nc = c + way[1];
+                        if (nr < 0 || nr >= 5 || nc < 0 || nc >= 5) {
+                            continue;
+                        }
+                        int whichCeil = nr * 5 + nc;
+                        Integer ns = valueOf(bitOperator.setBit(bitOperator.setBit(board, centerId, bitOperator.bitAt(status, whichCeil) == 1), whichCeil, false), nr, nc);
+                        if (dist.contains(ns)) {
+                            continue;
+                        }
+                        dist.add(ns);
+                        if (possible.containsKey(ns)) {
+                            ans = Math.min(ans, possible.get(ns) + i + 1);
+                        }
+                        deques[(i & 1) ^ 1].addLast(ns);
+                    }
                 }
             }
 
-            for (int i = 0; i < n; i++) {
-                spans[i][m - 1] = 1;
-                for (int j = m - 2; j >= 0; j--) {
-                    if (grids[i][j] == grids[i][j + 1]) {
-                        spans[i][j] = 1;
-                    } else {
-                        spans[i][j] = spans[i][j + 1] + 1;
-                    }
-                }
+            if (ans > 15) {
+                io.cache.append(-1).append('\n');
+            } else {
+                io.cache.append(ans).append('\n');
             }
-
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    rowSpans[i][j] = 1;
-                }
-            }
-
-            int originRow;
-            IntDeque increasing = new IntDeque(m);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(0);
-                originRow = 0;
-                for (int i = 1; i < n; i++) {
-                    if (grids[i][j] == grids[i - 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (i - originRow);
-                    } else {
-                        rowSpans[i][j] += (i - increasing.peekLast() - 1);
-                    }
-                    increasing.addLast(i);
-                }
-            }
-
-            debug.debug("rowSpan", rowSpans);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(n - 1);
-                originRow = n - 1;
-                for (int i = n - 2; i >= 0; i--) {
-                    if (grids[i][j] == grids[i + 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (originRow - i);
-                    } else {
-                        rowSpans[i][j] += (increasing.peekLast() - 1 - i);
-                    }
-                    increasing.addLast(i);
-                }
-            }
-
-            int largestSquareArea = 1;
-            int largestRectArea = 1;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    int squareLen = Math.min(rowSpans[i][j], spans[i][j]);
-                    largestSquareArea = Math.max(largestSquareArea, squareLen * squareLen);
-                    largestRectArea = Math.max(largestRectArea, spans[i][j] * rowSpans[i][j]);
-                }
-            }
-
-            debug.debug("span", spans);
-            debug.debug("rowSpan", rowSpans);
-            io.cache.append(largestSquareArea).append('\n').append(largestRectArea);
         }
+
+        Map<Integer, Integer> possible = new HashMap(700000);
+        Deque<Integer>[] deques = new ArrayDeque[2];
+        int[][] ways = new int[][]{
+                {2, 1},
+                {2, -1},
+                {-2, 1},
+                {-2, -1},
+                {1, 2},
+                {-1, 2},
+                {1, -2},
+                {-1, -2}
+        };
+
+        {
+            char[][] success = new char[][]{
+                    {'1', '1', '1', '1', '1'},
+                    {'0', '1', '1', '1', '1'},
+                    {'0', '0', '*', '1', '1'},
+                    {'0', '0', '0', '0', '1'},
+                    {'0', '0', '0', '0', '0'}
+            };
+
+
+            for (int i = 0; i < 2; i++) {
+                deques[i] = new ArrayDeque(1000000);
+            }
+            deques[0].add(valueOf(success));
+            possible.put(deques[0].peekFirst(), 0);
+            for (int i = 0; i <= 10; i++) {
+                while (!deques[i & 1].isEmpty()) {
+                    Integer status = deques[i & 1].pollFirst();
+                    int board = boardOf(status);
+                    int r = rowOf(status);
+                    int c = columnOf(status);
+                    int centerId = r * 5 + c;
+                    for (int[] way : ways) {
+                        int nr = r + way[0];
+                        int nc = c + way[1];
+                        if (nr < 0 || nr >= 5 || nc < 0 || nc >= 5) {
+                            continue;
+                        }
+                        int whichCeil = nr * 5 + nc;
+                        Integer ns = valueOf(bitOperator.setBit(bitOperator.setBit(board, centerId, bitOperator.bitAt(status, whichCeil) == 1), whichCeil, false), nr, nc);
+                        if (possible.containsKey(ns)) {
+                            continue;
+                        }
+                        possible.put(ns, i + 1);
+                        deques[(i & 1) ^ 1].addLast(ns);
+                    }
+                }
+            }
+        }
+
+
+        public int centerOf(int status) {
+            return status >> 25;
+        }
+
+        public int rowOf(int status) {
+            return centerOf(status) / 5;
+        }
+
+        public int columnOf(int status) {
+            return centerOf(status) % 5;
+        }
+
+        public int boardOf(int status) {
+            return status & ((1 << 25) - 1);
+        }
+
+        public int valueOf(char[][] board) {
+            int r = -1;
+            int c = -1;
+            int b = 0;
+            for (int i = 0; i < 5; i++) {
+                for (int j = 0; j < 5; j++) {
+                    if (board[i][j] == '*') {
+                        r = i;
+                        c = j;
+                        continue;
+                    }
+                    b = bitOperator.setBit(b, i * 5 + j, board[i][j] == '1');
+                }
+            }
+            return valueOf(b, r, c);
+        }
+
+        public int valueOf(int board, int x, int y) {
+            int id = x * 5 + y;
+            return (id << 25) | board;
+        }
+
+
     }
 
-    public static class IntDeque {
-        int[] data;
-        int bpos;
-        int epos;
-        int cap;
-
-        public IntDeque(int cap) {
-            this.cap = cap + 1;
-            this.data = new int[this.cap];
+    /**
+     * Bit operations
+     */
+    public static class BitOperator {
+        public int bitAt(int x, int i) {
+            return (x >> i) & 1;
         }
 
-        public int size() {
-            int s = epos - bpos;
-            if (s < 0) {
-                s += cap;
+        public int bitAt(long x, int i) {
+            return (int) ((x >> i) & 1);
+        }
+
+        public int setBit(int x, int i, boolean v) {
+            if (v) {
+                x |= 1 << i;
+            } else {
+                x &= ~(1 << i);
             }
-            return s;
+            return x;
         }
 
-        public boolean isEmpty() {
-            return epos == bpos;
-        }
-
-        public int peekFirst() {
-            return data[bpos];
-        }
-
-        private int last(int i) {
-            return (i == 0 ? cap : i) - 1;
-        }
-
-        private int next(int i) {
-            int n = i + 1;
-            return n == cap ? 0 : n;
-        }
-
-        public int peekLast() {
-            return data[last(epos)];
-        }
-
-        public int removeFirst() {
-            int t = bpos;
-            bpos = next(bpos);
-            return data[t];
-        }
-
-        public int removeLast() {
-            return data[epos = last(epos)];
-        }
-
-        public void addLast(int val) {
-            data[epos] = val;
-            epos = next(epos);
-        }
-
-        public void addFirst(int val) {
-            data[bpos = last(bpos)] = val;
-        }
-
-        public void reset() {
-            bpos = epos = 0;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = bpos; i != epos; i = next(i)) {
-                builder.append(data[i]).append(' ');
+        public long setBit(long x, int i, boolean v) {
+            if (v) {
+                x |= 1L << i;
+            } else {
+                x &= ~(1L << i);
             }
-            return builder.toString();
+            return x;
+        }
+
+        /**
+         * Determine whether x is subset of y
+         */
+        public boolean subset(long x, long y) {
+            return intersect(x, y) == x;
+        }
+
+        /**
+         * Merge two set
+         */
+        public long merge(long x, long y) {
+            return x | y;
+        }
+
+        public long intersect(long x, long y) {
+            return x & y;
+        }
+
+        public long differ(long x, long y) {
+            return x - intersect(x, y);
         }
     }
 

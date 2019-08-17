@@ -5,9 +5,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
-public class BZOJ1057 {
+public class BZOJ1098 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -51,167 +56,173 @@ public class BZOJ1057 {
         public void solve() {
             int n = io.readInt();
             int m = io.readInt();
-            boolean[][] grids = new boolean[n][m];
-            int[][] spans = new int[n][m];
-            int[][] rowSpans = new int[n][m];
-
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    grids[i][j] = io.readInt() == 1;
-                }
+            Node[] nodes = new Node[n + 1];
+            for (int i = 1; i <= n; i++) {
+                nodes[i] = new Node();
+                nodes[i].id = i;
+            }
+            Chain chain = new Chain();
+            for (int i = 1; i <= n; i++) {
+                chain.add(nodes[i]);
+            }
+            Set<Long> edges = new HashSet(m);
+            for (int i = 0; i < m; i++) {
+                Node a = nodes[io.readInt()];
+                Node b = nodes[io.readInt()];
+                edges.add(idOfEdge(a, b));
             }
 
-            for (int i = 0; i < n; i++) {
-                spans[i][m - 1] = 1;
-                for (int j = m - 2; j >= 0; j--) {
-                    if (grids[i][j] == grids[i][j + 1]) {
-                        spans[i][j] = 1;
-                    } else {
-                        spans[i][j] = spans[i][j + 1] + 1;
+            Deque<Node> deque = new ArrayDeque(n);
+            int time = 0;
+            int[] alloc = new int[n];
+            while (chain.getHead() != null) {
+                deque.addLast(chain.getHead());
+                chain.remove(chain.getHead());
+                int cnt = 0;
+                while (!deque.isEmpty()) {
+                    cnt++;
+                    Node head = deque.removeFirst();
+                    for (Node iter = chain.head; iter != null; ) {
+                        if (!edges.contains(idOfEdge(head, iter))) {
+                            deque.addLast(iter);
+                            iter = chain.next(iter);
+                            chain.remove(deque.peekLast());
+                            continue;
+                        }
+                        iter = chain.next(iter);
                     }
                 }
+                alloc[time] = cnt;
+                time++;
             }
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    rowSpans[i][j] = 1;
-                }
+            Randomized.randomizedArray(alloc, 0, time);
+            Arrays.sort(alloc, 0, time);
+            io.cache.append(time).append('\n');
+            for (int i = 0; i < time; i++) {
+                io.cache.append(alloc[i]).append(' ');
             }
+        }
 
-            int originRow;
-            IntDeque increasing = new IntDeque(m);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(0);
-                originRow = 0;
-                for (int i = 1; i < n; i++) {
-                    if (grids[i][j] == grids[i - 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (i - originRow);
-                    } else {
-                        rowSpans[i][j] += (i - increasing.peekLast() - 1);
-                    }
-                    increasing.addLast(i);
-                }
+        public long idOfEdge(Node a, Node b) {
+            if (a.id > b.id) {
+                return (((long) a.id) << 32) | b.id;
             }
-
-            debug.debug("rowSpan", rowSpans);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(n - 1);
-                originRow = n - 1;
-                for (int i = n - 2; i >= 0; i--) {
-                    if (grids[i][j] == grids[i + 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (originRow - i);
-                    } else {
-                        rowSpans[i][j] += (increasing.peekLast() - 1 - i);
-                    }
-                    increasing.addLast(i);
-                }
-            }
-
-            int largestSquareArea = 1;
-            int largestRectArea = 1;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    int squareLen = Math.min(rowSpans[i][j], spans[i][j]);
-                    largestSquareArea = Math.max(largestSquareArea, squareLen * squareLen);
-                    largestRectArea = Math.max(largestRectArea, spans[i][j] * rowSpans[i][j]);
-                }
-            }
-
-            debug.debug("span", spans);
-            debug.debug("rowSpan", rowSpans);
-            io.cache.append(largestSquareArea).append('\n').append(largestRectArea);
+            return (((long) b.id) << 32) | a.id;
         }
     }
 
-    public static class IntDeque {
-        int[] data;
-        int bpos;
-        int epos;
-        int cap;
 
-        public IntDeque(int cap) {
-            this.cap = cap + 1;
-            this.data = new int[this.cap];
+    /**
+     * Created by dalt on 2018/6/1.
+     */
+    public static class Randomized {
+        static Random random = new Random();
+
+        public static double nextDouble(double min, double max) {
+            return random.nextDouble() * (max - min) + min;
         }
 
-        public int size() {
-            int s = epos - bpos;
-            if (s < 0) {
-                s += cap;
+        public static void randomizedArray(int[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                int tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
             }
-            return s;
         }
 
-        public boolean isEmpty() {
-            return epos == bpos;
-        }
-
-        public int peekFirst() {
-            return data[bpos];
-        }
-
-        private int last(int i) {
-            return (i == 0 ? cap : i) - 1;
-        }
-
-        private int next(int i) {
-            int n = i + 1;
-            return n == cap ? 0 : n;
-        }
-
-        public int peekLast() {
-            return data[last(epos)];
-        }
-
-        public int removeFirst() {
-            int t = bpos;
-            bpos = next(bpos);
-            return data[t];
-        }
-
-        public int removeLast() {
-            return data[epos = last(epos)];
-        }
-
-        public void addLast(int val) {
-            data[epos] = val;
-            epos = next(epos);
-        }
-
-        public void addFirst(int val) {
-            data[bpos = last(bpos)] = val;
-        }
-
-        public void reset() {
-            bpos = epos = 0;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = bpos; i != epos; i = next(i)) {
-                builder.append(data[i]).append(' ');
+        public static void randomizedArray(long[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                long tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
             }
-            return builder.toString();
+        }
+
+        public static void randomizedArray(double[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                double tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static void randomizedArray(float[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                float tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static <T> void randomizedArray(T[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                T tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
+        }
+
+        public static int nextInt(int l, int r) {
+            return random.nextInt(r - l + 1) + l;
         }
     }
 
+
+    public static class Chain {
+        Node head;
+        Node tail;
+
+        public Node next(Node node) {
+            return node.next;
+        }
+
+        public Node getHead() {
+            return head;
+        }
+
+        public void add(Node node) {
+            if (head == null) {
+                head = tail = node;
+                return;
+            }
+            tail.next = node;
+            node.prev = tail;
+            tail = node;
+        }
+
+        public void remove(Node node) {
+            if (node == head) {
+                head = node.next;
+            }
+            if (node == tail) {
+                tail = node.prev;
+            }
+            if (node.prev != null) {
+                node.prev.next = node.next;
+            }
+            if (node.next != null) {
+                node.next.prev = node.prev;
+            }
+            node.prev = node.next = null;
+        }
+    }
+
+    public static class Node {
+        Node prev;
+        Node next;
+        int id;
+    }
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder(1 << 13);

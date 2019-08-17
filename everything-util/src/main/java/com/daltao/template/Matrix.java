@@ -5,6 +5,14 @@ public class Matrix implements Cloneable {
     int n;
     int m;
 
+    public void set(int i, int j, double val) {
+        mat[i][j] = val;
+    }
+
+    public double get(int i, int j) {
+        return mat[i][j];
+    }
+
     public Matrix(Matrix model) {
         n = model.n;
         m = model.m;
@@ -37,8 +45,8 @@ public class Matrix implements Cloneable {
         }
     }
 
-    public static Matrix mul(Matrix a, Matrix b) {
-        Matrix c = new Matrix(a.n, b.m);
+    public static Matrix mul(Matrix a, Matrix b, Matrix c) {
+        c.fill(0);
         for (int i = 0; i < c.n; i++) {
             for (int j = 0; j < c.m; j++) {
                 for (int k = 0; k < a.m; k++) {
@@ -47,6 +55,11 @@ public class Matrix implements Cloneable {
             }
         }
         return c;
+    }
+
+    public static Matrix mul(Matrix a, Matrix b) {
+        Matrix c = new Matrix(a.n, b.m);
+        return mul(a, b, c);
     }
 
     public static Matrix pow(Matrix x, int n) {

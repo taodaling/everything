@@ -5,9 +5,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
+import java.util.List;
 
-public class BZOJ1057 {
+public class BZOJ1064 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -48,170 +52,139 @@ public class BZOJ1057 {
             solve();
         }
 
+
+        int loop = inf;
+
         public void solve() {
             int n = io.readInt();
             int m = io.readInt();
-            boolean[][] grids = new boolean[n][m];
-            int[][] spans = new int[n][m];
-            int[][] rowSpans = new int[n][m];
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    grids[i][j] = io.readInt() == 1;
+            Node[] nodes = new Node[n + 1];
+            for (int i = 1; i <= n; i++) {
+                nodes[i] = new Node();
+                nodes[i].id = i;
+            }
+            for (int i = 1; i <= m; i++) {
+                Node a = nodes[io.readInt()];
+                Node b = nodes[io.readInt()];
+                a.next.add(b);
+                b.former.add(a);
+                Node.merge(a, b);
+            }
+
+            Deque<Node> deque = new ArrayDeque<>();
+            for (int i = 1; i <= n; i++) {
+                if (searchLoop(nodes[i], deque)) {
+                    loop = deque.size();
+                    break;
                 }
             }
 
-            for (int i = 0; i < n; i++) {
-                spans[i][m - 1] = 1;
-                for (int j = m - 2; j >= 0; j--) {
-                    if (grids[i][j] == grids[i][j + 1]) {
-                        spans[i][j] = 1;
-                    } else {
-                        spans[i][j] = spans[i][j + 1] + 1;
-                    }
+            boolean valid = true;
+            int minBlock = 0;
+            int maxBlock = 0;
+
+            for (int i = 1; i <= n; i++) {
+                Node node = nodes[i];
+                if (node.find() != node) {
+                    continue;
                 }
+                paint(node, 0, node);
+                valid = valid && node.valid;
+                int range = node.max - node.min + 1;
+                if (range > loop) {
+                    valid = false;
+                }
+                minBlock = Math.max(minBlock, range);
+                maxBlock += range;
             }
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    rowSpans[i][j] = 1;
+
+        }
+
+        public boolean searchLoop(Node root, Deque<Node> deque) {
+            if (root.visited) {
+                if (!root.instk) {
+                    return false;
+                }
+                while (deque.peekFirst() != root) {
+                    deque.removeFirst();
+                }
+                return true;
+            }
+            for (Node node : root.next) {
+                if (searchLoop(node, deque)) {
+                    return true;
                 }
             }
+            return false;
+        }
 
-            int originRow;
-            IntDeque increasing = new IntDeque(m);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(0);
-                originRow = 0;
-                for (int i = 1; i < n; i++) {
-                    if (grids[i][j] == grids[i - 1][j]) {
-                        increasing.reset();
-                        originRow = i;
+        public void paint(Node root, int val, Node recorder) {
+            if (root.visited) {
+                if (root.val != val) {
+                    if (Math.abs(root.val - val) != loop) {
+                        recorder.valid = false;
                     }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (i - originRow);
-                    } else {
-                        rowSpans[i][j] += (i - increasing.peekLast() - 1);
-                    }
-                    increasing.addLast(i);
                 }
+                return;
             }
+            root.visited = true;
+            root.val = val;
+            recorder.min = Math.min(recorder.min, root.val);
+            recorder.max = Math.max(recorder.max, root.val);
 
-            debug.debug("rowSpan", rowSpans);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(n - 1);
-                originRow = n - 1;
-                for (int i = n - 2; i >= 0; i--) {
-                    if (grids[i][j] == grids[i + 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (originRow - i);
-                    } else {
-                        rowSpans[i][j] += (increasing.peekLast() - 1 - i);
-                    }
-                    increasing.addLast(i);
-                }
+            for (Node next : root.next) {
+                paint(next, val + 1, recorder);
             }
-
-            int largestSquareArea = 1;
-            int largestRectArea = 1;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    int squareLen = Math.min(rowSpans[i][j], spans[i][j]);
-                    largestSquareArea = Math.max(largestSquareArea, squareLen * squareLen);
-                    largestRectArea = Math.max(largestRectArea, spans[i][j] * rowSpans[i][j]);
-                }
+            for (Node former : root.former) {
+                paint(former, val - 1, recorder);
             }
-
-            debug.debug("span", spans);
-            debug.debug("rowSpan", rowSpans);
-            io.cache.append(largestSquareArea).append('\n').append(largestRectArea);
         }
     }
 
-    public static class IntDeque {
-        int[] data;
-        int bpos;
-        int epos;
-        int cap;
+    public static class Node {
+        List<Node> next = new ArrayList(1);
+        List<Node> former = new ArrayList(1);
 
-        public IntDeque(int cap) {
-            this.cap = cap + 1;
-            this.data = new int[this.cap];
+        int id;
+
+        int val;
+        boolean visited;
+        boolean instk;
+
+        Node p = this;
+        int rank;
+
+        int min;
+        int max;
+        boolean valid = true;
+
+        int size = 1;
+
+
+        public Node find() {
+            return p == p.p ? p : (p = p.find());
         }
 
-        public int size() {
-            int s = epos - bpos;
-            if (s < 0) {
-                s += cap;
+        public static void merge(Node a, Node b) {
+            a = a.find();
+            b = b.find();
+            if (a == b) {
+                return;
             }
-            return s;
-        }
-
-        public boolean isEmpty() {
-            return epos == bpos;
-        }
-
-        public int peekFirst() {
-            return data[bpos];
-        }
-
-        private int last(int i) {
-            return (i == 0 ? cap : i) - 1;
-        }
-
-        private int next(int i) {
-            int n = i + 1;
-            return n == cap ? 0 : n;
-        }
-
-        public int peekLast() {
-            return data[last(epos)];
-        }
-
-        public int removeFirst() {
-            int t = bpos;
-            bpos = next(bpos);
-            return data[t];
-        }
-
-        public int removeLast() {
-            return data[epos = last(epos)];
-        }
-
-        public void addLast(int val) {
-            data[epos] = val;
-            epos = next(epos);
-        }
-
-        public void addFirst(int val) {
-            data[bpos = last(bpos)] = val;
-        }
-
-        public void reset() {
-            bpos = epos = 0;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = bpos; i != epos; i = next(i)) {
-                builder.append(data[i]).append(' ');
+            if (a.rank == b.rank) {
+                a.rank++;
             }
-            return builder.toString();
+            if (a.rank > b.rank) {
+                b.p = a;
+                a.size += b.size;
+            } else {
+                a.p = b;
+                b.size += a.size;
+            }
         }
     }
-
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder(1 << 13);

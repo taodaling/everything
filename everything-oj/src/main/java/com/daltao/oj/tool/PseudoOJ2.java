@@ -140,6 +140,11 @@ public class PseudoOJ2 implements Runnable, AutoCloseable {
         errorInfoStream.close();
     }
 
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
     public static interface Checker {
         public void check(FastIO std, FastIO test);
     }

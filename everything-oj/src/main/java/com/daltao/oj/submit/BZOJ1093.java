@@ -5,9 +5,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-public class BZOJ1057 {
+public class BZOJ1093 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -51,167 +57,185 @@ public class BZOJ1057 {
         public void solve() {
             int n = io.readInt();
             int m = io.readInt();
-            boolean[][] grids = new boolean[n][m];
-            int[][] spans = new int[n][m];
-            int[][] rowSpans = new int[n][m];
+            int p = io.readInt();
+            Modular mod = new Modular(p);
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    grids[i][j] = io.readInt() == 1;
+            Node[] nodes = new Node[n + 1];
+            for (int i = 1; i <= n; i++) {
+                nodes[i] = new Node();
+            }
+
+            for (int i = 0; i < m; i++) {
+                Node a = nodes[io.readInt()];
+                Node b = nodes[io.readInt()];
+                a.next.add(b);
+            }
+
+            for (int i = 1; i <= n; i++) {
+                tarjan(nodes[i]);
+            }
+
+            for (int i = 1; i <= n; i++) {
+                for (Node node : nodes[i].next) {
+                    if (node.set == nodes[i].set) {
+                        continue;
+                    }
+                    nodes[i].set.nextSet.add(node.set);
+                    node.set.prevSet.add(nodes[i].set);
                 }
             }
 
-            for (int i = 0; i < n; i++) {
-                spans[i][m - 1] = 1;
-                for (int j = m - 2; j >= 0; j--) {
-                    if (grids[i][j] == grids[i][j + 1]) {
-                        spans[i][j] = 1;
-                    } else {
-                        spans[i][j] = spans[i][j + 1] + 1;
+            Deque<Node> zero = new ArrayDeque();
+            for (int i = 1; i <= n; i++) {
+                if (nodes[i] != nodes[i].set) {
+                    continue;
+                }
+                nodes[i].relyOn = nodes[i].nextSet.size();
+                if (nodes[i].relyOn == 0) {
+                    zero.add(nodes[i]);
+                }
+            }
+
+            while (!zero.isEmpty()) {
+                Node head = zero.removeFirst();
+                head.longestChainLength = head.size;
+                head.longestChainCount = 1;
+
+                //dp
+                for (Node next : head.nextSet) {
+                    if (next.longestChainLength + head.size > head.longestChainLength) {
+                        head.longestChainLength = next.longestChainLength + head.size;
+                        head.longestChainCount = 0;
+                    }
+                    if (next.longestChainLength + head.size == head.longestChainLength) {
+                        head.longestChainCount = mod.plus(next.longestChainCount, head.longestChainCount);
+                    }
+                }
+
+                //remove this
+                for (Node from : head.prevSet) {
+                    from.relyOn--;
+                    if (from.relyOn == 0) {
+                        zero.add(from);
                     }
                 }
             }
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    rowSpans[i][j] = 1;
+            int longestLength = 0;
+            int longestCount = 0;
+            for (int i = 1; i <= n; i++) {
+                if (nodes[i].set != nodes[i]) {
+                    continue;
+                }
+                if (longestLength < nodes[i].longestChainLength) {
+                    longestLength = nodes[i].longestChainLength;
+                    longestCount = 0;
+                }
+                if (longestLength == nodes[i].longestChainLength) {
+                    longestCount = mod.plus(longestCount, nodes[i].longestChainCount);
                 }
             }
 
-            int originRow;
-            IntDeque increasing = new IntDeque(m);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(0);
-                originRow = 0;
-                for (int i = 1; i < n; i++) {
-                    if (grids[i][j] == grids[i - 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (i - originRow);
-                    } else {
-                        rowSpans[i][j] += (i - increasing.peekLast() - 1);
-                    }
-                    increasing.addLast(i);
+            io.cache.append(longestLength).append('\n').append(longestCount);
+        }
+
+        int order = 1;
+        Deque<Node> deque = new ArrayDeque();
+
+        public void tarjan(Node root) {
+            if (root.dfn > 0) {
+                return;
+            }
+            root.dfn = root.low = order++;
+            root.instk = true;
+            deque.addLast(root);
+            for (Node node : root.next) {
+                tarjan(node);
+                if (node.instk) {
+                    root.low = Math.min(root.low, node.low);
                 }
             }
-
-            debug.debug("rowSpan", rowSpans);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(n - 1);
-                originRow = n - 1;
-                for (int i = n - 2; i >= 0; i--) {
-                    if (grids[i][j] == grids[i + 1][j]) {
-                        increasing.reset();
-                        originRow = i;
+            if (root.low == root.dfn) {
+                while (true) {
+                    Node last = deque.removeLast();
+                    last.set = root;
+                    root.size++;
+                    last.instk = false;
+                    if (last == root) {
+                        break;
                     }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (originRow - i);
-                    } else {
-                        rowSpans[i][j] += (increasing.peekLast() - 1 - i);
-                    }
-                    increasing.addLast(i);
                 }
             }
-
-            int largestSquareArea = 1;
-            int largestRectArea = 1;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    int squareLen = Math.min(rowSpans[i][j], spans[i][j]);
-                    largestSquareArea = Math.max(largestSquareArea, squareLen * squareLen);
-                    largestRectArea = Math.max(largestRectArea, spans[i][j] * rowSpans[i][j]);
-                }
-            }
-
-            debug.debug("span", spans);
-            debug.debug("rowSpan", rowSpans);
-            io.cache.append(largestSquareArea).append('\n').append(largestRectArea);
         }
     }
 
-    public static class IntDeque {
-        int[] data;
-        int bpos;
-        int epos;
-        int cap;
+    public static class Node {
+        int dfn;
+        int low;
+        boolean instk;
 
-        public IntDeque(int cap) {
-            this.cap = cap + 1;
-            this.data = new int[this.cap];
+        int relyOn;
+        int size;
+        int longestChainLength;
+        int longestChainCount = 1;
+        List<Node> next = new ArrayList(1);
+        Set<Node> nextSet = new HashSet();
+        Set<Node> prevSet = new HashSet();
+
+        Node set;
+    }
+
+    /**
+     * Mod operations
+     */
+    public static class Modular {
+        int m;
+
+        public Modular(int m) {
+            this.m = m;
         }
 
-        public int size() {
-            int s = epos - bpos;
-            if (s < 0) {
-                s += cap;
+        public int valueOf(int x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
             }
-            return s;
+            return x;
         }
 
-        public boolean isEmpty() {
-            return epos == bpos;
+        public int valueOf(long x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
+            }
+            return (int) x;
         }
 
-        public int peekFirst() {
-            return data[bpos];
+        public int mul(int x, int y) {
+            return valueOf((long) x * y);
         }
 
-        private int last(int i) {
-            return (i == 0 ? cap : i) - 1;
+        public int mul(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x * y);
         }
 
-        private int next(int i) {
-            int n = i + 1;
-            return n == cap ? 0 : n;
+        public int plus(int x, int y) {
+            return valueOf(x + y);
         }
 
-        public int peekLast() {
-            return data[last(epos)];
-        }
-
-        public int removeFirst() {
-            int t = bpos;
-            bpos = next(bpos);
-            return data[t];
-        }
-
-        public int removeLast() {
-            return data[epos = last(epos)];
-        }
-
-        public void addLast(int val) {
-            data[epos] = val;
-            epos = next(epos);
-        }
-
-        public void addFirst(int val) {
-            data[bpos = last(bpos)] = val;
-        }
-
-        public void reset() {
-            bpos = epos = 0;
+        public int plus(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x + y);
         }
 
         @Override
         public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = bpos; i != epos; i = next(i)) {
-                builder.append(data[i]).append(' ');
-            }
-            return builder.toString();
+            return "mod " + m;
         }
     }
-
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder(1 << 13);

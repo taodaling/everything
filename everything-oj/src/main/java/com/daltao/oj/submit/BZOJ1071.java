@@ -6,8 +6,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 
-public class BZOJ1057 {
+public class BZOJ1071 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -50,168 +52,66 @@ public class BZOJ1057 {
 
         public void solve() {
             int n = io.readInt();
-            int m = io.readInt();
-            boolean[][] grids = new boolean[n][m];
-            int[][] spans = new int[n][m];
-            int[][] rowSpans = new int[n][m];
+            long a = io.readLong();
+            long b = io.readLong();
+            long c = io.readLong();
 
+            Person[] people = new Person[n];
             for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    grids[i][j] = io.readInt() == 1;
-                }
+                people[i] = new Person();
+                people[i].height = io.readLong();
+                people[i].speed = io.readLong();
+                people[i].factor = a * people[i].height + b * people[i].speed - c;
             }
 
+            Arrays.sort(people, Person.sortBySpeed);
+            int ans = 0;
+
+            PriorityQueue<Person> pq = new PriorityQueue(n, Person.sortByFactor);
             for (int i = 0; i < n; i++) {
-                spans[i][m - 1] = 1;
-                for (int j = m - 2; j >= 0; j--) {
-                    if (grids[i][j] == grids[i][j + 1]) {
-                        spans[i][j] = 1;
-                    } else {
-                        spans[i][j] = spans[i][j + 1] + 1;
+                long minH = people[i].height;
+                pq.clear();
+                for (int j = n - 1; j >= 0; j--) {
+                    if (people[j].height < minH) {
+                        continue;
                     }
+                    pq.add(people[j]);
+                    long upBound = a * minH + b * people[j].speed;
+                    while (!pq.isEmpty() && pq.peek().factor > upBound) {
+                        pq.poll();
+                    }
+                    ans = Math.max(ans, pq.size());
                 }
             }
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    rowSpans[i][j] = 1;
-                }
-            }
-
-            int originRow;
-            IntDeque increasing = new IntDeque(m);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(0);
-                originRow = 0;
-                for (int i = 1; i < n; i++) {
-                    if (grids[i][j] == grids[i - 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (i - originRow);
-                    } else {
-                        rowSpans[i][j] += (i - increasing.peekLast() - 1);
-                    }
-                    increasing.addLast(i);
-                }
-            }
-
-            debug.debug("rowSpan", rowSpans);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(n - 1);
-                originRow = n - 1;
-                for (int i = n - 2; i >= 0; i--) {
-                    if (grids[i][j] == grids[i + 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (originRow - i);
-                    } else {
-                        rowSpans[i][j] += (increasing.peekLast() - 1 - i);
-                    }
-                    increasing.addLast(i);
-                }
-            }
-
-            int largestSquareArea = 1;
-            int largestRectArea = 1;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    int squareLen = Math.min(rowSpans[i][j], spans[i][j]);
-                    largestSquareArea = Math.max(largestSquareArea, squareLen * squareLen);
-                    largestRectArea = Math.max(largestRectArea, spans[i][j] * rowSpans[i][j]);
-                }
-            }
-
-            debug.debug("span", spans);
-            debug.debug("rowSpan", rowSpans);
-            io.cache.append(largestSquareArea).append('\n').append(largestRectArea);
+            io.cache.append(ans);
         }
+
     }
 
-    public static class IntDeque {
-        int[] data;
-        int bpos;
-        int epos;
-        int cap;
+    public static class Person {
+        long speed;
+        long height;
+        long factor;
 
-        public IntDeque(int cap) {
-            this.cap = cap + 1;
-            this.data = new int[this.cap];
+        public static int compareLong(long a, long b) {
+            return a == b ? 0 : a > b ? 1 : -1;
         }
 
-        public int size() {
-            int s = epos - bpos;
-            if (s < 0) {
-                s += cap;
+        public static Comparator<Person> sortBySpeed = new Comparator<Person>() {
+            @Override
+            public int compare(Person o1, Person o2) {
+                return compareLong(o1.speed, o2.speed);
             }
-            return s;
-        }
+        };
 
-        public boolean isEmpty() {
-            return epos == bpos;
-        }
-
-        public int peekFirst() {
-            return data[bpos];
-        }
-
-        private int last(int i) {
-            return (i == 0 ? cap : i) - 1;
-        }
-
-        private int next(int i) {
-            int n = i + 1;
-            return n == cap ? 0 : n;
-        }
-
-        public int peekLast() {
-            return data[last(epos)];
-        }
-
-        public int removeFirst() {
-            int t = bpos;
-            bpos = next(bpos);
-            return data[t];
-        }
-
-        public int removeLast() {
-            return data[epos = last(epos)];
-        }
-
-        public void addLast(int val) {
-            data[epos] = val;
-            epos = next(epos);
-        }
-
-        public void addFirst(int val) {
-            data[bpos = last(bpos)] = val;
-        }
-
-        public void reset() {
-            bpos = epos = 0;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = bpos; i != epos; i = next(i)) {
-                builder.append(data[i]).append(' ');
+        public static Comparator<Person> sortByFactor = new Comparator<Person>() {
+            @Override
+            public int compare(Person o1, Person o2) {
+                return -compareLong(o1.factor, o2.factor);
             }
-            return builder.toString();
-        }
+        };
     }
-
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder(1 << 13);

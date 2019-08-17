@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
-public class BZOJ1057 {
+public class BZOJ1095 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -50,168 +52,179 @@ public class BZOJ1057 {
 
         public void solve() {
             int n = io.readInt();
-            int m = io.readInt();
-            boolean[][] grids = new boolean[n][m];
-            int[][] spans = new int[n][m];
-            int[][] rowSpans = new int[n][m];
-
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    grids[i][j] = io.readInt() == 1;
-                }
+            Node[] nodes = new Node[n + 1];
+            for (int i = 1; i <= n; i++) {
+                nodes[i] = new Node();
+            }
+            for (int i = 1; i < n; i++) {
+                Node a = nodes[io.readInt()];
+                Node b = nodes[io.readInt()];
+                a.next.add(b);
+                b.next.add(a);
             }
 
-            for (int i = 0; i < n; i++) {
-                spans[i][m - 1] = 1;
-                for (int j = m - 2; j >= 0; j--) {
-                    if (grids[i][j] == grids[i][j + 1]) {
-                        spans[i][j] = 1;
+            dfs(nodes[1], null);
+            int[] brackets = new int[order];
+            for (int i = 1; i <= n; i++) {
+                brackets[nodes[i].open] = 1;
+                brackets[nodes[i].close] = -1;
+            }
+
+            Segment segment = new Segment(0, order - 1, brackets);
+
+            int q = io.readInt();
+            for (int i = 0; i < q; i++) {
+                char cmd = io.readChar();
+                if (cmd == 'C') {
+                    int which = io.readInt();
+                    nodes[which].light = !nodes[which].light;
+                    segment.update(nodes[which].open, nodes[which].open, 0, order - 1, nodes[which].light);
+                    //segment.update(nodes[which].close, nodes[which].close, 0, order - 1, nodes[which].light);
+                } else {
+                    int dp = segment.dp;
+                    if (dp < 0) {
+                        io.cache.append(-1);
                     } else {
-                        spans[i][j] = spans[i][j + 1] + 1;
+                        io.cache.append(dp);
                     }
+                    io.cache.append('\n');
                 }
             }
+        }
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    rowSpans[i][j] = 1;
+        int order;
+
+        public void dfs(Node root, Node father) {
+            root.open = order++;
+            for (Node node : root.next) {
+                if (node == father) {
+                    continue;
                 }
+                dfs(node, root);
             }
-
-            int originRow;
-            IntDeque increasing = new IntDeque(m);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(0);
-                originRow = 0;
-                for (int i = 1; i < n; i++) {
-                    if (grids[i][j] == grids[i - 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (i - originRow);
-                    } else {
-                        rowSpans[i][j] += (i - increasing.peekLast() - 1);
-                    }
-                    increasing.addLast(i);
-                }
-            }
-
-            debug.debug("rowSpan", rowSpans);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(n - 1);
-                originRow = n - 1;
-                for (int i = n - 2; i >= 0; i--) {
-                    if (grids[i][j] == grids[i + 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (originRow - i);
-                    } else {
-                        rowSpans[i][j] += (increasing.peekLast() - 1 - i);
-                    }
-                    increasing.addLast(i);
-                }
-            }
-
-            int largestSquareArea = 1;
-            int largestRectArea = 1;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    int squareLen = Math.min(rowSpans[i][j], spans[i][j]);
-                    largestSquareArea = Math.max(largestSquareArea, squareLen * squareLen);
-                    largestRectArea = Math.max(largestRectArea, spans[i][j] * rowSpans[i][j]);
-                }
-            }
-
-            debug.debug("span", spans);
-            debug.debug("rowSpan", rowSpans);
-            io.cache.append(largestSquareArea).append('\n').append(largestRectArea);
+            root.close = order++;
         }
     }
 
-    public static class IntDeque {
-        int[] data;
-        int bpos;
-        int epos;
-        int cap;
-
-        public IntDeque(int cap) {
-            this.cap = cap + 1;
-            this.data = new int[this.cap];
-        }
-
-        public int size() {
-            int s = epos - bpos;
-            if (s < 0) {
-                s += cap;
-            }
-            return s;
-        }
-
-        public boolean isEmpty() {
-            return epos == bpos;
-        }
-
-        public int peekFirst() {
-            return data[bpos];
-        }
-
-        private int last(int i) {
-            return (i == 0 ? cap : i) - 1;
-        }
-
-        private int next(int i) {
-            int n = i + 1;
-            return n == cap ? 0 : n;
-        }
-
-        public int peekLast() {
-            return data[last(epos)];
-        }
-
-        public int removeFirst() {
-            int t = bpos;
-            bpos = next(bpos);
-            return data[t];
-        }
-
-        public int removeLast() {
-            return data[epos = last(epos)];
-        }
-
-        public void addLast(int val) {
-            data[epos] = val;
-            epos = next(epos);
-        }
-
-        public void addFirst(int val) {
-            data[bpos = last(bpos)] = val;
-        }
-
-        public void reset() {
-            bpos = epos = 0;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = bpos; i != epos; i = next(i)) {
-                builder.append(data[i]).append(' ');
-            }
-            return builder.toString();
-        }
+    public static class Node {
+        int open;
+        int close;
+        boolean light;
+        List<Node> next = new ArrayList(1);
     }
 
+    public static class Segment implements Cloneable {
+        public static final int INF = (int) 1e8;
+
+        private Segment left;
+        private Segment right;
+
+
+        private int sum;
+
+        private int dlr;
+        private int dlSub;
+        private int drSub;
+        private int minDepth;
+        private int dp;
+
+        //String str;
+
+        public void pushUp() {
+            //  str = left.str + right.str;
+            sum = left.sum + right.sum;
+
+            dlr = Math.max(left.dlr, right.dlr + left.sum);
+            dlSub = Math.max(right.dlSub - left.sum, left.dlSub);
+            dlSub = Math.max(dlSub, left.dlr - 2 * (right.minDepth + left.sum));
+            drSub = Math.max(left.drSub, right.drSub - left.sum);
+            drSub = Math.max(drSub, right.dlr + left.sum - 2 * left.minDepth);
+            minDepth = Math.min(left.minDepth, right.minDepth + left.sum);
+            dp = Math.max(left.dp, right.dp);
+            dp = Math.max(dp, left.dlr + right.drSub - left.sum);
+            dp = Math.max(dp, left.dlSub + right.dlr + left.sum);
+        }
+
+        public void pushDown() {
+
+        }
+
+        public Segment(int l, int r, int[] vals) {
+            if (l < r) {
+                int m = (l + r) >> 1;
+                left = new Segment(l, m, vals);
+                right = new Segment(m + 1, r, vals);
+                pushUp();
+            } else {
+                sum = vals[l];
+                notLight();
+            }
+        }
+
+        public void notLight() {
+            if (sum == -1) {
+                light();
+                return;
+            }
+            dlr = sum;
+            dlSub = -sum;
+            drSub = -sum;
+            minDepth = sum;
+            dp = 0;
+
+            //str = sum == 1 ? "[" : "]";
+        }
+
+        public void light() {
+            dlr = -INF;
+            dlSub = -INF;
+            drSub = -INF;
+            minDepth = sum;
+            dp = -INF;
+
+            //str = sum == 1 ? "(" : ")";
+        }
+
+        private boolean covered(int ll, int rr, int l, int r) {
+            return ll <= l && rr >= r;
+        }
+
+        private boolean noIntersection(int ll, int rr, int l, int r) {
+            return ll > r || rr < l;
+        }
+
+        public void update(int ll, int rr, int l, int r, boolean light) {
+            if (noIntersection(ll, rr, l, r)) {
+                return;
+            }
+            if (covered(ll, rr, l, r)) {
+                if (!light) {
+                    notLight();
+                } else {
+                    light();
+                }
+                return;
+            }
+            pushDown();
+            int m = (l + r) >> 1;
+            left.update(ll, rr, l, m, light);
+            right.update(ll, rr, m + 1, r, light);
+            pushUp();
+        }
+
+        public void query(int ll, int rr, int l, int r) {
+            if (noIntersection(ll, rr, l, r)) {
+                return;
+            }
+            if (covered(ll, rr, l, r)) {
+                return;
+            }
+            pushDown();
+            int m = (l + r) >> 1;
+            left.query(ll, rr, l, m);
+            right.query(ll, rr, m + 1, r);
+        }
+    }
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder(1 << 13);

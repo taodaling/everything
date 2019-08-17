@@ -1,4 +1,4 @@
-package com.daltao.oj.submit;
+package com.daltao.oj.old.submit.bzoj;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-public class BZOJ1057 {
+public class BZOJ1074 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -37,6 +37,7 @@ public class BZOJ1057 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
+        private double EPS = 0.000001;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -50,168 +51,261 @@ public class BZOJ1057 {
 
         public void solve() {
             int n = io.readInt();
+            Coordination2D[] transforms = new Coordination2D[n];
+            for (int i = 0; i < n; i++) {
+                double x1 = io.readDouble();
+                double y1 = io.readDouble();
+                double x2 = io.readDouble();
+                double y2 = io.readDouble();
+                transforms[i] = Coordination2D.merge(Coordination2D.ofXAxis(x2 - x1, y2 - y1),
+                        Coordination2D.ofOrigin(x1, y1));
+            }
+
             int m = io.readInt();
-            boolean[][] grids = new boolean[n][m];
-            int[][] spans = new int[n][m];
-            int[][] rowSpans = new int[n][m];
-
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    grids[i][j] = io.readInt() == 1;
-                }
+            for (int i = 0; i < m; i++) {
+                double x = io.readDouble();
+                double y = io.readDouble();
+                io.cache.append(find(transforms, n - 1, x, y)).append('\n');
             }
+        }
 
-            for (int i = 0; i < n; i++) {
-                spans[i][m - 1] = 1;
-                for (int j = m - 2; j >= 0; j--) {
-                    if (grids[i][j] == grids[i][j + 1]) {
-                        spans[i][j] = 1;
-                    } else {
-                        spans[i][j] = spans[i][j + 1] + 1;
-                    }
-                }
+        Matrix source = new Matrix(3, 1);
+        Matrix target = new Matrix(3, 1);
+
+        {
+            source.mat[2][0] = target.mat[2][0] = 1;
+        }
+
+        public int find(Coordination2D[] transform, int i, double x, double y) {
+            if (i < 0) {
+                return x >= EPS && x <= 100 - EPS && y >= EPS && y <= 100 - EPS ? 1 : 0;
             }
-
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    rowSpans[i][j] = 1;
-                }
+            int ans = find(transform, i - 1, x, y);
+            source.set(0, 0, x);
+            source.set(1, 0, y);
+            transform[i].toCurrentCoordination(source, target);
+            if (target.get(1, 0) <= EPS) {
+                return 0;
             }
-
-            int originRow;
-            IntDeque increasing = new IntDeque(m);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(0);
-                originRow = 0;
-                for (int i = 1; i < n; i++) {
-                    if (grids[i][j] == grids[i - 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (i - originRow);
-                    } else {
-                        rowSpans[i][j] += (i - increasing.peekLast() - 1);
-                    }
-                    increasing.addLast(i);
-                }
-            }
-
-            debug.debug("rowSpan", rowSpans);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(n - 1);
-                originRow = n - 1;
-                for (int i = n - 2; i >= 0; i--) {
-                    if (grids[i][j] == grids[i + 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (originRow - i);
-                    } else {
-                        rowSpans[i][j] += (increasing.peekLast() - 1 - i);
-                    }
-                    increasing.addLast(i);
-                }
-            }
-
-            int largestSquareArea = 1;
-            int largestRectArea = 1;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    int squareLen = Math.min(rowSpans[i][j], spans[i][j]);
-                    largestSquareArea = Math.max(largestSquareArea, squareLen * squareLen);
-                    largestRectArea = Math.max(largestRectArea, spans[i][j] * rowSpans[i][j]);
-                }
-            }
-
-            debug.debug("span", spans);
-            debug.debug("rowSpan", rowSpans);
-            io.cache.append(largestSquareArea).append('\n').append(largestRectArea);
+            target.set(1, 0, -target.get(1, 0));
+            transform[i].toNormalCoordination(target, source);
+            return ans
+                    + find(transform, i - 1, source.get(0, 0), source.get(1, 0));
         }
     }
 
-    public static class IntDeque {
-        int[] data;
-        int bpos;
-        int epos;
-        int cap;
+    public static class Matrix implements Cloneable {
+        double[][] mat;
+        int n;
+        int m;
 
-        public IntDeque(int cap) {
-            this.cap = cap + 1;
-            this.data = new int[this.cap];
+        public void set(int i, int j, double val) {
+            mat[i][j] = val;
         }
 
-        public int size() {
-            int s = epos - bpos;
-            if (s < 0) {
-                s += cap;
+        public double get(int i, int j) {
+            return mat[i][j];
+        }
+
+        public Matrix(Matrix model) {
+            n = model.n;
+            m = model.m;
+            mat = new double[n][m];
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < m; j++) {
+                    mat[i][j] = model.mat[i][j];
+                }
             }
-            return s;
         }
 
-        public boolean isEmpty() {
-            return epos == bpos;
+        public Matrix(int n, int m) {
+            this.n = n;
+            this.m = m;
+            mat = new double[n][m];
         }
 
-        public int peekFirst() {
-            return data[bpos];
+        public void fill(int v) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < m; j++) {
+                    mat[i][j] = v;
+                }
+            }
         }
 
-        private int last(int i) {
-            return (i == 0 ? cap : i) - 1;
+        public void asStandard() {
+            fill(0);
+            for (int i = 0; i < n && i < m; i++) {
+                mat[i][i] = 1;
+            }
         }
 
-        private int next(int i) {
-            int n = i + 1;
-            return n == cap ? 0 : n;
+        public static Matrix mul(Matrix a, Matrix b, Matrix c) {
+            c.fill(0);
+            for (int i = 0; i < c.n; i++) {
+                for (int j = 0; j < c.m; j++) {
+                    for (int k = 0; k < a.m; k++) {
+                        c.mat[i][j] = c.mat[i][j] + a.mat[i][k] * b.mat[k][j];
+                    }
+                }
+            }
+            return c;
         }
 
-        public int peekLast() {
-            return data[last(epos)];
+        public static Matrix mul(Matrix a, Matrix b) {
+            Matrix c = new Matrix(a.n, b.m);
+            return mul(a, b, c);
         }
 
-        public int removeFirst() {
-            int t = bpos;
-            bpos = next(bpos);
-            return data[t];
+        public static Matrix pow(Matrix x, int n) {
+            if (n == 0) {
+                Matrix r = new Matrix(x.n, x.m);
+                r.asStandard();
+                return r;
+            }
+            Matrix r = pow(x, n >> 1);
+            r = Matrix.mul(r, r);
+            if (n % 2 == 1) {
+                r = Matrix.mul(r, x);
+            }
+            return r;
         }
 
-        public int removeLast() {
-            return data[epos = last(epos)];
+        public static Matrix inverse(Matrix x) {
+            if (x.n != x.m) {
+                throw new RuntimeException("Matrix is not square");
+            }
+            int n = x.n;
+            Matrix l = new Matrix(x);
+            Matrix r = new Matrix(n, n);
+            r.asStandard();
+            for (int i = 0; i < n; i++) {
+                int maxRow = i;
+                for (int j = i; j < n; j++) {
+                    if (Math.abs(l.mat[j][i]) > Math.abs(l.mat[maxRow][i])) {
+                        maxRow = j;
+                    }
+                }
+
+                if (l.mat[maxRow][i] == 0) {
+                    throw new RuntimeException("Can't inverse current matrix");
+                }
+                r.swapRow(i, maxRow);
+                l.swapRow(i, maxRow);
+
+                r.divideRow(i, l.mat[i][i]);
+                l.divideRow(i, l.mat[i][i]);
+
+                for (int j = 0; j < n; j++) {
+                    if (j == i) {
+                        continue;
+                    }
+                    if (l.mat[j][i] == 0) {
+                        continue;
+                    }
+                    double f = l.mat[j][i];
+                    r.subtractRow(j, i, f);
+                    l.subtractRow(j, i, f);
+                }
+            }
+            return r;
         }
 
-        public void addLast(int val) {
-            data[epos] = val;
-            epos = next(epos);
+        static Matrix transposition(Matrix x) {
+            int n = x.n;
+            int m = x.m;
+            Matrix t = new Matrix(m, n);
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < m; j++) {
+                    t.mat[j][i] = x.mat[i][j];
+                }
+            }
+            return t;
         }
 
-        public void addFirst(int val) {
-            data[bpos = last(bpos)] = val;
+        void swapRow(int i, int j) {
+            double[] row = mat[i];
+            mat[i] = mat[j];
+            mat[j] = row;
         }
 
-        public void reset() {
-            bpos = epos = 0;
+        void subtractRow(int i, int j, double f) {
+            for (int k = 0; k < m; k++) {
+                mat[i][k] -= mat[j][k] * f;
+            }
         }
 
-        @Override
+        void divideRow(int i, double f) {
+            for (int k = 0; k < m; k++) {
+                mat[i][k] /= f;
+            }
+        }
+
         public String toString() {
             StringBuilder builder = new StringBuilder();
-            for (int i = bpos; i != epos; i = next(i)) {
-                builder.append(data[i]).append(' ');
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < m; j++) {
+                    builder.append(mat[i][j]).append(' ');
+                }
+                builder.append('\n');
             }
             return builder.toString();
         }
+
     }
 
+    public static class Coordination2D {
+        private Matrix mat;
+        private Matrix inv;
+
+        private static final double EPS = 1e-8;
+
+
+        private static boolean near(double x, double y) {
+            return Math.abs(x - y) <= EPS;
+        }
+
+        private Coordination2D(Matrix mat) {
+            this.mat = mat;
+            this.inv = Matrix.inverse(mat);
+        }
+
+        //set x coordination
+        public static Coordination2D ofXAxis(double x, double y) {
+            if (near(x * x + y * y, 1)) {
+                double d = Math.sqrt(x * x + y * y);
+                x /= d;
+                y /= d;
+            }
+            Matrix mat = new Matrix(3, 3);
+            mat.asStandard();
+            mat.set(0, 0, x);
+            mat.set(1, 0, y);
+            mat.set(0, 1, -y);
+            mat.set(1, 1, x);
+            return new Coordination2D(mat);
+        }
+
+        public static Coordination2D ofOrigin(double x, double y) {
+            Matrix mat = new Matrix(3, 3);
+            mat.asStandard();
+            mat.set(0, 2, x);
+            mat.set(1, 2, y);
+            return new Coordination2D(mat);
+        }
+
+        //As a * b
+        public static Coordination2D merge(Coordination2D a, Coordination2D b) {
+            return new Coordination2D(Matrix.mul(b.mat, a.mat));
+        }
+
+        public void toNormalCoordination(Matrix vec, Matrix ans) {
+            Matrix.mul(mat, vec, ans);
+        }
+
+        public void toCurrentCoordination(Matrix vec, Matrix ans) {
+            Matrix.mul(inv, vec, ans);
+        }
+    }
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder(1 << 13);

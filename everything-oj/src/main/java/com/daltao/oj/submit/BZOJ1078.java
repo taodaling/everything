@@ -5,9 +5,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
-public class BZOJ1057 {
+public class BZOJ1078 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -45,173 +48,109 @@ public class BZOJ1057 {
 
         @Override
         public void run() {
+
             solve();
+
         }
 
         public void solve() {
             int n = io.readInt();
-            int m = io.readInt();
-            boolean[][] grids = new boolean[n][m];
-            int[][] spans = new int[n][m];
-            int[][] rowSpans = new int[n][m];
+            Node[] nodes = new Node[n + 1];
+            for (int i = 0; i <= n; i++) {
+                nodes[i] = new Node();
+                nodes[i].val = i;
+            }
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    grids[i][j] = io.readInt() == 1;
+            for (int i = 1; i <= n; i++) {
+                int d = io.readInt();
+                if (d < 100) {
+                    nodes[d].left = nodes[i];
+                } else {
+                    nodes[d - 100].right = nodes[i];
                 }
             }
 
-            for (int i = 0; i < n; i++) {
-                spans[i][m - 1] = 1;
-                for (int j = m - 2; j >= 0; j--) {
-                    if (grids[i][j] == grids[i][j + 1]) {
-                        spans[i][j] = 1;
-                    } else {
-                        spans[i][j] = spans[i][j + 1] + 1;
-                    }
-                }
+
+            List<Integer> ans = dp(nodes[0]);
+            for (Integer v : ans) {
+                io.cache.append(v).append(' ');
+            }
+        }
+
+        public List<Integer> dp(Node root) {
+            if (root == null) {
+                return Collections.emptyList();
+            }
+            List<Integer> seqL = dp(root.left);
+            List<Integer> seqR = dp(root.right);
+
+            boolean seqLIsLast = true;
+            if (seqL.size() < seqR.size()) {
+                List<Integer> tmp = seqL;
+                seqL = seqR;
+                seqR = tmp;
+                seqLIsLast = false;
             }
 
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    rowSpans[i][j] = 1;
+            int n = seqL.size();
+            int m = seqR.size();
+
+            List<Integer> best = new ArrayList(n + m + 1);
+            if (n - m == 0) {
+                best.add(root.val);
+                for (int i = 0; i < n; i++) {
+                    best.add(seqR.get(i));
+                    best.add(seqL.get(i));
                 }
+                return best;
             }
 
-            int originRow;
-            IntDeque increasing = new IntDeque(m);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(0);
-                originRow = 0;
+            if (n - m == 1 && seqLIsLast) {
+                best.add(root.val);
+                best.add(seqL.get(0));
                 for (int i = 1; i < n; i++) {
-                    if (grids[i][j] == grids[i - 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (i - originRow);
-                    } else {
-                        rowSpans[i][j] += (i - increasing.peekLast() - 1);
-                    }
-                    increasing.addLast(i);
+                    best.add(seqR.get(i - 1));
+                    best.add(seqL.get(i));
+                }
+                return best;
+            }
+
+            int i = 0;
+            int j = 0;
+            for (; n - i > m; i++) {
+                best.add(seqL.get(i));
+            }
+            if (m == 0) {
+                best.add(root.val);
+                return best;
+            }
+            if (!seqLIsLast) {
+                best.add(seqL.get(i++));
+                best.add(root.val);
+                for (; i < n; i++, j++) {
+                    best.add(seqR.get(j));
+                    best.add(seqL.get(i));
+                }
+                best.add(seqR.get(j));
+            } else {
+                best.add(root.val);
+                for (; i < n; i++, j++) {
+                    best.add(seqR.get(j));
+                    best.add(seqL.get(i));
                 }
             }
 
-            debug.debug("rowSpan", rowSpans);
-            for (int j = 0; j < m; j++) {
-                increasing.reset();
-                increasing.addLast(n - 1);
-                originRow = n - 1;
-                for (int i = n - 2; i >= 0; i--) {
-                    if (grids[i][j] == grids[i + 1][j]) {
-                        increasing.reset();
-                        originRow = i;
-                    }
-                    while (!increasing.isEmpty() && spans[increasing.peekLast()][j] >= spans[i][j]) {
-                        increasing.removeLast();
-                    }
-                    if (increasing.isEmpty()) {
-                        rowSpans[i][j] += (originRow - i);
-                    } else {
-                        rowSpans[i][j] += (increasing.peekLast() - 1 - i);
-                    }
-                    increasing.addLast(i);
-                }
-            }
-
-            int largestSquareArea = 1;
-            int largestRectArea = 1;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < m; j++) {
-                    int squareLen = Math.min(rowSpans[i][j], spans[i][j]);
-                    largestSquareArea = Math.max(largestSquareArea, squareLen * squareLen);
-                    largestRectArea = Math.max(largestRectArea, spans[i][j] * rowSpans[i][j]);
-                }
-            }
-
-            debug.debug("span", spans);
-            debug.debug("rowSpan", rowSpans);
-            io.cache.append(largestSquareArea).append('\n').append(largestRectArea);
+            return best;
         }
     }
 
-    public static class IntDeque {
-        int[] data;
-        int bpos;
-        int epos;
-        int cap;
 
-        public IntDeque(int cap) {
-            this.cap = cap + 1;
-            this.data = new int[this.cap];
-        }
+    public static class Node {
+        Node left;
+        Node right;
+        int val;
 
-        public int size() {
-            int s = epos - bpos;
-            if (s < 0) {
-                s += cap;
-            }
-            return s;
-        }
-
-        public boolean isEmpty() {
-            return epos == bpos;
-        }
-
-        public int peekFirst() {
-            return data[bpos];
-        }
-
-        private int last(int i) {
-            return (i == 0 ? cap : i) - 1;
-        }
-
-        private int next(int i) {
-            int n = i + 1;
-            return n == cap ? 0 : n;
-        }
-
-        public int peekLast() {
-            return data[last(epos)];
-        }
-
-        public int removeFirst() {
-            int t = bpos;
-            bpos = next(bpos);
-            return data[t];
-        }
-
-        public int removeLast() {
-            return data[epos = last(epos)];
-        }
-
-        public void addLast(int val) {
-            data[epos] = val;
-            epos = next(epos);
-        }
-
-        public void addFirst(int val) {
-            data[bpos = last(bpos)] = val;
-        }
-
-        public void reset() {
-            bpos = epos = 0;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = bpos; i != epos; i = next(i)) {
-                builder.append(data[i]).append(' ');
-            }
-            return builder.toString();
-        }
     }
-
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder(1 << 13);
