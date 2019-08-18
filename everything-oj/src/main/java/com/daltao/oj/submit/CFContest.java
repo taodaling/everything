@@ -38,7 +38,7 @@ public class CFContest {
     public static class Task implements Runnable {
         final FastIO io;
         final Debug debug;
-        long inf = (long) 1e10;
+        int inf = (int) 1e8;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -50,60 +50,146 @@ public class CFContest {
             solve();
         }
 
-        char[] s = new char[2000000];
-        int len;
+        int n;
+        int m;
 
         public void solve() {
-            len = io.readString(s, 0);
-            for (int i = 0; i <= 9; i++) {
-                for (int j = 0; j <= 9; j++) {
-                    io.cache.append(solve(i, j)).append(' ');
+            int n = io.readInt();
+            int m = 3 * n;
+            int[] s = new int[3 * n];
+            for (int i = 0; i < m; i++) {
+                char c = io.readChar();
+                s[i] = c == 'R' ? 0 : c == 'G' ? 1 : 2;
+            }
+
+            int[] lcnt = new int[3];
+            int[] rcnt = new int[3];
+            int[] midCnt = new int[3];
+
+            int l = 0;
+            int r = 0;
+            int remain = n;
+            while (remain > 0) {
+
+            }
+        }
+
+        public int rowIdOf(int x) {
+            return (x - 1) / m;
+        }
+    }
+
+
+    public static class KMAlgo {
+        public static class Node {
+            int visited;
+            Node partner;
+            int id;
+
+            @Override
+            public String toString() {
+                return "" + id;
+            }
+        }
+
+        Node[] leftSides;
+        Node[] rightSides;
+        int version;
+
+        boolean[][] edges;
+        int l;
+        int r;
+
+        public KMAlgo(int l, int r) {
+            this.l = l;
+            this.r = r;
+            leftSides = new Node[l];
+            for (int i = 0; i < l; i++) {
+                leftSides[i] = new Node();
+                leftSides[i].id = i;
+            }
+            rightSides = new Node[r];
+            for (int i = 0; i < r; i++) {
+                rightSides[i] = new Node();
+                rightSides[i].id = i;
+            }
+
+            edges = new boolean[l][r];
+        }
+
+        public void reset() {
+            for (int i = 0; i < l; i++) {
+                leftSides[i].partner = null;
+            }
+            for (int j = 0; j < r; j++) {
+                rightSides[j].partner = null;
+            }
+        }
+
+        private void init() {
+            version++;
+        }
+
+        /**
+         * Determine can we find a partner for a left node to enhance the matching degree.
+         */
+        public boolean matchLeft(int id) {
+            if (leftSides[id].partner != null) {
+                return false;
+            }
+            init();
+            return findPartner(leftSides[id]);
+        }
+
+        private boolean findPartner(Node src) {
+            if (src.visited == version) {
+                return false;
+            }
+            src.visited = version;
+            for (int i = 0; i < r; i++) {
+                if (!edges[src.id][i]) {
+                    continue;
                 }
-                io.cache.append('\n');
-            }
-        }
-
-        public long solve(int x, int y) {
-            long[][] dp = new long[10][10];
-            for (int i = 0; i < 10; i++) {
-                Arrays.fill(dp[i], inf);
-            }
-            for (int i = 0; i < 10; i++) {
-                dp[i][(i + x) % 10] = 1;
-                dp[i][(i + y) % 10] = 1;
-            }
-            for (int k = 0; k < 10; k++) {
-                for (int i = 0; i < 10; i++) {
-                    for (int j = 0; j < 10; j++) {
-                        if (dp[i][j] > dp[i][k] + dp[k][j]) {
-                            dp[i][j] = dp[i][k] + dp[k][j];
-                        }
-                    }
+                Node node = rightSides[i];
+                if (!tryRelease(node)) {
+                    continue;
                 }
+                node.partner = src;
+                src.partner = node;
+                return true;
             }
-
-            long need = 0;
-            for (int i = 1; i < len; i++) {
-                int former = s[i - 1] - '0';
-                int next = s[i] - '0';
-                need += dp[former][next] - 1;
-            }
-
-            if (need >= inf - 1) {
-                return -1;
-            }
-
-            return need;
+            return false;
         }
 
-        public void reverse(char[] data, int n) {
-            for (int l = 0, r = n - 1; l <= r; l++, r--) {
-                char tmp = data[l];
-                data[l] = data[r];
-                data[r] = tmp;
+        private boolean tryRelease(Node src) {
+            if (src.visited == version) {
+                return false;
             }
+            src.visited = version;
+            if (src.partner == null) {
+                return true;
+            }
+            if (findPartner(src.partner)) {
+                src.partner = null;
+                return true;
+            }
+            return false;
         }
 
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 1; i < leftSides.length; i++) {
+                if (leftSides[i].partner == null) {
+                    continue;
+                }
+                builder.append(leftSides[i].id).append(" - ").append(leftSides[i].partner.id).append(" || ");
+            }
+            if (builder.length() > 0) {
+                builder.setLength(builder.length() - 4);
+            }
+            return builder.toString();
+        }
     }
 
     public static class Randomized {

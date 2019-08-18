@@ -1,52 +1,74 @@
 package com.daltao.template;
 
 public class Hash {
-    private static int MOD = (int) (1e9 + 7);
+    private static final NumberTheory.Modular MOD = new NumberTheory.Modular((int) (1e9 + 7));
     private int[] inverse;
     private int[] hash;
     private int n;
     private int x;
+    private int invX;
 
-    public Hash(char[] data, int x) {
-        n = data.length;
-        inverse = new int[n];
+    public static interface ToHash<T> {
+        int hash(T obj);
+    }
+
+    public Hash(int size, int x) {
+        inverse = new int[size];
+        hash = new int[size];
         this.x = x;
+        this.invX = new NumberTheory.Power(MOD).inverse(x);
         inverse[0] = 1;
-        long inv = pow(x, MOD - 2);
+        for (int i = 1; i < size; i++) {
+            this.inverse[i] = MOD.mul(this.inverse[i - 1], invX);
+        }
+    }
+
+    public <T> void populate(T[] data, int n, ToHash<T> toHash) {
+        this.n = n;
+        hash[0] = toHash.hash(data[0]);
+        int xn = 1;
         for (int i = 1; i < n; i++) {
-            this.inverse[i] = (int) (this.inverse[i - 1] * inv % MOD);
-        }
-
-        hash = new int[n];
-        hash[n - 1] = data[n - 1];
-        long xn = 1;
-        for (int i = n - 2; i >= 0; i--) {
-            xn = xn * x % MOD;
-            hash[i] = (int) (((long) hash[i + 1] + data[i] * xn) % MOD);
+            xn = MOD.mul(xn, x);
+            hash[i] = MOD.plus(hash[i - 1], MOD.mul(toHash.hash(data[i]), xn));
         }
     }
 
-    public static long pow(int x, int n) {
-        int bit = 31 - Integer.numberOfLeadingZeros(n);
-        long product = 1;
-        for (; bit >= 0; bit--) {
-            product = product * product % MOD;
-            if (((1 << bit) & n) != 0) {
-                product = product * x % MOD;
-            }
+    public void populate(Object[] data, int n) {
+        this.n = n;
+        hash[0] = data[0].hashCode();
+        int xn = 1;
+        for (int i = 1; i < n; i++) {
+            xn = MOD.mul(xn, x);
+            hash[i] = MOD.plus(hash[i - 1], MOD.mul(data[i].hashCode(), xn));
         }
-        return product;
     }
 
-    public int hash(int l, int r) {
-        long hash = this.hash[l];
-        if (r < n - 1) {
-            hash = hash - this.hash[r + 1];
-            if (hash < 0) {
-                hash += MOD;
-            }
-            hash = hash * inverse[n - 1 - r] % MOD;
+    public void populate(int[] data, int n) {
+        this.n = n;
+        hash[0] = data[0];
+        int xn = 1;
+        for (int i = 1; i < n; i++) {
+            xn = MOD.mul(xn, x);
+            hash[i] = MOD.plus(hash[i - 1], MOD.mul(data[i], xn));
         }
-        return (int) hash;
+    }
+
+    public void populate(char[] data, int n) {
+        this.n = n;
+        hash[0] = data[0];
+        int xn = 1;
+        for (int i = 1; i < n; i++) {
+            xn = MOD.mul(xn, x);
+            hash[i] = MOD.plus(hash[i - 1], MOD.mul(data[i], xn));
+        }
+    }
+
+    public int partial(int l, int r) {
+        int h = hash[r];
+        if (l > 0) {
+            h = MOD.plus(h, -hash[l - 1]);
+            h = MOD.mul(h, inverse[l]);
+        }
+        return h;
     }
 }
