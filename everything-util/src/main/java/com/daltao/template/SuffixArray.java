@@ -29,7 +29,7 @@ public class SuffixArray {
                 originalSuffix.clone(), new Suffix[n + 1]
         });
 
-        sort(suffixLoop.get(0), suffixLoop.get(1), rankLoop.get(0), rangeTo - rangeFrom + 1);
+        sort(suffixLoop.get(0), suffixLoop.get(1), rankLoop.get(0), rangeTo - rangeFrom + 2);
         assignRank(suffixLoop.turn(), rankLoop.get(0), rankLoop.get(0), rankLoop.turn());
 
         for (int i = 1; i < n; i <<= 1) {
@@ -62,7 +62,8 @@ public class SuffixArray {
                 h = Math.max(h, heights[originalSuffix[former].rank] - 1);
             }
             int anotherStartIndex = orderedSuffix[suffix.rank - 1].suffixStartIndex;
-            for (; startIndex + h < n && anotherStartIndex + h < n && s[startIndex + h] == s[anotherStartIndex + h]; h++) ;
+            for (; startIndex + h < n && anotherStartIndex + h < n && s[startIndex + h] == s[anotherStartIndex + h]; h++)
+                ;
             heights[suffix.rank] = h;
         }
     }
@@ -146,7 +147,7 @@ public class SuffixArray {
         }
     }
 
-    public  class Suffix {
+    public class Suffix {
         int suffixStartIndex;
         int rank;
 
