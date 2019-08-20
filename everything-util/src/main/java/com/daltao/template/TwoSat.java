@@ -112,7 +112,6 @@ public class TwoSat {
         addEdge(b.inverse, a.inverse);
     }
 
-
     public boolean valueOf(int i) {
         return nodes[1][i].value == 1;
     }

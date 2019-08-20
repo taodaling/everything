@@ -6,8 +6,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Comparator;
 
-public class ABC138F {
+public class BZOJ1106 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -37,9 +38,6 @@ public class ABC138F {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        Modular mod = new Modular((int) 1e9 + 7);
-        Log2 log2 = new Log2();
-        Power power = new Power(mod);
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -49,312 +47,95 @@ public class ABC138F {
         @Override
         public void run() {
             solve();
-//            for (int i = 1; i < 100; i++) {
-//                for (int j = 1; j <= i; j++) {
-//                    debug.debug("l", j);
-//                    debug.debug("r", i);
-//                    debug.assertTrue(bruteForce(j, i) == solve(j, i));
-//                }
-//            }
-        }
-
-        int[][][][] dp;
-        boolean[] lBits;
-        boolean[] rBits;
-
-
-        public int bruteForce(long l, long r) {
-            int sum = 0;
-            for (long i = l; i <= r; i++) {
-                for (long j = l; j <= i; j++) {
-                    if (Long.highestOneBit(i) == Long.highestOneBit(j)
-                            && (i & j) == j) {
-                        sum++;
-                    }
-                }
-            }
-            return sum;
         }
 
         public void solve() {
-            long l = io.readLong();
-            long r = io.readLong();
-            io.cache.append(solve(l, r));
-        }
+            int n = io.readInt();
 
-        public int solve(long l, long r) {
-            lBits = new boolean[64];
-            rBits = new boolean[64];
-            toBits(lBits, 0, l);
-            toBits(rBits, 0, r);
-            reverse(lBits);
-            reverse(rBits);
-
-            //1st chosen, up bound, low bound
-            int[][][][] dp = new int[2][2][2][64];
-            dp[0][1][1][0] = 1;
-            for (int i = 1; i < 64; i++) {
-                //000
-                dp[1][0][0][i] = mod.plus(dp[1][0][0][i], dp[0][0][0][i - 1]);
-                dp[0][0][0][i] = mod.plus(dp[0][0][0][i], dp[0][0][0][i - 1]);
-
-                //001
-                if (lBits[i]) {
-                    dp[1][0][1][i] = mod.plus(dp[1][0][1][i], dp[0][0][1][i - 1]);
+            int[][] poses = new int[n + 1][2];
+            BIT bit = new BIT(n + n);
+            for (int i = 1; i <= 2 * n; i++) {
+                int x = io.readInt();
+                if (poses[x][0] == 0) {
+                    poses[x][0] = i;
                 } else {
-                    dp[1][0][0][i] = mod.plus(dp[1][0][0][i], dp[0][0][1][i - 1]);
-                    dp[0][0][1][i] = mod.plus(dp[0][0][1][i], dp[0][0][1][i - 1]);
+                    poses[x][1] = i;
                 }
-
-                //010
-
-                //011
-                if (rBits[i] && lBits[i]) {
-                    dp[1][1][1][i] = mod.plus(dp[1][1][1][i],
-                            dp[0][1][1][i - 1]);
-                } else if (rBits[i]) {
-                    dp[1][1][0][i] = mod.plus(dp[1][1][0][i],
-                            dp[0][1][1][i - 1]);
-                    dp[0][0][1][i] = mod.plus(dp[0][0][1][i],
-                            dp[0][1][1][i - 1]);
-                } else if (lBits[i]) {
-
-                } else {
-                    dp[0][1][1][i] = mod.plus(dp[0][1][1][i], dp[0][1][1][i - 1]);
-                }
-
-                //100
-                dp[1][0][0][i] = mod.plus(dp[1][0][0][i], mod.mul(3, dp[1][0][0][i - 1]));
-
-                //101
-                if (lBits[i]) {
-                    dp[1][0][1][i] = mod.plus(dp[1][0][1][i], dp[1][0][1][i - 1]);
-                } else {
-                    dp[1][0][1][i] = mod.plus(dp[1][0][1][i], mod.mul(2, dp[1][0][1][i - 1]));
-                    dp[1][0][0][i] = mod.plus(dp[1][0][0][i], dp[1][0][1][i - 1]);
-                }
-
-                //110
-                if (rBits[i]) {
-                    dp[1][1][0][i] = mod.plus(dp[1][1][0][i], mod.mul(2, dp[1][1][0][i - 1]));
-                    dp[1][0][0][i] = mod.plus(dp[1][0][0][i], dp[1][1][0][i - 1]);
-                } else {
-                    dp[1][1][0][i] = mod.plus(dp[1][1][0][i], dp[1][1][0][i - 1]);
-                }
-
-                //111
-                if (lBits[i] && rBits[i]) {
-                    dp[1][1][1][i] = mod.plus(dp[1][1][1][i], dp[1][1][1][i - 1]);
-                } else if (rBits[i]) {
-                    dp[1][1][0][i] = mod.plus(dp[1][1][0][i], dp[1][1][1][i - 1]);
-                    dp[1][1][1][i] = mod.plus(dp[1][1][1][i], dp[1][1][1][i - 1]);
-                    dp[1][0][1][i] = mod.plus(dp[1][0][1][i], dp[1][1][1][i - 1]);
-                } else if (lBits[i]) {
-
-                } else {
-                    dp[1][1][1][i] = mod.plus(dp[1][1][1][i], dp[1][1][1][i - 1]);
-                }
+                bit.update(i, 1);
             }
+
+            Arrays.sort(poses, 1, n + 1, new Comparator<int[]>() {
+                @Override
+                public int compare(int[] o1, int[] o2) {
+                    return (o1[1] - o1[0]) - (o2[1] - o2[0]);
+                }
+            });
 
             int sum = 0;
-            for (int i = 0; i < 2; i++) {
-                for (int j = 0; j < 2; j++) {
-                    sum = mod.plus(dp[1][i][j][63], sum);
-                }
+            for (int i = 1; i <= n; i++) {
+                int[] pair = poses[i];
+                int l = pair[0];
+                int r = pair[1];
+                int cnt = bit.query(r) - bit.query(l) - 1;
+                sum += cnt;
+                bit.update(l, -1);
+                bit.update(r, -1);
             }
 
+            io.cache.append(sum);
+        }
+    }
+
+
+    /**
+     * Created by dalt on 2018/5/20.
+     */
+    public static class BIT {
+        private int[] data;
+        private int n;
+
+        /**
+         * 创建大小A[1...n]
+         */
+        public BIT(int n) {
+            this.n = n;
+            data = new int[n + 1];
+        }
+
+        /**
+         * 查询A[1]+A[2]+...+A[i]
+         */
+        public int query(int i) {
+            int sum = 0;
+            for (; i > 0; i -= i & -i) {
+                sum += data[i];
+            }
             return sum;
         }
 
-        public int valueOf(boolean x) {
-            return x ? 1 : 0;
-        }
-
-        public void reverse(boolean[] data) {
-            int l = 0;
-            int r = data.length - 1;
-            while (l < r) {
-                boolean tmp = data[l];
-                data[l] = data[r];
-                data[r] = tmp;
-                l++;
-                r--;
+        /**
+         * 将A[i]更新为A[i]+mod
+         */
+        public void update(int i, int mod) {
+            for (; i <= n; i += i & -i) {
+                data[i] += mod;
             }
         }
 
-        public void toBits(boolean[] bits, int i, long x) {
-            if (x == 0) {
-                return;
-            }
-            bits[i] = (x & 1) == 1;
-            toBits(bits, i + 1, x >>> 1);
-        }
-
-    }
-
-    /**
-     * Mod operations
-     */
-    public static class Modular {
-        int m;
-
-        public Modular(int m) {
-            this.m = m;
-        }
-
-        public int valueOf(int x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return x;
-        }
-
-        public int valueOf(long x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return (int) x;
-        }
-
-        public int mul(int x, int y) {
-            return valueOf((long) x * y);
-        }
-
-        public int mul(long x, long y) {
-            x = valueOf(x);
-            y = valueOf(y);
-            return valueOf(x * y);
-        }
-
-        public int plus(int x, int y) {
-            return valueOf(x + y);
-        }
-
-        public int plus(long x, long y) {
-            x = valueOf(x);
-            y = valueOf(y);
-            return valueOf(x + y);
+        /**
+         * 将A全部清0
+         */
+        public void clear() {
+            Arrays.fill(data, 0);
         }
 
         @Override
         public String toString() {
-            return "mod " + m;
-        }
-    }
-
-
-    /**
-     * Bit operations
-     */
-    public static class BitOperator {
-        public int bitAt(int x, int i) {
-            return (x >> i) & 1;
-        }
-
-        public int bitAt(long x, int i) {
-            return (int) ((x >> i) & 1);
-        }
-
-        public int setBit(int x, int i, boolean v) {
-            if (v) {
-                x |= 1 << i;
-            } else {
-                x &= ~(1 << i);
+            StringBuilder builder = new StringBuilder();
+            for (int i = 1; i <= n; i++) {
+                builder.append(query(i) - query(i - 1)).append(' ');
             }
-            return x;
-        }
-
-        public long setBit(long x, int i, boolean v) {
-            if (v) {
-                x |= 1L << i;
-            } else {
-                x &= ~(1L << i);
-            }
-            return x;
-        }
-
-        /**
-         * Determine whether x is subset of y
-         */
-        public boolean subset(long x, long y) {
-            return intersect(x, y) == x;
-        }
-
-        /**
-         * Merge two set
-         */
-        public long merge(long x, long y) {
-            return x | y;
-        }
-
-        public long intersect(long x, long y) {
-            return x & y;
-        }
-
-        public long differ(long x, long y) {
-            return x - intersect(x, y);
-        }
-    }
-
-    /**
-     * Power operations
-     */
-    public static class Power {
-        final Modular modular;
-
-        public Power(Modular modular) {
-            this.modular = modular;
-        }
-
-        public int pow(int x, long n) {
-            if (n == 0) {
-                return 1;
-            }
-            long r = pow(x, n >> 1);
-            r = modular.valueOf(r * r);
-            if ((n & 1) == 1) {
-                r = modular.valueOf(r * x);
-            }
-            return (int) r;
-        }
-
-        public int inverse(int x) {
-            return pow(x, modular.m - 2);
-        }
-
-        public int pow2(int x) {
-            return x * x;
-        }
-
-        public long pow2(long x) {
-            return x * x;
-        }
-
-        public double pow2(double x) {
-            return x * x;
-        }
-    }
-
-    /**
-     * Log operations
-     */
-    public static class Log2 {
-        public int ceilLog(int x) {
-            return 32 - Integer.numberOfLeadingZeros(x - 1);
-        }
-
-        public int floorLog(int x) {
-            return 31 - Integer.numberOfLeadingZeros(x);
-        }
-
-        public int ceilLog(long x) {
-            return 64 - Long.numberOfLeadingZeros(x - 1);
-        }
-
-        public int floorLog(long x) {
-            return 63 - Long.numberOfLeadingZeros(x);
+            return builder.toString();
         }
     }
 
