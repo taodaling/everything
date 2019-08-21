@@ -9,6 +9,8 @@ public class KMAlgo {
         int visited;
         Node partner;
         int id;
+        boolean leftSide;
+        boolean inMinVertexCover;
 
         @Override
         public String toString() {
@@ -20,11 +22,49 @@ public class KMAlgo {
     Node[] rightSides;
     int version;
 
+    public void findMinVertexCover() {
+        prepare();
+        for (Node r : rightSides) {
+            if (r.partner == null) {
+                dfsRight(r);
+            }
+        }
+
+        for (Node l : leftSides) {
+            l.inMinVertexCover = l.visited == version;
+        }
+        for (Node r : rightSides) {
+            r.inMinVertexCover = r.visited != version;
+        }
+    }
+
+    private void dfsRight(Node node) {
+        if (node.visited == version) {
+            return;
+        }
+        node.visited = version;
+        for (Node next : node.nodes) {
+            dfsLeft(next);
+        }
+    }
+
+    private void dfsLeft(Node node) {
+        if (node.partner == null) {
+            return;
+        }
+        if (node.visited == version) {
+            return;
+        }
+        node.visited = version;
+        dfsRight(node.partner);
+    }
+
     public KMAlgo(int l, int r) {
         leftSides = new Node[l];
         for (int i = 0; i < l; i++) {
             leftSides[i] = new Node();
             leftSides[i].id = i;
+            leftSides[i].leftSide = true;
         }
         rightSides = new Node[r];
         for (int i = 0; i < r; i++) {
@@ -38,7 +78,7 @@ public class KMAlgo {
         rightSides[rId].nodes.add(leftSides[lId]);
     }
 
-    private void init() {
+    private void prepare() {
         version++;
     }
 
@@ -49,7 +89,7 @@ public class KMAlgo {
         if (leftSides[id].partner != null) {
             return false;
         }
-        init();
+        prepare();
         return findPartner(leftSides[id]);
     }
 
@@ -60,7 +100,7 @@ public class KMAlgo {
         if (rightSides[id].partner != null) {
             return false;
         }
-        init();
+        prepare();
         return findPartner(rightSides[id]);
     }
 
@@ -98,14 +138,11 @@ public class KMAlgo {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        for (int i = 1; i < leftSides.length; i++) {
+        for (int i = 0; i < leftSides.length; i++) {
             if (leftSides[i].partner == null) {
                 continue;
             }
-            builder.append(leftSides[i].id).append(" - ").append(leftSides[i].partner.id).append(" || ");
-        }
-        if (builder.length() > 0) {
-            builder.setLength(builder.length() - 4);
+            builder.append(leftSides[i].id).append(" - ").append(leftSides[i].partner.id).append("\n");
         }
         return builder.toString();
     }

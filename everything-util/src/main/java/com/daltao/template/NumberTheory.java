@@ -358,6 +358,14 @@ public class NumberTheory {
             return valueOf(x + y);
         }
 
+        public int subtract(int x, int y) {
+            return valueOf(x - y);
+        }
+
+        public int subtract(long x, long y) {
+            return valueOf(x - y);
+        }
+
         @Override
         public String toString() {
             return "mod " + m;
