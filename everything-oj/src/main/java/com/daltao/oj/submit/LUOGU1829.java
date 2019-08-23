@@ -43,6 +43,16 @@ public class LUOGU1829 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
+        NumberTheory.Modular mod = new NumberTheory.Modular(20101009);
+        NumberTheory.MultiplicativeFunctionSieve sieve = new NumberTheory.MultiplicativeFunctionSieve(10000000, true, false, false);
+        int[] ud2 = new int[10000000 + 1];
+
+        {
+            for (int i = 1; i <= 10000000; i++) {
+                ud2[i] = mod.mul(mod.mul(i, i), sieve.mobius[i]);
+                ud2[i] = mod.plus(ud2[i], ud2[i - 1]);
+            }
+        }
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -52,28 +62,63 @@ public class LUOGU1829 {
         @Override
         public void run() {
             solve();
+
+
+//            debug.debug("b", bruteForce(3, 2));
+//            debug.debug("s", solve(3, 2));
+//            debug.assertTrue(bruteForce(3, 2) == solve(3, 2));
+//            for (int i = 1; i <= 10; i++) {
+//                for (int j = 1; j <= 10; j++) {
+//                    debug.debug("i", i);
+//                    debug.debug("j", j);
+//                    debug.assertTrue(bruteForce(i, j) == solve(i, j));
+//                }
+//            }
+        }
+
+        public int bruteForce(int n, int m) {
+            NumberTheory.Gcd gcd = new NumberTheory.Gcd();
+            int sum = 0;
+            for (int i = 1; i <= n; i++) {
+                for (int j = 1; j <= m; j++) {
+                    sum = mod.plus(sum, i * j / gcd.gcd(i, j));
+                }
+            }
+            return sum;
+        }
+
+        public int solve(int n, int m) {
+            int sum = 0;
+            for (int l = 1, r; l <= n && l <= m; l = r + 1) {
+                r = Math.min(n / (n / l), m / (m / l));
+                int s = mod.subtract(sumOf(r), sumOf(l - 1));
+                s = mod.mul(s, g(n / l, m / l));
+                sum = mod.plus(sum, s);
+            }
+            return sum;
+        }
+
+        public int g(int n, int m) {
+            int sum = 0;
+            for (int l = 1, r; l <= n && l <= m; l = r + 1) {
+                r = Math.min(n / (n / l), m / (m / l));
+                int s = mod.subtract(ud2[r], ud2[l - 1]);
+                s = mod.mul(s, sumOf(n / l));
+                s = mod.mul(s, sumOf(m / l));
+                sum = mod.plus(sum, s);
+            }
+            return sum;
         }
 
         public void solve() {
             int n = io.readInt();
             int m = io.readInt();
 
-            NumberTheory.Modular mod = new NumberTheory.Modular(20101009);
-            NumberTheory.MultiplicativeFunctionSieve sieve = new NumberTheory.MultiplicativeFunctionSieve(n, true, false, false);
-            List<Integer> factors = new ArrayList<>();
-            int decN = n;
-            for (int i = 1; i * i <= decN; i++) {
-                if (n % i != 0) {
-                    continue;
-                }
-                factors.add(i);
-                if (i != decN / i) {
-                    factors.add(decN / i);
-                }
-            }
+            io.cache.append(solve(n, m));
+        }
 
-
-
+        public int sumOf(int n) {
+            return mod.valueOf((long) n * (n + 1) / 2);
         }
     }
 
