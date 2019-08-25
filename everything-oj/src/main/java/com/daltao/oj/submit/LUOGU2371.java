@@ -1,16 +1,16 @@
 package com.daltao.oj.submit;
 
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.TreeSet;
 
-
-public class CFContest {
+public class LUOGU2371 {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
         boolean async = false;
@@ -54,207 +54,72 @@ public class CFContest {
 
         public void solve() {
             int n = io.readInt();
-            int w = io.readInt();
-
-            Segment segment = new Segment(1, w);
-            TreeSet<Interval> set = new TreeSet<Interval>(Interval.sortByL);
+            long bMin = io.readLong();
+            long bMax = io.readLong();
+            int[] a = new int[n];
             for (int i = 0; i < n; i++) {
-                int li = io.readInt();
-                set.clear();
-                for (int j = 1; j <= li; j++) {
-                    int val = io.readInt();
-                    Interval floatArea = new Interval();
-                    floatArea.l = j;
-                    floatArea.r = w + j - li;
-                    floatArea.max = val;
+                a[i] = io.readInt();
+            }
+            a = Arrays.stream(a).filter(x -> x != 0).toArray();
+            n = a.length;
+            if (n == 0) {
+                io.cache.append(0);
+                return;
+            }
 
-                    addInterval(set, floatArea);
-                }
+            Node[] nodes = new Node[a[0]];
+            for (int i = 0; i < a[0]; i++) {
+                nodes[i] = new Node();
+                nodes[i].dist = lInf;
+                nodes[i].id = i;
+            }
 
-                if (li < w) {
-                    Interval prefix = new Interval();
-                    prefix.l = 1;
-                    prefix.r = w - li;
-                    prefix.max = 0;
+            nodes[0].dist = 0;
+            TreeSet<Node> pq = new TreeSet<>((x, y) -> x.dist == y.dist ? x.id - y.id : Long.compare(x.dist, y.dist));
+            for (Node node : nodes) {
+                pq.add(node);
+            }
 
-                    Interval suffix = new Interval();
-                    suffix.l = li + 1;
-                    suffix.r = w;
-                    suffix.max = 0;
-
-                    addInterval(set, prefix);
-                    addInterval(set, suffix);
-                }
-
-                for (Interval interval : set) {
-                    segment.update(interval.l, interval.r, 1, w, interval.max);
+            while (!pq.isEmpty()) {
+                Node head = pq.pollFirst();
+                for (int x : a) {
+                    Node t = nodes[(head.id + x) % a[0]];
+                    if (t.dist > head.dist + x) {
+                        pq.remove(t);
+                        t.dist = head.dist + x;
+                        pq.add(t);
+                    }
                 }
             }
 
-            segment.query(1, w, 1, w, io);
+            long ans = f(nodes, bMax, a[0]) -
+                    f(nodes, bMin - 1, a[0]);
+            io.cache.append(ans);
         }
 
-        public void splitAndAdd(TreeSet<Interval> set, Interval which, Interval middle) {
-            set.remove(which);
-            if (which.r <= middle.r) {
-                which.r = middle.l - 1;
-                if (which.valid()) {
-                    set.add(which);
-                }
-            } else if (which.l >= middle.l) {
-                which.l = middle.r + 1;
-                if (which.valid()) {
-                    set.add(which);
-                }
-            } else {
-                Interval l = new Interval();
-                l.l = which.l;
-                l.r = middle.l - 1;
-                l.max = which.max;
-
-                Interval r = which;
-                r.l = middle.r + 1;
-
-                if (l.valid()) {
-                    set.add(l);
-                }
-                if (r.valid()) {
-                    set.add(r);
+        public long f(Node[] nodes, long n, int mn) {
+            long ans = 0;
+            for (Node node : nodes) {
+                if (node.dist <= n) {
+                    ans += (n - node.dist) / mn + 1;
                 }
             }
-        }
-
-        public void addInterval(TreeSet<Interval> set, Interval interval) {
-            while (!set.isEmpty() && interval.valid()) {
-                Interval floor = set.floor(interval);
-                if (floor == null) {
-                    break;
-                }
-                if (floor.r < interval.l) {
-                    break;
-                }
-                if (floor.max >= interval.max) {
-                    interval.l = floor.r + 1;
-                } else {
-                    splitAndAdd(set, floor, interval);
-                    break;
-                }
-            }
-
-            while (!set.isEmpty() && interval.valid()) {
-                Interval ceil = set.ceiling(interval);
-                if (ceil == null) {
-                    break;
-                }
-                if (ceil.l > interval.r) {
-                    break;
-                }
-                if (ceil.max >= interval.max) {
-                    interval.r = ceil.l - 1;
-                    break;
-                } else {
-                    splitAndAdd(set, ceil, interval);
-                }
-            }
-
-            if (interval.valid()) {
-                set.add(interval);
-            }
+            return ans;
         }
     }
 
-    public static class Segment implements Cloneable {
-        private Segment left;
-        private Segment right;
-        private long val;
-        private long plus;
-
-        public void setPlus(long p) {
-            plus += p;
-            val += p;
-        }
-
-
-        public void pushUp() {
-        }
-
-        public void pushDown() {
-            if (plus != 0) {
-                left.setPlus(plus);
-                right.setPlus(plus);
-                plus = 0;
-            }
-        }
-
-        public Segment(int l, int r) {
-            if (l < r) {
-                int m = (l + r) >> 1;
-                left = new Segment(l, m);
-                right = new Segment(m + 1, r);
-                pushUp();
-            } else {
-
-            }
-        }
-
-        private boolean covered(int ll, int rr, int l, int r) {
-            return ll <= l && rr >= r;
-        }
-
-        private boolean noIntersection(int ll, int rr, int l, int r) {
-            return ll > r || rr < l;
-        }
-
-        public void update(int ll, int rr, int l, int r, long p) {
-            if (noIntersection(ll, rr, l, r)) {
-                return;
-            }
-            if (covered(ll, rr, l, r)) {
-                setPlus(p);
-                return;
-            }
-            pushDown();
-            int m = (l + r) >> 1;
-            left.update(ll, rr, l, m, p);
-            right.update(ll, rr, m + 1, r, p);
-            pushUp();
-        }
-
-        public void query(int ll, int rr, int l, int r, FastIO  io) {
-            if (noIntersection(ll, rr, l, r)) {
-                return;
-            }
-            if (l == r) {
-                io.cache.append(val).append(' ');
-                return;
-            }
-            pushDown();
-            int m = (l + r) >> 1;
-            left.query(ll, rr, l, m, io);
-            right.query(ll, rr, m + 1, r, io);
-        }
-    }
-
-
-    public static class Interval {
-        int l;
-        int r;
-        int max;
-
-        public boolean valid() {
-            return r >= l;
-        }
-
-        public static Comparator<Interval> sortByL = (a, b) -> a.l - b.l;
+    public static class Node {
+        long dist;
+        int id;
     }
 
     public static class FastIO {
-        public final StringBuilder cache = new StringBuilder(20 << 20);
+        public final StringBuilder cache = new StringBuilder(1 << 13);
         private final InputStream is;
         private final OutputStream os;
         private final Charset charset;
-        private StringBuilder defaultStringBuf = new StringBuilder(1 << 8);
-        private byte[] buf = new byte[1 << 20];
+        private StringBuilder defaultStringBuf = new StringBuilder(1 << 13);
+        private byte[] buf = new byte[1 << 13];
         private int bufLen;
         private int bufOffset;
         private int next;
@@ -424,14 +289,10 @@ public class CFContest {
             return c;
         }
 
-        public void flush() {
-            try {
-                os.write(cache.toString().getBytes(charset));
-                os.flush();
-                cache.setLength(0);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        public void flush() throws IOException {
+            os.write(cache.toString().getBytes(charset));
+            os.flush();
+            cache.setLength(0);
         }
 
         public boolean hasMore() {

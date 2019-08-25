@@ -114,10 +114,6 @@ public class ZkwMinCostMaxFlow {
      */
     public void send(double flow) {
         while (flow > 0) {
-            spfa();
-            if (source.distance == INF) {
-                break;
-            }
             while (true) {
                 for (int i = 1; i <= nodeNum; i++) {
                     nodes[i].inque = false;
@@ -128,6 +124,12 @@ public class ZkwMinCostMaxFlow {
                 }
                 flow -= f;
                 this.flow += f;
+            }
+            if (flow > 0) {
+                spfa();
+                if (source.distance == INF) {
+                    break;
+                }
             }
         }
     }
