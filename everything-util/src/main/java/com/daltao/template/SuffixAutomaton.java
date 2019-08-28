@@ -10,6 +10,7 @@ public class SuffixAutomaton {
     Node root;
     Node buildLast;
     Node matchLast;
+    int matchLength;
 
     public SuffixAutomaton() {
         buildLast = root = new Node();
@@ -18,16 +19,24 @@ public class SuffixAutomaton {
 
     public void beginMatch() {
         matchLast = root;
+        matchLength = 0;
     }
 
     public void match(char c) {
         int index = c - MIN_CHARACTER;
+        if (matchLast.next[index] != null) {
+            matchLast = matchLast.next[index];
+            matchLength = matchLength + 1;
+            return;
+        }
         while (matchLast != null && matchLast.next[index] == null) {
             matchLast = matchLast.fail;
         }
         if (matchLast == null) {
             matchLast = root;
+            matchLength = 0;
         } else {
+            matchLength = matchLast.maxlen + 1;
             matchLast = matchLast.next[index];
         }
     }
