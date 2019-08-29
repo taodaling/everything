@@ -17,19 +17,19 @@ public class LUOGU4022Test {
         Assertions.assertTrue(new TestCaseExecutor.Builder()
         .setInputFactory(new Generator())
         .setActualSolution(() -> new Runnable2OJSolution(new MainMethod2Runnable(LUOGU4022.class)))
-        .setExpectedSolution(() -> new Runnable2OJSolution(new Process2Runnable("C:\\Users\\daltao\\VSCodeProject\\oj-c\\target\\LUOGU4022_oj.exe")))
-        .build().call());
+        .setExpectedSolution(() -> new Runnable2OJSolution(new Process2Runnable("D:\\DATABASE\\CODE\\oj-c\\LUOGU4022_OJ.exe")))
+        .setTestTime(10000).build().call());
     }
 
     public static class Generator extends RandomFactory {
         @Override
         public Input newInstance() {
             QueueInput input = new QueueInput();
-            int n = nextInt(1, 1);
+            int n = nextInt(1, 2);
             int m = nextInt(1, 2);
             input.add(n).add(m);
             for (int i = 1; i <= m + n; i++) {
-                int len = nextInt(1, 5);
+                int len = nextInt(1, 10);
                 input.add(String.valueOf(RandomUtils.getRandomCharacterSequence(random, '0', '1', len)));
             }
             return input.end();

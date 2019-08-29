@@ -7,4 +7,16 @@ public interface Input<T> {
      * Has more element?
      */
     boolean available();
+
+    default int readInt() {
+        return Integer.parseInt(read().toString());
+    }
+
+    default double readDouble() {
+        return Double.parseDouble(read().toString());
+    }
+
+    default String readString() {
+        return read().toString();
+    }
 }
