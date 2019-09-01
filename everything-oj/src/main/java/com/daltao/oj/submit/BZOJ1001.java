@@ -13,7 +13,7 @@ import java.util.List;
 
 public class BZOJ1001 {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
+        boolean local = System.getSecurityManager() == null;
         boolean async = false;
 
         Charset charset = Charset.forName("ascii");

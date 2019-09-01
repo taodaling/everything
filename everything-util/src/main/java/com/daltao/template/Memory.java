@@ -2,6 +2,7 @@ package com.daltao.template;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
 public class Memory {
     public static <T> void swap(T[] data, int i, int j) {
@@ -54,6 +55,31 @@ public class Memory {
         System.arraycopy(buf, 0, data, from, len);
     }
 
+    private static int gcd(int a, int b) {
+        return a >= b ? gcd0(a, b) : gcd0(b, a);
+    }
+
+    private static int gcd0(int a, int b) {
+        return b == 0 ? a : gcd0(b, a % b);
+    }
+
+    public static <T> void rotate(List<T> list, int l, int newBeg, int r) {
+        int offset = l;
+        int len = r - l + 1;
+        int step = len - (newBeg - l);
+        int g = gcd0(newBeg, r - l + 1);
+        for (int i = 0; i < g; i++) {
+            T take = list.get(i + offset);
+            int ni = i;
+            while ((ni = (ni + step) % len) != i) {
+                T tmp = list.get(ni + offset);
+                list.set(ni + offset, take);
+                take = tmp;
+            }
+            list.set(i + offset, take);
+        }
+    }
+
     public static <T> void reverse(T[] data, int f, int t) {
         int l = f, r = t - 1;
         while (l < r) {
@@ -93,4 +119,6 @@ public class Memory {
             fill(v, val);
         }
     }
+
+
 }

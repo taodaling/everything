@@ -24,6 +24,7 @@ public class Runnable2OJSolution implements Function<Input, Input> {
         InputStream originInput = System.in;
         PrintStream originOutput = System.out;
         String oj = System.getProperty("ONLINE_JUDGE");
+        System.setSecurityManager(new OJSecurityManager());
         try {
             StringBuilder stringBuilder = new StringBuilder();
             while (input.available()) {
@@ -53,6 +54,7 @@ public class Runnable2OJSolution implements Function<Input, Input> {
             System.setIn(originInput);
             System.setOut(originOutput);
             System.setProperty("ONLINE_JUDGE", StringUtils.valueOf(oj));
+            System.setSecurityManager(null);
         }
     }
 }
