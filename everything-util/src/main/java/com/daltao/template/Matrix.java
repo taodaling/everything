@@ -62,6 +62,16 @@ public class Matrix implements Cloneable {
         return mul(a, b, c);
     }
 
+    public static Matrix region(Matrix x, int b, int t, int l, int r) {
+        Matrix y = new Matrix(t - b + 1, r - l + 1);
+        for (int i = b; i <= t; i++) {
+            for (int j = l; j <= r; j++) {
+                y.mat[i - b][j - l] = x.mat[i][j];
+            }
+        }
+        return y;
+    }
+
     public static Matrix pow(Matrix x, int n) {
         if (n == 0) {
             Matrix r = new Matrix(x.n, x.m);
@@ -74,6 +84,46 @@ public class Matrix implements Cloneable {
             r = Matrix.mul(r, x);
         }
         return r;
+    }
+
+    public static double determinant(Matrix x) {
+        if (x.n != x.m) {
+            throw new RuntimeException("Matrix is not square");
+        }
+        int n = x.n;
+        Matrix l = new Matrix(x);
+        double ans = 1;
+        for (int i = 0; i < n; i++) {
+            int maxRow = i;
+            for (int j = i; j < n; j++) {
+                if (Math.abs(l.mat[j][i]) > Math.abs(l.mat[maxRow][i])) {
+                    maxRow = j;
+                }
+            }
+
+            if (l.mat[maxRow][i] == 0) {
+                return 0;
+            }
+            if (i != maxRow) {
+                l.swapRow(i, maxRow);
+                ans = -ans;
+            }
+            ans *= l.mat[i][i];
+            l.divideRow(i, l.mat[i][i]);
+
+            for (int j = i + 1; j < n; j++) {
+                if (j == i) {
+                    continue;
+                }
+                if (l.mat[j][i] == 0) {
+                    continue;
+                }
+                double f = l.mat[j][i];
+                l.subtractRow(j, i, f);
+            }
+        }
+
+        return ans;
     }
 
     public static Matrix inverse(Matrix x) {

@@ -429,6 +429,10 @@ public class NumberTheory {
      * Power operations
      */
     public static class Power {
+        public Modular getModular() {
+            return modular;
+        }
+
         final Modular modular;
 
         public Power(Modular modular) {
