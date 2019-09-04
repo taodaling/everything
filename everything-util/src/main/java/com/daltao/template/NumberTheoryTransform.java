@@ -23,7 +23,7 @@ public class NumberTheoryTransform {
         }
     }
 
-    public static void reverse(int[] r, int b) {
+    public static void prepareReverse(int[] r, int b) {
         int n = 1 << b;
         r[0] = 0;
         for (int i = 1; i < n; i++) {
@@ -77,6 +77,58 @@ public class NumberTheoryTransform {
         }
     }
 
+    public static void reverse(int[] p, int l, int r) {
+        while (l < r) {
+            int tmp = p[l];
+            p[l] = p[r];
+            p[r] = tmp;
+            l++;
+            r--;
+        }
+    }
+
+    public static int rankOf(int[] p) {
+        for (int i = p.length - 1; i >= 0; i--) {
+            if (p[i] > 0) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * calc a = b * c + remainder
+     */
+    public static void divide(int[] r, int[] a, int[] b, int[] c, int[] remainder, int m)  {
+        int rankA = rankOf(a);
+        int rankB = rankOf(b);
+        reverse(a, 0, rankA);
+        reverse(b, 0, rankB);
+        inverse(r, b, c, remainder, m - 1);
+        dft(r, a, m);
+        dft(r, c, m);
+        dotMul(a, c, c, m);
+        idft(r, a, m);
+        idft(r, c, m);
+        reverse(a, 0, rankA);
+        reverse(b, 0, rankB);
+        for (int i = rankA - rankB + 1; i < c.length; i++) {
+            c[i] = 0;
+        }
+        reverse(c, 0, rankA - rankB);
+
+        dft(r, a, m);
+        dft(r, b, m);
+        dft(r, c, m);
+        for (int i = 0; i < remainder.length; i++) {
+            remainder[i] = MODULAR.subtract(a[i], MODULAR.mul(b[i], c[i]));
+        }
+        idft(r, a, m);
+        idft(r, b, m);
+        idft(r, c, m);
+        idft(r, remainder, m);
+    }
+
     /**
      * return polynomial g while p * g = 1 (mod x^m).
      * <br>
@@ -91,7 +143,7 @@ public class NumberTheoryTransform {
         int n = 1 << (m + 1);
         System.arraycopy(p, 0, buf, 0, 1 << m);
         Arrays.fill(buf, 1 << m, 1 << (m + 1), 0);
-        reverse(r, (m + 1));
+        prepareReverse(r, (m + 1));
         dft(r, buf, (m + 1));
         dft(r, inv, (m + 1));
         for (int i = 0; i < n; i++) {
