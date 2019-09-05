@@ -13,7 +13,7 @@ import java.util.*;
 public class CFContest {
     public static void main(String[] args) throws Exception {
         boolean local = System.getProperty("ONLINE_JUDGE") == null;
-        boolean async = false;
+        boolean async = true;
 
         Charset charset = Charset.forName("ascii");
 
@@ -52,200 +52,359 @@ public class CFContest {
             solve();
         }
 
+        ConnectionChecker checker;
+        Set<Long> exist;
+
         public void solve() {
             int n = io.readInt();
-            int w = io.readInt();
+            int m = io.readInt();
+            checker = new ConnectionChecker(n);
 
-            Segment segment = new Segment(1, w);
-            TreeSet<Interval> set = new TreeSet<Interval>(Interval.sortByL);
+            Query[][] queries = new Query[2][m];
+            Map<Long, Query> edgeMap = new HashMap<>(m);
+            exist = new HashSet<>(m);
+
+            for (int i = 0; i < m; i++) {
+                int t = io.readInt();
+                int x = io.readInt();
+                int y = io.readInt();
+                for (int j = 0; j < 2; j++) {
+                    queries[j][i] = new Query();
+                    queries[j][i].t = t;
+                    queries[j][i].x = (x + j - 1) % n;
+                    queries[j][i].y = (y + j - 1) % n;
+                    queries[j][i].edgeId = idOfEdge(queries[j][i].x, queries[j][i].y);
+                    queries[j][i].time = i;
+                }
+                queries[0][i].opposite = queries[1][i];
+                queries[1][i].opposite = queries[0][i];
+            }
+
+
+            for (int i = m - 1; i >= 0; i--) {
+                if (queries[0][i].t == 2) {
+                    continue;
+                }
+                for (int j = 0; j < 2; j++) {
+                    queries[j][i].next = edgeMap.get(queries[j][i].edgeId);
+                }
+                for (int j = 0; j < 2; j++) {
+                    edgeMap.put(queries[j][i].edgeId, queries[j][i]);
+                }
+            }
+
+            int last = 0;
+            for (int i = 0; i < m; i++) {
+                Query q = queries[last][i];
+                checker.elapse(q.time);
+                if (q.t == 2) {
+                    last = checker.check(q.x, q.y) ? 1 : 0;
+                    io.cache.append(last);
+                    continue;
+                }
+                if (q.revokeOpp && !equal(q, q.opposite)) {
+                    addEdge(q.opposite);
+                }
+                if (exist.contains(q.edgeId)) {
+                    exist.remove(q.edgeId);
+                    continue;
+                }
+                addEdge(q);
+            }
+        }
+
+        public boolean equal(Query a, Query b) {
+            return a.x == b.x && a.y == b.y || a.y == b.x && a.x == b.y;
+        }
+
+        public void addEdge(Query q) {
+            exist.add(q.edgeId);
+            int dieTime = q.next == null ?
+                    inf : q.next.time;
+            checker.addEdge(q.x, q.y,
+                    dieTime);
+            if (q.next != null) {
+                q.next.opposite.revokeOpp = true;
+            }
+        }
+
+        public long idOfEdge(int a, int b) {
+            if (a > b) {
+                int tmp = a;
+                a = b;
+                b = tmp;
+            }
+            return (((long) a) << 32) | b;
+        }
+    }
+
+    public static class Query {
+        int time;
+        int x;
+        int y;
+        int t;
+        long edgeId;
+        Query opposite;
+        Query next;
+        boolean revokeOpp;
+    }
+
+    public static class ConnectionChecker {
+        private LCTNode[] nodes;
+        private int time = -1;
+
+        public ConnectionChecker(int n) {
+            nodes = new LCTNode[n];
             for (int i = 0; i < n; i++) {
-                int li = io.readInt();
-                set.clear();
-                for (int j = 1; j <= li; j++) {
-                    int val = io.readInt();
-                    Interval floatArea = new Interval();
-                    floatArea.l = j;
-                    floatArea.r = w + j - li;
-                    floatArea.max = val;
-
-                    addInterval(set, floatArea);
-                }
-
-                if (li < w) {
-                    Interval prefix = new Interval();
-                    prefix.l = 1;
-                    prefix.r = w - li;
-                    prefix.max = 0;
-
-                    Interval suffix = new Interval();
-                    suffix.l = li + 1;
-                    suffix.r = w;
-                    suffix.max = 0;
-
-                    addInterval(set, prefix);
-                    addInterval(set, suffix);
-                }
-
-                for (Interval interval : set) {
-                    segment.update(interval.l, interval.r, 1, w, interval.max);
-                }
+                nodes[i] = new LCTNode();
+                nodes[i].id = i;
+                nodes[i].dieTime = Integer.MAX_VALUE;
+                nodes[i].pushUp();
             }
-
-            segment.query(1, w, 1, w, io);
-        }
-
-        public void splitAndAdd(TreeSet<Interval> set, Interval which, Interval middle) {
-            set.remove(which);
-            if (which.r <= middle.r) {
-                which.r = middle.l - 1;
-                if (which.valid()) {
-                    set.add(which);
-                }
-            } else if (which.l >= middle.l) {
-                which.l = middle.r + 1;
-                if (which.valid()) {
-                    set.add(which);
-                }
-            } else {
-                Interval l = new Interval();
-                l.l = which.l;
-                l.r = middle.l - 1;
-                l.max = which.max;
-
-                Interval r = which;
-                r.l = middle.r + 1;
-
-                if (l.valid()) {
-                    set.add(l);
-                }
-                if (r.valid()) {
-                    set.add(r);
-                }
+            for (int i = 1; i < n; i++) {
+                LCTNode node = new LCTNode();
+                node.dieTime = time;
+                node.a = nodes[i - 1];
+                node.b = nodes[i];
+                node.pushUp();
+                LCTNode.join(node.a, node);
+                LCTNode.join(node.b, node);
             }
         }
 
-        public void addInterval(TreeSet<Interval> set, Interval interval) {
-            while (!set.isEmpty() && interval.valid()) {
-                Interval floor = set.floor(interval);
-                if (floor == null) {
-                    break;
+        /**
+         * 增加一条有效期截止到dieTime的边
+         */
+        public void addEdge(int aId, int bId, int dieTime) {
+            LCTNode a = nodes[aId];
+            LCTNode b = nodes[bId];
+            LCTNode.findRoute(a, b);
+            LCTNode.splay(a);
+            if (a.eldest.dieTime >= dieTime) {
+                return;
+            }
+            LCTNode eldest = a.eldest;
+            LCTNode.splay(eldest);
+            LCTNode.cut(eldest.a, eldest);
+            LCTNode.cut(eldest.b, eldest);
+
+            LCTNode node = new LCTNode();
+            node.dieTime = dieTime;
+            node.a = a;
+            node.b = b;
+            node.pushUp();
+            LCTNode.join(node.a, node);
+            LCTNode.join(node.b, node);
+        }
+
+        /**
+         * 检查两个顶点之间是否存在一条路径
+         */
+        public boolean check(int aId, int bId) {
+            LCTNode a = nodes[aId];
+            LCTNode b = nodes[bId];
+            LCTNode.findRoute(a, b);
+            LCTNode.splay(b);
+            return b.eldest.dieTime > time;
+        }
+
+
+        public void elapse(int t) {
+            time = t;
+        }
+
+        private static class LCTNode {
+            public static final LCTNode NIL = new LCTNode();
+
+            static {
+                NIL.left = NIL;
+                NIL.right = NIL;
+                NIL.father = NIL;
+                NIL.treeFather = NIL;
+                NIL.dieTime = Integer.MAX_VALUE;
+                NIL.eldest = NIL;
+            }
+
+            LCTNode left = NIL;
+            LCTNode right = NIL;
+            LCTNode father = NIL;
+            LCTNode treeFather = NIL;
+            boolean reverse;
+            int id;
+
+            LCTNode a;
+            LCTNode b;
+            LCTNode eldest;
+            int dieTime;
+
+            public static LCTNode elder(LCTNode a, LCTNode b) {
+                return a.dieTime < b.dieTime ? a : b;
+            }
+
+            public static void access(LCTNode x) {
+                LCTNode last = NIL;
+                while (x != NIL) {
+                    splay(x);
+                    x.right.father = NIL;
+                    x.right.treeFather = x;
+                    x.setRight(last);
+                    x.pushUp();
+
+                    last = x;
+                    x = x.treeFather;
                 }
-                if (floor.r < interval.l) {
-                    break;
+            }
+
+            public static void makeRoot(LCTNode x) {
+                access(x);
+                splay(x);
+                x.reverse();
+            }
+
+            public static void cut(LCTNode y, LCTNode x) {
+                makeRoot(y);
+                access(x);
+                splay(y);
+                y.right.treeFather = NIL;
+                y.right.father = NIL;
+                y.setRight(NIL);
+                y.pushUp();
+            }
+
+            public static void join(LCTNode y, LCTNode x) {
+                makeRoot(x);
+                x.treeFather = y;
+            }
+
+            public static void findRoute(LCTNode x, LCTNode y) {
+                makeRoot(y);
+                access(x);
+            }
+
+            public static void splay(LCTNode x) {
+                if (x == NIL) {
+                    return;
                 }
-                if (floor.max >= interval.max) {
-                    interval.l = floor.r + 1;
+                LCTNode y, z;
+                while ((y = x.father) != NIL) {
+                    if ((z = y.father) == NIL) {
+                        y.pushDown();
+                        x.pushDown();
+                        if (x == y.left) {
+                            zig(x);
+                        } else {
+                            zag(x);
+                        }
+                    } else {
+                        z.pushDown();
+                        y.pushDown();
+                        x.pushDown();
+                        if (x == y.left) {
+                            if (y == z.left) {
+                                zig(y);
+                                zig(x);
+                            } else {
+                                zig(x);
+                                zag(x);
+                            }
+                        } else {
+                            if (y == z.left) {
+                                zag(x);
+                                zig(x);
+                            } else {
+                                zag(y);
+                                zag(x);
+                            }
+                        }
+                    }
+                }
+
+                x.pushDown();
+                x.pushUp();
+            }
+
+            public static void zig(LCTNode x) {
+                LCTNode y = x.father;
+                LCTNode z = y.father;
+                LCTNode b = x.right;
+
+                y.setLeft(b);
+                x.setRight(y);
+                z.changeChild(y, x);
+
+                y.pushUp();
+            }
+
+            public static void zag(LCTNode x) {
+                LCTNode y = x.father;
+                LCTNode z = y.father;
+                LCTNode b = x.left;
+
+                y.setRight(b);
+                x.setLeft(y);
+                z.changeChild(y, x);
+
+                y.pushUp();
+            }
+
+            public static LCTNode findRoot(LCTNode x) {
+                x.pushDown();
+                while (x.left != NIL) {
+                    x = x.left;
+                    x.pushDown();
+                }
+                splay(x);
+                return x;
+            }
+
+            @Override
+            public String toString() {
+                return "" + id;
+            }
+
+            public void pushDown() {
+                if (reverse) {
+                    reverse = false;
+
+                    LCTNode tmpNode = left;
+                    left = right;
+                    right = tmpNode;
+
+                    left.reverse();
+                    right.reverse();
+                }
+
+                left.treeFather = treeFather;
+                right.treeFather = treeFather;
+            }
+
+            public void reverse() {
+                reverse = !reverse;
+            }
+
+            public void setLeft(LCTNode x) {
+                left = x;
+                x.father = this;
+            }
+
+            public void setRight(LCTNode x) {
+                right = x;
+                x.father = this;
+            }
+
+            public void changeChild(LCTNode y, LCTNode x) {
+                if (left == y) {
+                    setLeft(x);
                 } else {
-                    splitAndAdd(set, floor, interval);
-                    break;
+                    setRight(x);
                 }
             }
 
-            while (!set.isEmpty() && interval.valid()) {
-                Interval ceil = set.ceiling(interval);
-                if (ceil == null) {
-                    break;
-                }
-                if (ceil.l > interval.r) {
-                    break;
-                }
-                if (ceil.max >= interval.max) {
-                    interval.r = ceil.l - 1;
-                    break;
-                } else {
-                    splitAndAdd(set, ceil, interval);
-                }
-            }
-
-            if (interval.valid()) {
-                set.add(interval);
+            public void pushUp() {
+                eldest = elder(this, left.eldest);
+                eldest = elder(eldest, right.eldest);
             }
         }
-    }
-
-    public static class Segment implements Cloneable {
-        private Segment left;
-        private Segment right;
-        private long val;
-        private long plus;
-
-        public void setPlus(long p) {
-            plus += p;
-            val += p;
-        }
-
-
-        public void pushUp() {
-        }
-
-        public void pushDown() {
-            if (plus != 0) {
-                left.setPlus(plus);
-                right.setPlus(plus);
-                plus = 0;
-            }
-        }
-
-        public Segment(int l, int r) {
-            if (l < r) {
-                int m = (l + r) >> 1;
-                left = new Segment(l, m);
-                right = new Segment(m + 1, r);
-                pushUp();
-            } else {
-
-            }
-        }
-
-        private boolean covered(int ll, int rr, int l, int r) {
-            return ll <= l && rr >= r;
-        }
-
-        private boolean noIntersection(int ll, int rr, int l, int r) {
-            return ll > r || rr < l;
-        }
-
-        public void update(int ll, int rr, int l, int r, long p) {
-            if (noIntersection(ll, rr, l, r)) {
-                return;
-            }
-            if (covered(ll, rr, l, r)) {
-                setPlus(p);
-                return;
-            }
-            pushDown();
-            int m = (l + r) >> 1;
-            left.update(ll, rr, l, m, p);
-            right.update(ll, rr, m + 1, r, p);
-            pushUp();
-        }
-
-        public void query(int ll, int rr, int l, int r, FastIO  io) {
-            if (noIntersection(ll, rr, l, r)) {
-                return;
-            }
-            if (l == r) {
-                io.cache.append(val).append(' ');
-                return;
-            }
-            pushDown();
-            int m = (l + r) >> 1;
-            left.query(ll, rr, l, m, io);
-            right.query(ll, rr, m + 1, r, io);
-        }
-    }
-
-
-    public static class Interval {
-        int l;
-        int r;
-        int max;
-
-        public boolean valid() {
-            return r >= l;
-        }
-
-        public static Comparator<Interval> sortByL = (a, b) -> a.l - b.l;
     }
 
     public static class FastIO {
