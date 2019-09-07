@@ -11,7 +11,7 @@ public class BZOJ2049 {
     public static BlockReader input;
 
     public static void main(String[] args) throws FileNotFoundException, InterruptedException {
-        System.setIn(new FileInputStream("D:\\DataBase\\TESTCASE\\bzoj\\BZOJ2049.in"));
+        System.setIn(new FileInputStream("D:\\DataBase\\TESTCASE\\code.in"));
         input = new BlockReader(System.in);
         while (input.hasMore()) {
             BZOJ2049 solution = new BZOJ2049();

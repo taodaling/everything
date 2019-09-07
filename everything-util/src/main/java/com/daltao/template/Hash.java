@@ -3,63 +3,63 @@ package com.daltao.template;
 public class Hash {
     private static final NumberTheory.Modular MOD = new NumberTheory.Modular((int) (1e9 + 7));
     private int[] inverse;
+    private int[] xs;
     private int[] hash;
     private int n;
-    private int x;
-    private int invX;
 
     public static interface ToHash<T> {
         int hash(T obj);
     }
 
+    public Hash(Hash model) {
+        inverse = model.inverse;
+        hash = new int[model.hash.length];
+        n = model.n;
+        xs = model.xs;
+    }
+
     public Hash(int size, int x) {
         inverse = new int[size];
         hash = new int[size];
-        this.x = x;
-        this.invX = new NumberTheory.Power(MOD).inverse(x);
+        xs = new int[size];
+        int invX = new NumberTheory.Power(MOD).inverse(x);
         inverse[0] = 1;
+        xs[0] = 1;
         for (int i = 1; i < size; i++) {
             this.inverse[i] = MOD.mul(this.inverse[i - 1], invX);
+            xs[i] = MOD.mul(xs[i - 1], x);
         }
     }
 
     public <T> void populate(T[] data, int n, ToHash<T> toHash) {
         this.n = n;
         hash[0] = toHash.hash(data[0]);
-        int xn = 1;
         for (int i = 1; i < n; i++) {
-            xn = MOD.mul(xn, x);
-            hash[i] = MOD.plus(hash[i - 1], MOD.mul(toHash.hash(data[i]), xn));
+            hash[i] = MOD.plus(hash[i - 1], MOD.mul(toHash.hash(data[i]), xs[i]));
         }
     }
 
     public void populate(Object[] data, int n) {
         this.n = n;
         hash[0] = data[0].hashCode();
-        int xn = 1;
         for (int i = 1; i < n; i++) {
-            xn = MOD.mul(xn, x);
-            hash[i] = MOD.plus(hash[i - 1], MOD.mul(data[i].hashCode(), xn));
+            hash[i] = MOD.plus(hash[i - 1], MOD.mul(data[i].hashCode(), xs[i]));
         }
     }
 
     public void populate(int[] data, int n) {
         this.n = n;
         hash[0] = data[0];
-        int xn = 1;
         for (int i = 1; i < n; i++) {
-            xn = MOD.mul(xn, x);
-            hash[i] = MOD.plus(hash[i - 1], MOD.mul(data[i], xn));
+            hash[i] = MOD.plus(hash[i - 1], MOD.mul(data[i], xs[i]));
         }
     }
 
     public void populate(char[] data, int n) {
         this.n = n;
         hash[0] = data[0];
-        int xn = 1;
         for (int i = 1; i < n; i++) {
-            xn = MOD.mul(xn, x);
-            hash[i] = MOD.plus(hash[i - 1], MOD.mul(data[i], xn));
+            hash[i] = MOD.plus(hash[i - 1], MOD.mul(data[i], xs[i]));
         }
     }
 
