@@ -97,7 +97,7 @@ public class NumberTheoryTransform {
     }
 
     /**
-     * calc a = b * c + remainder
+     * calc a = b * c + remainder, m >= 1 + ceil(log_2 max(|a|, |b|))
      */
     public static void divide(int[] r, int[] a, int[] b, int[] c, int[] remainder, int m)  {
         int rankA = rankOf(a);
