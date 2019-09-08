@@ -1,4 +1,4 @@
-package test.com.daltao.oj.submit;
+package com.daltao.oj.submit;
 
 import com.daltao.oj.old.submit.bzoj.BZOJ2049V2;
 import com.daltao.oj.submit.BZOJ2049;
@@ -64,7 +64,7 @@ public class BZOJ2049Test {
             set.clear();
             QueueInput input = new QueueInput();
             int n = nextInt(2, 50);
-            int m = nextInt(1, 50);
+            int m = nextInt(1, 500);
             input.add(n).add(m);
 
             for (int i = 0; i < m; i++) {

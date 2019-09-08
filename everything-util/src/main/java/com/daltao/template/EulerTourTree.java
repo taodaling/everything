@@ -125,10 +125,15 @@ public class EulerTourTree {
         l = Splay.selectMaxAsRoot(l);
         r = Splay.selectMinAsRoot(r);
 
-        Splay rSnapshot = r;
-        r = Splay.splitRight(r);
-        destroy(rSnapshot);
-        nodes[l.id] = l;
+        if(nodes[l.id] == l) {
+            Splay rSnapshot = r;
+            r = Splay.splitRight(r);
+            destroy(rSnapshot);
+        }else{
+            Splay lSnapshot = l;
+            l = Splay.splitLeft(l);
+            destroy(lSnapshot);
+        }
 
         Splay.merge(l, r);
         destroy(e.a);

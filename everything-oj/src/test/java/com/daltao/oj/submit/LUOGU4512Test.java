@@ -1,4 +1,4 @@
-package test.com.daltao.oj.submit;
+package com.daltao.oj.submit;
 
 import com.daltao.oj.submit.LUOGU4512;
 import com.daltao.oj.tool.MainMethod2Runnable;
