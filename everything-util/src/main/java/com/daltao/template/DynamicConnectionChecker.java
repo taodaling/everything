@@ -233,7 +233,6 @@ public class DynamicConnectionChecker {
             Splay.merge(nodes[i], Splay.merge(l, newNode));
         }
 
-
         public void link(EdgeInfo info) {
             int i = info.a;
             int j = info.b;

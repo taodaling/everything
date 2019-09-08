@@ -46,9 +46,13 @@ public class EulerTourTree {
         Splay a = Splay.selectMinAsRoot(l);
         Splay b = Splay.selectMaxAsRoot(nodes[i]);
 
-        Splay.splitLeft(b);
-        destroy(b);
-        nodes[a.id] = a;
+        if (nodes[a.id] == a) {
+            Splay.splitLeft(b);
+            destroy(b);
+        } else {
+            l = Splay.splitRight(a);
+            destroy(a);
+        }
 
         Splay newNode = alloc(i);
         Splay.splay(nodes[i]);
@@ -125,11 +129,11 @@ public class EulerTourTree {
         l = Splay.selectMaxAsRoot(l);
         r = Splay.selectMinAsRoot(r);
 
-        if(nodes[l.id] == l) {
+        if (nodes[l.id] == l) {
             Splay rSnapshot = r;
             r = Splay.splitRight(r);
             destroy(rSnapshot);
-        }else{
+        } else {
             Splay lSnapshot = l;
             l = Splay.splitLeft(l);
             destroy(lSnapshot);
