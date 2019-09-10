@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.TreeMap;
 
 public class BZOJ4552 {
@@ -50,7 +52,7 @@ public class BZOJ4552 {
         }
 
 
-        TreeMap<Integer, Interval> map = new TreeMap<>();
+        TreeMap<Integer, Interval> map = new TreeMap();
         int n;
 
         public void solve() {
@@ -58,12 +60,11 @@ public class BZOJ4552 {
             int m = io.readInt();
 
             for (int i = 1; i <= n; i++) {
-                CountSegment segment = CountSegment.NIL.clone();
+                MergeAbleSegment segment = MergeAbleSegment.alloc();
                 segment.update(io.readInt(), 1, n, 1);
                 map.put(i, new Interval(segment, i, i));
             }
             for (int i = 1; i <= m; i++) {
-                debug.debug("i", i);
                 int op = io.readInt();
                 int l = io.readInt();
                 int r = io.readInt();
@@ -77,7 +78,7 @@ public class BZOJ4552 {
                     left.segment.merge(1, n, next.segment);
                 }
 
-                left.rev = op == 2;
+                left.rev = op == 1;
             }
 
             int q = io.readInt();
@@ -113,12 +114,12 @@ public class BZOJ4552 {
     }
 
     public static class Interval implements Cloneable {
-        CountSegment segment;
+        MergeAbleSegment segment;
         int l;
         int r;
         boolean rev;
 
-        public Interval(CountSegment segment, int l, int r) {
+        public Interval(MergeAbleSegment segment, int l, int r) {
             this.segment = segment;
             this.l = l;
             this.r = r;
@@ -426,10 +427,25 @@ public class BZOJ4552 {
         }
     }
 
-    public static class CountSegment implements Cloneable {
-        private static final CountSegment NIL = new CountSegment();
-        private CountSegment left;
-        private CountSegment right;
+    public static class MergeAbleSegment implements Cloneable {
+        private static final MergeAbleSegment NIL = new MergeAbleSegment();
+        private static Deque<MergeAbleSegment> allocator = new ArrayDeque();
+
+        public static MergeAbleSegment alloc() {
+            return new MergeAbleSegment();
+        }
+
+        public static void destroy(MergeAbleSegment segment) {
+            //allocator.addLast(segment);
+        }
+
+        static {
+            NIL.left = NIL;
+            NIL.right = NIL;
+        }
+
+        private MergeAbleSegment left;
+        private MergeAbleSegment right;
         private int cnt;
 
         public void pushUp() {
@@ -437,12 +453,10 @@ public class BZOJ4552 {
         }
 
         public void pushDown() {
-            left = left.clone();
-            right = right.clone();
         }
 
-        public CountSegment() {
-            left = right = this;
+        public MergeAbleSegment() {
+            left = right = NIL;
         }
 
         private boolean covered(int ll, int rr, int l, int r) {
@@ -454,17 +468,23 @@ public class BZOJ4552 {
         }
 
         public void update(int x, int l, int r, int mod) {
-            if (noIntersection(x, x, l, r)) {
-                return;
-            }
-            if (covered(x, x, l, r)) {
-                cnt++;
+            if (l == r) {
+                cnt += mod;
                 return;
             }
             pushDown();
             int m = (l + r) >> 1;
-            left.update(x, l, m, mod);
-            right.update(x, m + 1, r, mod);
+            if (x <= m) {
+                if (left == NIL) {
+                    left = alloc();
+                }
+                left.update(x, l, m, mod);
+            } else {
+                if (right == NIL) {
+                    right = alloc();
+                }
+                right.update(x, m + 1, r, mod);
+            }
             pushUp();
         }
 
@@ -496,25 +516,37 @@ public class BZOJ4552 {
          * split this by kth element, and kth element belong to the left part.
          * Return the k-th element as result
          */
-        public CountSegment splitByKth(int k, int l, int r) {
-            if (k <= 0) {
-                return CountSegment.NIL;
-            }
-            CountSegment ret = clone();
+        public MergeAbleSegment splitByKth(int k, int l, int r) {
+            MergeAbleSegment ret = alloc();
             if (l == r) {
                 ret.cnt = k;
                 cnt -= k;
                 return ret;
             }
             int m = (l + r) >> 1;
-            ret.right = right.splitByKth(k - ret.cnt, m + 1, r);
-            ret.left = left.splitByKth(k, l, m);
+            if (k >= left.cnt) {
+                k -= left.cnt;
+                ret.left = left;
+                left = NIL;
+            } else {
+                ret.left = left.splitByKth(k, l, m);
+                k = 0;
+            }
+            if (k > 0) {
+                if (k >= right.cnt) {
+                    ret.right = right;
+                    right = NIL;
+                } else {
+                    ret.right = right.splitByKth(k, l, m);
+                }
+            }
+
             ret.pushUp();
             this.pushUp();
             return ret;
         }
 
-        public CountSegment merge(int l, int r, CountSegment segment) {
+        public MergeAbleSegment merge(int l, int r, MergeAbleSegment segment) {
             if (this == NIL) {
                 return segment;
             } else if (segment == NIL) {
@@ -522,22 +554,15 @@ public class BZOJ4552 {
             }
             if (l == r) {
                 cnt += segment.cnt;
+                destroy(segment);
                 return this;
             }
             int m = (l + r) >> 1;
             left = left.merge(l, m, segment.left);
             right = right.merge(m + 1, r, segment.right);
+            destroy(segment);
             pushUp();
             return this;
-        }
-
-        @Override
-        public CountSegment clone() {
-            try {
-                return (CountSegment) super.clone();
-            } catch (CloneNotSupportedException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 
