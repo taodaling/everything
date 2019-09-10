@@ -22,7 +22,7 @@ public class TestCaseExecutor implements Callable<Boolean> {
     private int testTime;
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
     private long timeLimitForEachTestCase;
-    private static MessageFormat passPrompt = new MessageFormat("Pass test ({0} ms): {1}\n\n");
+    private static MessageFormat passPrompt = new MessageFormat("Pass test ({0} ms / {2} ms): {1}\n\n");
 
     private TestCaseExecutor(Factory<Function<Input, Input>> actualSolution, Factory<Function<Input, Input>> expectedSolution, Factory<Input> inputFactory,
             Factory<Checker> checkerFactory, Consumer<Input[]> failInputRecord, Appendable debugOutput, int testTime, long timeLimitForEachTestCase) {
@@ -60,9 +60,13 @@ public class TestCaseExecutor implements Callable<Boolean> {
                 throw new RuntimeException(e);
             }
 
+            System.gc();
+            long expBeginTime = System.currentTimeMillis();
+            long expTakeTime = 0;
             try {
                 output1 = new MultiDirectionInput(executorService.submit(() -> expectedSolution.newInstance().apply(input.getInput(1)))
                         .get(), 2);
+                expTakeTime = System.currentTimeMillis() - expBeginTime;
             } catch (Exception t) {
                 t.printStackTrace();
                 try {
@@ -74,6 +78,7 @@ public class TestCaseExecutor implements Callable<Boolean> {
                 output1 = new MultiDirectionInput(EmptyInput.getInstance(), 1);
             }
 
+            System.gc();
             long beginTime = System.currentTimeMillis();
             long takeTime = 0;
             try {
@@ -113,7 +118,7 @@ public class TestCaseExecutor implements Callable<Boolean> {
             }
 
             try {
-                debugOutput.append(passPrompt.format(new Object[]{takeTime, i}));
+                debugOutput.append(passPrompt.format(new Object[]{takeTime, i, expTakeTime}));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

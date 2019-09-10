@@ -5,7 +5,7 @@ import java.util.Comparator;
 /**
  * Created by dalt on 2018/5/20.
  */
-public class St<T> {
+public class SparseTable<T> {
     //st[i][j] means the min value between [i, i + 2^j),
     //so st[i][j] equals to min(st[i][j - 1], st[i + 2^(j - 1)][j - 1])
     Object[][] st;
@@ -13,7 +13,7 @@ public class St<T> {
 
     int[] floorLogTable;
 
-    public St(Object[] data, int length, Comparator<T> comparator) {
+    public SparseTable(Object[] data, int length, Comparator<T> comparator) {
         int m = floorLog2(length);
         st = new Object[m + 1][length];
         this.comparator = comparator;

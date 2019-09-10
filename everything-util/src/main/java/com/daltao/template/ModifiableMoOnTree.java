@@ -45,7 +45,7 @@ public class ModifiableMoOnTree {
         eulerTrace = new Node[nodes.length * 2];
         lcaTrace = new Node[nodes.length * 2 - 1];
         dfs(nodes[0], null);
-        st = new St(lcaTrace, lcaTraceTail, new Comparator<Node>() {
+        sparseTable = new SparseTable(lcaTrace, lcaTraceTail, new Comparator<Node>() {
             @Override
             public int compare(Node a, Node b) {
                 return a.dfn - b.dfn;
@@ -57,7 +57,7 @@ public class ModifiableMoOnTree {
     int eulerTraceTail = 0;
     Node[] lcaTrace;
     int lcaTraceTail = 0;
-    St<Node> st;
+    SparseTable<Node> sparseTable;
 
     private void dfs(Node root, Node father) {
         root.open = eulerTraceTail;
@@ -95,7 +95,7 @@ public class ModifiableMoOnTree {
                 q.l = v.close;
                 q.r = u.close - 1;
             }
-            q.lca = st.query(Math.min(u.dfn, v.dfn), Math.max(u.dfn, v.dfn)).id;
+            q.lca = sparseTable.query(Math.min(u.dfn, v.dfn), Math.max(u.dfn, v.dfn)).id;
         }
 
         Arrays.sort(queries, new Comparator<Query>() {
