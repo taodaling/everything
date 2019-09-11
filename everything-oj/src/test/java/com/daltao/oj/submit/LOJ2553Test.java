@@ -17,17 +17,17 @@ public class LOJ2553Test {
     public void test(){
         Assert.assertTrue(new TestCaseExecutor.Builder()
         .setInputFactory(new Generator())
-        .setExpectedSolution(() -> new Runnable2OJSolution(new Process2Runnable("C:\\Users\\daltao\\VSCodeProject\\oj-c\\target\\LOJ2553_oj.exe")))
-        .setActualSolution(() -> new Runnable2OJSolution(new MainMethod2Runnable(LOJ2553.class)))
+        .setExpectedSolution(() -> new Runnable2OJSolution(new MainMethod2Runnable(LOJ2553.class)))
+        .setActualSolution(() -> new Runnable2OJSolution(new MainMethod2Runnable(BZOJ5341.class)))
         .setTestTime(10000).setTimeLimitForEachTestCase(50000)
-                .setFailInputRecord(x -> {}).build().call());
+                .build().call());
     }
 
     public static class Generator extends RandomFactory {
         @Override
         public Input newInstance() {
             QueueInput input = new QueueInput();
-            int n = nextInt(200000, 200000);
+            int n = nextInt(100000, 100000);
             input.add(n);
             createTree(input, n);
             createTree(input, n);
