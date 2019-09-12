@@ -82,7 +82,7 @@ public class BZOJ2049Test {
 
                 switch (nextInt(1, 3)) {
                     case 1:
-                        input.add("Query").add(u).add(v);
+                        input.add("Event").add(u).add(v);
                         break;
                     case 2:
                         if (connect(u, v, set)) {

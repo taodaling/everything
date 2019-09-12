@@ -257,7 +257,7 @@ public class CFG102275D {
     }
 
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         private Segment left;
         private Segment right;
         private static long inf = (long) 1e18;

@@ -208,7 +208,7 @@ public class LUOGU4137 {
     }
 
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         private Segment left;
         private Segment right;
         private int time;

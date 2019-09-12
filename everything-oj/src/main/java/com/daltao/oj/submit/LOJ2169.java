@@ -5,13 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
-public class CF1178F {
+public class LOJ2169 {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
+        boolean local = System.getSecurityManager() == null;
         boolean async = false;
 
         Charset charset = Charset.forName("ascii");
@@ -52,191 +50,172 @@ public class CF1178F {
 
         int n;
         int m;
-        Segment root;
-        int[] colors;
-        int[] prev;
-        int[] last;
-        int[] first;
-
-        Modular mod = new Modular(998244353);
+        Segment segment;
+        Event[] events;
 
         public void solve() {
             n = io.readInt();
             m = io.readInt();
-            colors = new int[m + 1];
-
-            for (int i = 1; i <= m; i++) {
-                colors[i] = io.readInt();
+            Country[] countries = new Country[n + 1];
+            for (int i = 1; i <= n; i++) {
+                countries[i] = new Country();
             }
 
-            prev = new int[m + 1];
-            first = new int[n + 1];
-            last = new int[n + 1];
+            int[] belong = new int[m + 1];
             for (int i = 1; i <= m; i++) {
-                prev[i] = last[colors[i]];
-                last[colors[i]] = i;
-                if (first[colors[i]] == 0) {
-                    first[colors[i]] = i;
+                belong[i] = io.readInt();
+                countries[belong[i]].cnt++;
+            }
+
+            for (int i = 1; i <= n; i++) {
+                countries[i].range = new int[countries[i].cnt];
+            }
+            for (int i = 1; i <= m; i++) {
+                int c = belong[i];
+                countries[c].range[--countries[c].cnt] = i;
+            }
+
+            for (int i = 1; i <= n; i++) {
+                countries[i].req = io.readLong();
+            }
+
+            segment = new Segment(1, m);
+
+            int k = io.readInt();
+            events = new Event[k * 2];
+            for (int i = 0; i < k; i++) {
+                int l = io.readInt();
+                int r = io.readInt();
+                int a = io.readInt();
+
+                Event e1 = new Event();
+                Event e2 = new Event();
+                if (l <= r) {
+                    e1.l = l;
+                    e1.r = r;
+                    e1.a = a;
+                } else {
+                    e1.l = l;
+                    e1.r = m;
+                    e1.a = a;
+
+                    e2.l = 1;
+                    e2.r = r;
+                    e2.a = a;
                 }
+
+                events[i * 2] = e1;
+                events[i * 2 + 1] = e2;
             }
 
-            root = new Segment(1, m, colors);
-            Node tree = build(1, m);
+            dac(countries.clone(), 1, n, 0, 2 * k - 1);
+            for (int i = 1; i <= n; i++) {
+                if (countries[i].ans == -1) {
+                    io.cache.append("NIE");
+                } else {
+                    io.cache.append(countries[i].ans / 2 + 1);
+                }
+                io.cache.append('\n');
+            }
+        }
 
-            if (invalid) {
-                io.cache.append(0);
+        public void dac(Country[] cts, int ctsBegin, int ctsEnd, int l, int r) {
+            if(ctsBegin > ctsEnd){
                 return;
             }
 
-            dfs(tree);
-
-            io.cache.append(way);
-        }
-
-
-        boolean invalid;
-
-        public Node build(int l, int r) {
-            if (l > r) {
-                return Node.NIL;
+            int mid = (l + r) >> 1;
+            for (int i = l; i <= mid; i++) {
+                Event e = events[i];
+                segment.update(e.l, e.r, 1, m, e.a);
             }
 
-            int minColor = root.query(l, r, 1, m);
-            if (first[minColor] < l || last[minColor] > r) {
-                invalid = true;
-                return Node.NIL;
-            }
 
-            Node node = new Node();
-            node.l = build(l, first[minColor] - 1);
-            node.r = build(last[minColor] + 1, r);
-
-            int x = last[minColor];
-            while (prev[x] != 0) {
-                node.next.add(build(prev[x] + 1, x - 1));
-                x = prev[x];
-            }
-            return node;
-        }
-
-        int way = 1;
-
-        public void dfs(Node root) {
-            dfs0(root);
-            way = mod.mul(way, root.dp[0]);
-        }
-
-
-        public void dfs0(Node root) {
-            if (root == Node.NIL) {
-                return;
-            }
-
-            for (Node node : root.next) {
-                dfs(node);
-            }
-            dfs0(root.l);
-            dfs0(root.r);
-
-
-            for (int i = 0; i <= 500; i++) {
-                for (int j = 0; j + i + 1 <= 500; j++) {
-                    root.dp[i + j + 1] = mod.plus(root.dp[i + j + 1], mod.mul(root.l.dp[i],
-                            root.r.dp[j]));
+            int right = ctsEnd;
+            int left = ctsBegin;
+            for (; left <= right; left++) {
+                Country ct = cts[left];
+                long sum = 0;
+                for (int j : ct.range) {
+                    sum += segment.query(j, j, 1, m);
+                }
+                if (sum >= ct.req) {
+                    Country tmp = cts[right];
+                    cts[right] = cts[left];
+                    cts[left] = tmp;
+                    left--;
+                    right--;
                 }
             }
 
-            for (int i = 500 - 1; i >= 0; i--) {
-                root.dp[i] = mod.plus(root.dp[i], root.dp[i + 1]);
+            if(l == r) {
+                for (int i = ctsBegin; i <= right; i++) {
+                    cts[i].ans = -1;
+                }
+                for (int i = right + 1; i <= ctsEnd; i++) {
+                    cts[i].ans = l;
+                }
+            }
+
+
+            if (l < r) {
+                dac(cts, ctsBegin, right, mid + 1, r);
+            }
+
+            //revoke
+            for (int i = mid; i >= l; i--) {
+                Event e = events[i];
+                segment.update(e.l, e.r, 1, m, -e.a);
+            }
+
+            if (l < r) {
+                dac(cts, right + 1, ctsEnd, l, mid);
             }
         }
     }
 
-    /**
-     * Mod operations
-     */
-    public static class Modular {
-        int m;
-
-        public Modular(int m) {
-            this.m = m;
-        }
-
-        public int valueOf(int x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return x;
-        }
-
-        public int valueOf(long x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return (int) x;
-        }
-
-        public int mul(int x, int y) {
-            return valueOf((long) x * y);
-        }
-
-        public int mul(long x, long y) {
-            x = valueOf(x);
-            y = valueOf(y);
-            return valueOf(x * y);
-        }
-
-        public int plus(int x, int y) {
-            return valueOf(x + y);
-        }
-
-        public int plus(long x, long y) {
-            x = valueOf(x);
-            y = valueOf(y);
-            return valueOf(x + y);
-        }
-
-        @Override
-        public String toString() {
-            return "mod " + m;
-        }
+    public static class Event {
+        int l;
+        int r;
+        int a;
     }
 
-    public static class Node {
-        List<Node> next = new ArrayList<>();
-        Node l;
-        Node r;
-        int[] dp = new int[501];
-
-        public static final Node NIL = new Node();
-
-        static {
-            NIL.dp[0] = 1;
-        }
+    public static class Country {
+        int[] range;
+        int cnt;
+        int ans;
+        long req;
     }
 
-    private static class Segment implements Cloneable {
+    public static class Segment implements Cloneable {
         private Segment left;
         private Segment right;
-        int min;
+        private long cnt;
+        private long dirty;
+
+        public void setDirty(long d) {
+            dirty += d;
+            cnt += d;
+        }
 
         public void pushUp() {
-            min = Math.min(left.min, right.min);
         }
 
         public void pushDown() {
+            if (dirty != 0) {
+                left.setDirty(dirty);
+                right.setDirty(dirty);
+                dirty = 0;
+            }
         }
 
-        public Segment(int l, int r, int[] vals) {
+        public Segment(int l, int r) {
             if (l < r) {
                 int m = (l + r) >> 1;
-                left = new Segment(l, m, vals);
-                right = new Segment(m + 1, r, vals);
+                left = new Segment(l, m);
+                right = new Segment(m + 1, r);
                 pushUp();
             } else {
-                min = vals[l];
             }
         }
 
@@ -248,19 +227,35 @@ public class CF1178F {
             return ll > r || rr < l;
         }
 
-        public int query(int ll, int rr, int l, int r) {
+        public void update(int ll, int rr, int l, int r, int d) {
             if (noIntersection(ll, rr, l, r)) {
-                return Integer.MAX_VALUE;
+                return;
             }
             if (covered(ll, rr, l, r)) {
-                return min;
+                setDirty(d);
+                return;
             }
             pushDown();
             int m = (l + r) >> 1;
-            return Math.min(left.query(ll, rr, l, m),
-                    right.query(ll, rr, m + 1, r));
+            left.update(ll, rr, l, m, d);
+            right.update(ll, rr, m + 1, r, d);
+            pushUp();
+        }
+
+        public long query(int ll, int rr, int l, int r) {
+            if (noIntersection(ll, rr, l, r)) {
+                return 0;
+            }
+            if (covered(ll, rr, l, r)) {
+                return cnt;
+            }
+            pushDown();
+            int m = (l + r) >> 1;
+            return left.query(ll, rr, l, m) +
+                    right.query(ll, rr, m + 1, r);
         }
     }
+
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder(1 << 13);

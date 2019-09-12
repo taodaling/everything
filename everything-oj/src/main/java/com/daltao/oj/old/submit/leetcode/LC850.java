@@ -98,7 +98,7 @@ public class LC850 {
     }
 
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         Segment left;
         Segment right;
         long area;

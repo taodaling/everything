@@ -72,7 +72,7 @@ public class CF960F2 {
         debug.statistic();
     }
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         Segment left;
         Segment right;
         int max;

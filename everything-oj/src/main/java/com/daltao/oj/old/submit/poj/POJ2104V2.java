@@ -49,7 +49,7 @@ public class POJ2104V2 {
         }
     }
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         Segment left;
         Segment right;
         int cnt;

@@ -379,7 +379,7 @@ public class BZOJ3531V2 {
             return a + b;
         }
 
-        public static class Segment implements Cloneable {
+        private static class Segment implements Cloneable {
             private static final Segment NIL = new Segment();
 
             static {

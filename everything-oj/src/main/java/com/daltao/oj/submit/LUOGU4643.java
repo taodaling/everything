@@ -5,13 +5,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Random;
 
-public class CF1178F {
+public class LUOGU4643 {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
+        boolean local = System.getSecurityManager() == null;
         boolean async = false;
 
         Charset charset = Charset.forName("ascii");
@@ -50,217 +49,99 @@ public class CF1178F {
             solve();
         }
 
-        int n;
-        int m;
-        Segment root;
-        int[] colors;
-        int[] prev;
-        int[] last;
-        int[] first;
-
-        Modular mod = new Modular(998244353);
-
         public void solve() {
-            n = io.readInt();
-            m = io.readInt();
-            colors = new int[m + 1];
+            int n = io.readInt();
+            int m = io.readInt();
+            long[] w = new long[n + 1];
+            for (int i = 1; i <= n; i++) {
+                w[i] = io.readInt() * 2;
+            }
 
             for (int i = 1; i <= m; i++) {
-                colors[i] = io.readInt();
+                int a = io.readInt();
+                int b = io.readInt();
+                int c = io.readInt();
+                w[a] += c;
+                w[b] += c;
             }
 
-            prev = new int[m + 1];
-            first = new int[n + 1];
-            last = new int[n + 1];
-            for (int i = 1; i <= m; i++) {
-                prev[i] = last[colors[i]];
-                last[colors[i]] = i;
-                if (first[colors[i]] == 0) {
-                    first[colors[i]] = i;
-                }
+            Randomized.randomizedArray(w, 1, n + 1);
+            Arrays.sort(w, 1, n + 1);
+            long sum = 0;
+            for (int i = 1; i <= n; i += 2) {
+                sum -= w[i] - w[i + 1];
             }
 
-            root = new Segment(1, m, colors);
-            Node tree = build(1, m);
-
-            if (invalid) {
-                io.cache.append(0);
-                return;
-            }
-
-            dfs(tree);
-
-            io.cache.append(way);
-        }
-
-
-        boolean invalid;
-
-        public Node build(int l, int r) {
-            if (l > r) {
-                return Node.NIL;
-            }
-
-            int minColor = root.query(l, r, 1, m);
-            if (first[minColor] < l || last[minColor] > r) {
-                invalid = true;
-                return Node.NIL;
-            }
-
-            Node node = new Node();
-            node.l = build(l, first[minColor] - 1);
-            node.r = build(last[minColor] + 1, r);
-
-            int x = last[minColor];
-            while (prev[x] != 0) {
-                node.next.add(build(prev[x] + 1, x - 1));
-                x = prev[x];
-            }
-            return node;
-        }
-
-        int way = 1;
-
-        public void dfs(Node root) {
-            dfs0(root);
-            way = mod.mul(way, root.dp[0]);
-        }
-
-
-        public void dfs0(Node root) {
-            if (root == Node.NIL) {
-                return;
-            }
-
-            for (Node node : root.next) {
-                dfs(node);
-            }
-            dfs0(root.l);
-            dfs0(root.r);
-
-
-            for (int i = 0; i <= 500; i++) {
-                for (int j = 0; j + i + 1 <= 500; j++) {
-                    root.dp[i + j + 1] = mod.plus(root.dp[i + j + 1], mod.mul(root.l.dp[i],
-                            root.r.dp[j]));
-                }
-            }
-
-            for (int i = 500 - 1; i >= 0; i--) {
-                root.dp[i] = mod.plus(root.dp[i], root.dp[i + 1]);
-            }
+            io.cache.append(sum / 2);
         }
     }
+
 
     /**
-     * Mod operations
+     * Created by dalt on 2018/6/1.
      */
-    public static class Modular {
-        int m;
+    public static class Randomized {
+        static Random random = new Random();
 
-        public Modular(int m) {
-            this.m = m;
+        public static double nextDouble(double min, double max) {
+            return random.nextDouble() * (max - min) + min;
         }
 
-        public int valueOf(int x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
+        public static void randomizedArray(int[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                int tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
             }
-            return x;
         }
 
-        public int valueOf(long x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
+        public static void randomizedArray(long[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                long tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
             }
-            return (int) x;
         }
 
-        public int mul(int x, int y) {
-            return valueOf((long) x * y);
+        public static void randomizedArray(double[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                double tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
         }
 
-        public int mul(long x, long y) {
-            x = valueOf(x);
-            y = valueOf(y);
-            return valueOf(x * y);
+        public static void randomizedArray(float[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                float tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
         }
 
-        public int plus(int x, int y) {
-            return valueOf(x + y);
+        public static <T> void randomizedArray(T[] data, int from, int to) {
+            to--;
+            for (int i = from; i <= to; i++) {
+                int s = nextInt(i, to);
+                T tmp = data[i];
+                data[i] = data[s];
+                data[s] = tmp;
+            }
         }
 
-        public int plus(long x, long y) {
-            x = valueOf(x);
-            y = valueOf(y);
-            return valueOf(x + y);
-        }
-
-        @Override
-        public String toString() {
-            return "mod " + m;
+        public static int nextInt(int l, int r) {
+            return random.nextInt(r - l + 1) + l;
         }
     }
 
-    public static class Node {
-        List<Node> next = new ArrayList<>();
-        Node l;
-        Node r;
-        int[] dp = new int[501];
-
-        public static final Node NIL = new Node();
-
-        static {
-            NIL.dp[0] = 1;
-        }
-    }
-
-    private static class Segment implements Cloneable {
-        private Segment left;
-        private Segment right;
-        int min;
-
-        public void pushUp() {
-            min = Math.min(left.min, right.min);
-        }
-
-        public void pushDown() {
-        }
-
-        public Segment(int l, int r, int[] vals) {
-            if (l < r) {
-                int m = (l + r) >> 1;
-                left = new Segment(l, m, vals);
-                right = new Segment(m + 1, r, vals);
-                pushUp();
-            } else {
-                min = vals[l];
-            }
-        }
-
-        private boolean covered(int ll, int rr, int l, int r) {
-            return ll <= l && rr >= r;
-        }
-
-        private boolean noIntersection(int ll, int rr, int l, int r) {
-            return ll > r || rr < l;
-        }
-
-        public int query(int ll, int rr, int l, int r) {
-            if (noIntersection(ll, rr, l, r)) {
-                return Integer.MAX_VALUE;
-            }
-            if (covered(ll, rr, l, r)) {
-                return min;
-            }
-            pushDown();
-            int m = (l + r) >> 1;
-            return Math.min(left.query(ll, rr, l, m),
-                    right.query(ll, rr, m + 1, r));
-        }
-    }
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder(1 << 13);

@@ -346,7 +346,7 @@ public class CF1163F {
         }
     }
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         static long lInf = (long) 1e18;
         Segment left;
         Segment right;

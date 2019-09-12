@@ -63,7 +63,7 @@ public class MEXQueries {
 
             tree.update(leftBound, rightBound, cmd);
 
-            //Query all information
+            //Event all information
 //            for (int j = 0; j < gLen - 1; j++) {
 //                if (tree.queryValue(j, j).maxValue == 1) {
 //                    System.out.print(String.format("[%d, %d], ", g[j], g[j + 1] - 1));

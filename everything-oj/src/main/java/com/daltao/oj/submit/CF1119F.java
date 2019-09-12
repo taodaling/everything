@@ -549,7 +549,7 @@ public class CF1119F {
         }
     }
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         static Node zero = new Node();
 
         {

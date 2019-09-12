@@ -113,7 +113,7 @@ public class BZOJ1095 {
         List<Node> next = new ArrayList(1);
     }
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         public static final int INF = (int) 1e8;
 
         private Segment left;

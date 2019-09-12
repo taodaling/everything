@@ -147,7 +147,7 @@ public class LUOGU4473 {
         }
     }
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         static final int inf = (int) 1e8;
         private Segment left;
         private Segment right;

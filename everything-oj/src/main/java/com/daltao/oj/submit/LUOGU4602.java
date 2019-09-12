@@ -5,13 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
-public class CF1178F {
+public class LUOGU4602 {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
+        boolean local = System.getSecurityManager() == null;
         boolean async = false;
 
         Charset charset = Charset.forName("ascii");
@@ -52,192 +50,77 @@ public class CF1178F {
 
         int n;
         int m;
-        Segment root;
-        int[] colors;
-        int[] prev;
-        int[] last;
-        int[] first;
-
-        Modular mod = new Modular(998244353);
 
         public void solve() {
             n = io.readInt();
             m = io.readInt();
-            colors = new int[m + 1];
 
-            for (int i = 1; i <= m; i++) {
-                colors[i] = io.readInt();
+            Juice[] juices = new Juice[n];
+            for (int i = 0; i < n; i++) {
+                juices[i] = new Juice(io.readInt(), io.readInt(), io.readInt());
             }
 
-            prev = new int[m + 1];
-            first = new int[n + 1];
-            last = new int[n + 1];
-            for (int i = 1; i <= m; i++) {
-                prev[i] = last[colors[i]];
-                last[colors[i]] = i;
-                if (first[colors[i]] == 0) {
-                    first[colors[i]] = i;
+            Arrays.sort(juices, (a, b) -> a.d - b.d);
+
+            int priceLimit = 100000;
+            PersistentSegment[] roots = new PersistentSegment[n + 1];
+            roots[n] = new PersistentSegment();
+            for (int i = n - 1; i >= 0; i--) {
+                roots[i] = roots[i + 1].clone();
+                roots[i].update(juices[i].p, juices[i].p, 0, priceLimit, juices[i].l);
+            }
+
+            for (int i = 0; i < m; i++) {
+                long g = io.readLong();
+                long v = io.readLong();
+                int l = 0;
+                int r = n - 1;
+                while (l < r) {
+                    int mid = (l + r + 1) >> 1;
+                    if (roots[mid].query(0, priceLimit, v) <= g) {
+                        l = mid;
+                    } else {
+                        r = mid - 1;
+                    }
                 }
+
+                io.cache.append(roots[l].query(0, priceLimit, v) <= g ? juices[l].d : -1)
+                        .append('\n');
             }
-
-            root = new Segment(1, m, colors);
-            Node tree = build(1, m);
-
-            if (invalid) {
-                io.cache.append(0);
-                return;
-            }
-
-            dfs(tree);
-
-            io.cache.append(way);
         }
 
+    }
 
-        boolean invalid;
+    public static class Juice {
+        int d;
+        int p;
+        int l;
 
-        public Node build(int l, int r) {
-            if (l > r) {
-                return Node.NIL;
-            }
-
-            int minColor = root.query(l, r, 1, m);
-            if (first[minColor] < l || last[minColor] > r) {
-                invalid = true;
-                return Node.NIL;
-            }
-
-            Node node = new Node();
-            node.l = build(l, first[minColor] - 1);
-            node.r = build(last[minColor] + 1, r);
-
-            int x = last[minColor];
-            while (prev[x] != 0) {
-                node.next.add(build(prev[x] + 1, x - 1));
-                x = prev[x];
-            }
-            return node;
-        }
-
-        int way = 1;
-
-        public void dfs(Node root) {
-            dfs0(root);
-            way = mod.mul(way, root.dp[0]);
-        }
-
-
-        public void dfs0(Node root) {
-            if (root == Node.NIL) {
-                return;
-            }
-
-            for (Node node : root.next) {
-                dfs(node);
-            }
-            dfs0(root.l);
-            dfs0(root.r);
-
-
-            for (int i = 0; i <= 500; i++) {
-                for (int j = 0; j + i + 1 <= 500; j++) {
-                    root.dp[i + j + 1] = mod.plus(root.dp[i + j + 1], mod.mul(root.l.dp[i],
-                            root.r.dp[j]));
-                }
-            }
-
-            for (int i = 500 - 1; i >= 0; i--) {
-                root.dp[i] = mod.plus(root.dp[i], root.dp[i + 1]);
-            }
+        public Juice(int d, int p, int l) {
+            this.d = d;
+            this.p = p;
+            this.l = l;
         }
     }
 
-    /**
-     * Mod operations
-     */
-    public static class Modular {
-        int m;
-
-        public Modular(int m) {
-            this.m = m;
-        }
-
-        public int valueOf(int x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return x;
-        }
-
-        public int valueOf(long x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return (int) x;
-        }
-
-        public int mul(int x, int y) {
-            return valueOf((long) x * y);
-        }
-
-        public int mul(long x, long y) {
-            x = valueOf(x);
-            y = valueOf(y);
-            return valueOf(x * y);
-        }
-
-        public int plus(int x, int y) {
-            return valueOf(x + y);
-        }
-
-        public int plus(long x, long y) {
-            x = valueOf(x);
-            y = valueOf(y);
-            return valueOf(x + y);
-        }
-
-        @Override
-        public String toString() {
-            return "mod " + m;
-        }
-    }
-
-    public static class Node {
-        List<Node> next = new ArrayList<>();
-        Node l;
-        Node r;
-        int[] dp = new int[501];
-
-        public static final Node NIL = new Node();
-
-        static {
-            NIL.dp[0] = 1;
-        }
-    }
-
-    private static class Segment implements Cloneable {
-        private Segment left;
-        private Segment right;
-        int min;
+    public static class PersistentSegment implements Cloneable {
+        private PersistentSegment left;
+        private PersistentSegment right;
+        private long sum;
+        private long cnt;
 
         public void pushUp() {
-            min = Math.min(left.min, right.min);
+            sum = left.sum + right.sum;
+            cnt = left.cnt + right.cnt;
         }
 
         public void pushDown() {
+            left = left.clone();
+            right = right.clone();
         }
 
-        public Segment(int l, int r, int[] vals) {
-            if (l < r) {
-                int m = (l + r) >> 1;
-                left = new Segment(l, m, vals);
-                right = new Segment(m + 1, r, vals);
-                pushUp();
-            } else {
-                min = vals[l];
-            }
+        public PersistentSegment() {
+            left = right = this;
         }
 
         private boolean covered(int ll, int rr, int l, int r) {
@@ -248,19 +131,54 @@ public class CF1178F {
             return ll > r || rr < l;
         }
 
-        public int query(int ll, int rr, int l, int r) {
+        public void update(int ll, int rr, int l, int r, long cnt) {
             if (noIntersection(ll, rr, l, r)) {
-                return Integer.MAX_VALUE;
+                return;
             }
             if (covered(ll, rr, l, r)) {
-                return min;
+                this.cnt += cnt;
+                this.sum += cnt * l;
+                return;
             }
             pushDown();
             int m = (l + r) >> 1;
-            return Math.min(left.query(ll, rr, l, m),
-                    right.query(ll, rr, m + 1, r));
+            left.update(ll, rr, l, m, cnt);
+            right.update(ll, rr, m + 1, r, cnt);
+            pushUp();
+        }
+
+        public long query(int l, int r, long req) {
+            if (this.cnt < req) {
+                return Long.MAX_VALUE;
+            }
+            PersistentSegment trace = this;
+            long sum = 0;
+            while (l != r) {
+                int m = (l + r) >> 1;
+                if (trace.left.cnt >= req) {
+                    trace = trace.left;
+                    r = m;
+                } else {
+                    req -= trace.left.cnt;
+                    sum += trace.left.sum;
+                    trace = trace.right;
+                    l = m + 1;
+                }
+            }
+            sum += l * req;
+            return sum;
+        }
+
+        @Override
+        public PersistentSegment clone() {
+            try {
+                return (PersistentSegment) super.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
+
 
     public static class FastIO {
         public final StringBuilder cache = new StringBuilder(1 << 13);

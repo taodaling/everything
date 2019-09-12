@@ -124,7 +124,7 @@ public class CF1197E {
 
     static Modular mod = new Modular((int) 1e9 + 7);
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         private Segment left;
         private Segment right;
         int min;

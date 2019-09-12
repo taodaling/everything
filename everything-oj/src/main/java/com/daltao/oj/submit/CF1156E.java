@@ -196,7 +196,7 @@ public class CF1156E {
         }
     }
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         Segment left;
         Segment right;
         int max;

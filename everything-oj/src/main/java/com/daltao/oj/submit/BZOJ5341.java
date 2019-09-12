@@ -9,10 +9,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class CF1178F {
+public class BZOJ5341 {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
-        boolean async = false;
+        boolean local = System.getSecurityManager() == null;
+        boolean async = true;
 
         Charset charset = Charset.forName("ascii");
 
@@ -39,6 +39,7 @@ public class CF1178F {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
+        long lInf = (long) 1e18;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -50,216 +51,239 @@ public class CF1178F {
             solve();
         }
 
-        int n;
-        int m;
-        Segment root;
-        int[] colors;
-        int[] prev;
-        int[] last;
-        int[] first;
-
-        Modular mod = new Modular(998244353);
+        Node[] tree1;
+        Node[] tree2;
 
         public void solve() {
-            n = io.readInt();
-            m = io.readInt();
-            colors = new int[m + 1];
-
-            for (int i = 1; i <= m; i++) {
-                colors[i] = io.readInt();
+            int n = io.readInt();
+            tree1 = new Node[n + 1];
+            tree2 = new Node[n + 1];
+            for (int i = 1; i <= n; i++) {
+                tree1[i] = new Node();
+                tree2[i] = new Node();
+                tree1[i].edges = new ArrayList();
+                tree2[i].edges = new ArrayList();
+                tree1[i].id = i;
+                tree2[i].id = i;
+                tree2[i].head = tree1[i].head = new EdgeNode();
+                tree1[i].head.w = -lInf;
+                tree1[i].self = tree1[i];
             }
+            buildTree(tree1, n);
+            buildTree(tree2, n);
+            dfs1(tree1[1], null, 0);
+            dfs1(tree2[1], null, 0);
+            expand(tree1[1]);
+            dac(tree1[1]);
+            dfsForDp(tree2[1], null);
+            io.cache.append(ans);
+        }
 
-            prev = new int[m + 1];
-            first = new int[n + 1];
-            last = new int[n + 1];
-            for (int i = 1; i <= m; i++) {
-                prev[i] = last[colors[i]];
-                last[colors[i]] = i;
-                if (first[colors[i]] == 0) {
-                    first[colors[i]] = i;
-                }
-            }
+        long ans = -lInf;
 
-            root = new Segment(1, m, colors);
-            Node tree = build(1, m);
-
-            if (invalid) {
-                io.cache.append(0);
+        public void dfsForDp(Node root, Edge from) {
+            if (root == Node.NIL) {
                 return;
             }
+            for (Edge e : root.edges) {
+                Node node = e.other(root);
+                dfsForDp(node, e);
+                root.head = merge(root.head, node.head, root);
+            }
+        }
 
-            dfs(tree);
+        public EdgeNode merge(EdgeNode a, EdgeNode b, Node lca) {
+            if (a == EdgeNode.NIL) {
+                return b;
+            }
+            if (b == EdgeNode.NIL) {
+                return a;
+            }
+            ans = Math.max(ans, a.l.w + b.r.w - lca.prefix);
+            ans = Math.max(ans, b.l.w + a.r.w - lca.prefix);
+            a.l = merge(a.l, b.l, lca);
+            a.r = merge(a.r, b.r, lca);
+            a.w = Math.max(a.w, b.w);
+            return a;
+        }
 
-            io.cache.append(way);
+        public void dac(Node a) {
+            dfsForSize(a);
+            if (a.size == 1) {
+                return;
+            }
+            Node b = dfsForCenter2(a, dfsForCenter(a, a.size), a.size);
+            dfsSetHigher(a, a);
+            dfsSetLower(b);
+            dac(a);
+            dac(b);
+        }
+
+        public void dfsSetLower(Node root) {
+            if (root == Node.NIL) {
+                return;
+            }
+            dfsSetLower(root.l);
+            dfsSetLower(root.r);
+            if (root.id != -1) {
+                root.head.r = new EdgeNode();
+                root.head = root.head.r;
+                root.head.w = root.prefix;
+            }
+        }
+
+        public void dfsSetHigher(Node root, Node lca) {
+            if (root == Node.NIL) {
+                return;
+            }
+            if (root.color) {
+                lca = root;
+            }
+            dfsSetHigher(root.l, lca);
+            dfsSetHigher(root.r, lca);
+            if (root.id != -1) {
+                root.head.l = new EdgeNode();
+                root.head = root.head.l;
+                root.head.w = root.prefix - lca.prefix;
+            }
         }
 
 
-        boolean invalid;
+        public int dfsForCenter(Node root, int total) {
+            if (root == Node.NIL) {
+                return total;
+            }
+            int match = Math.max(root.size, total - root.size);
+            match = Math.min(dfsForCenter(root.l, total), match);
+            match = Math.min(dfsForCenter(root.r, total), match);
+            return match;
+        }
 
-        public Node build(int l, int r) {
-            if (l > r) {
+        public Node dfsForCenter2(Node root, int match, int total) {
+            if (root == Node.NIL) {
                 return Node.NIL;
             }
-
-            int minColor = root.query(l, r, 1, m);
-            if (first[minColor] < l || last[minColor] > r) {
-                invalid = true;
-                return Node.NIL;
+            if (Math.max(root.size, total - root.size) == match) {
+                return root;
             }
-
-            Node node = new Node();
-            node.l = build(l, first[minColor] - 1);
-            node.r = build(last[minColor] + 1, r);
-
-            int x = last[minColor];
-            while (prev[x] != 0) {
-                node.next.add(build(prev[x] + 1, x - 1));
-                x = prev[x];
+            Node node = dfsForCenter2(root.l, match, total);
+            if (node == Node.NIL) {
+                node = dfsForCenter2(root.r, match, total);
+            }
+            if (node != Node.NIL) {
+                root.color = true;
+                if (root.l == node) {
+                    root.l = Node.NIL;
+                }
+                if (root.r == node) {
+                    root.r = Node.NIL;
+                }
             }
             return node;
         }
 
-        int way = 1;
-
-        public void dfs(Node root) {
-            dfs0(root);
-            way = mod.mul(way, root.dp[0]);
+        public void dfs1(Node root, Edge fa, long prefix) {
+            root.edges.remove(fa);
+            root.prefix = prefix;
+            for (Edge e : root.edges) {
+                dfs1(e.other(root), e, prefix + e.len);
+            }
         }
 
-
-        public void dfs0(Node root) {
+        public void dfsForSize(Node root) {
             if (root == Node.NIL) {
                 return;
             }
+            root.color = false;
+            dfsForSize(root.l);
+            dfsForSize(root.r);
+            root.size = root.l.size + root.r.size + 1;
+        }
 
-            for (Node node : root.next) {
-                dfs(node);
+        public void expand(Node root) {
+            if (root == Node.NIL) {
+                return;
             }
-            dfs0(root.l);
-            dfs0(root.r);
-
-
-            for (int i = 0; i <= 500; i++) {
-                for (int j = 0; j + i + 1 <= 500; j++) {
-                    root.dp[i + j + 1] = mod.plus(root.dp[i + j + 1], mod.mul(root.l.dp[i],
-                            root.r.dp[j]));
+            if (root.edges.size() > 2) {
+                Node virtual = new Node();
+                virtual.id = -1;
+                virtual.self = root.self;
+                virtual.prefix = root.prefix;
+                virtual.edges = root.edges;
+                root.l = root.edges.remove(root.edges.size() - 1).other(root.self);
+                root.r = virtual;
+            } else {
+                if (root.edges.size() > 0) {
+                    root.l = root.edges.get(0).other(root.self);
+                }
+                if (root.edges.size() > 1) {
+                    root.r = root.edges.get(1).other(root.self);
                 }
             }
+            expand(root.l);
+            expand(root.r);
+        }
 
-            for (int i = 500 - 1; i >= 0; i--) {
-                root.dp[i] = mod.plus(root.dp[i], root.dp[i + 1]);
+        public void buildTree(Node[] tree, int n) {
+            for (int i = 2; i <= n; i++) {
+                Node a = tree[io.readInt()];
+                Node b = tree[io.readInt()];
+                Edge e = new Edge();
+                e.a = a;
+                e.b = b;
+                e.len = io.readInt();
+                a.edges.add(e);
+                b.edges.add(e);
             }
         }
     }
 
-    /**
-     * Mod operations
-     */
-    public static class Modular {
-        int m;
+    public static class Edge {
+        Node a;
+        Node b;
+        int len;
 
-        public Modular(int m) {
-            this.m = m;
-        }
-
-        public int valueOf(int x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return x;
-        }
-
-        public int valueOf(long x) {
-            x %= m;
-            if (x < 0) {
-                x += m;
-            }
-            return (int) x;
-        }
-
-        public int mul(int x, int y) {
-            return valueOf((long) x * y);
-        }
-
-        public int mul(long x, long y) {
-            x = valueOf(x);
-            y = valueOf(y);
-            return valueOf(x * y);
-        }
-
-        public int plus(int x, int y) {
-            return valueOf(x + y);
-        }
-
-        public int plus(long x, long y) {
-            x = valueOf(x);
-            y = valueOf(y);
-            return valueOf(x + y);
-        }
-
-        @Override
-        public String toString() {
-            return "mod " + m;
+        Node other(Node x) {
+            return a == x ? b : a;
         }
     }
 
     public static class Node {
-        List<Node> next = new ArrayList<>();
-        Node l;
-        Node r;
-        int[] dp = new int[501];
-
-        public static final Node NIL = new Node();
+        private static final Node NIL = new Node();
 
         static {
-            NIL.dp[0] = 1;
+            NIL.l = NIL.r = NIL;
+        }
+
+        List<Edge> edges;
+        int size;
+        int id;
+        Node l = NIL;
+        Node r = NIL;
+        long prefix;
+        Node self;
+
+        EdgeNode head = EdgeNode.NIL;
+
+        boolean color;
+
+        @Override
+        public String toString() {
+            return "" + id;
         }
     }
 
-    private static class Segment implements Cloneable {
-        private Segment left;
-        private Segment right;
-        int min;
+    public static class EdgeNode {
+        static final EdgeNode NIL = new EdgeNode();
 
-        public void pushUp() {
-            min = Math.min(left.min, right.min);
+        static {
+            NIL.l = NIL;
+            NIL.r = NIL;
         }
 
-        public void pushDown() {
-        }
-
-        public Segment(int l, int r, int[] vals) {
-            if (l < r) {
-                int m = (l + r) >> 1;
-                left = new Segment(l, m, vals);
-                right = new Segment(m + 1, r, vals);
-                pushUp();
-            } else {
-                min = vals[l];
-            }
-        }
-
-        private boolean covered(int ll, int rr, int l, int r) {
-            return ll <= l && rr >= r;
-        }
-
-        private boolean noIntersection(int ll, int rr, int l, int r) {
-            return ll > r || rr < l;
-        }
-
-        public int query(int ll, int rr, int l, int r) {
-            if (noIntersection(ll, rr, l, r)) {
-                return Integer.MAX_VALUE;
-            }
-            if (covered(ll, rr, l, r)) {
-                return min;
-            }
-            pushDown();
-            int m = (l + r) >> 1;
-            return Math.min(left.query(ll, rr, l, m),
-                    right.query(ll, rr, m + 1, r));
-        }
+        EdgeNode l = NIL;
+        EdgeNode r = NIL;
+        long w = -(long) 1e18;
     }
 
     public static class FastIO {

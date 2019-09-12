@@ -123,7 +123,7 @@ public class CF1140F {
         }
     }
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         Segment left;
         Segment right;
         List<Event> events = new ArrayList<>();

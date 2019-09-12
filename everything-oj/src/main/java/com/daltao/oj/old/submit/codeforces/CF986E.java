@@ -367,7 +367,7 @@ public class CF986E {
         }
     }
 
-    public static class Segment implements Cloneable {
+    private static class Segment implements Cloneable {
         Segment left;
         Segment right;
         int val;
