@@ -507,8 +507,8 @@ public class BZOJ4552 {
                 return ret;
             }
             int m = (l + r) >> 1;
-            ret.right = right.splitByKth(k - ret.cnt, m + 1, r);
-            ret.left = left.splitByKth(k, l, m);
+            ret.right = right.splitByKth(k - left.cnt, m + 1, r);
+            ret.left = left.splitByKth(Math.min(k, left.cnt), l, m);
             ret.pushUp();
             this.pushUp();
             return ret;
