@@ -5,12 +5,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
+import java.util.List;
 
-public class POJ2947 {
+public class LUOGU3332V2 {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
+        boolean local = System.getSecurityManager() == null;
         boolean async = false;
 
         Charset charset = Charset.forName("ascii");
@@ -38,6 +39,7 @@ public class POJ2947 {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
+        long lInf = (long) 1e18;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -49,310 +51,201 @@ public class POJ2947 {
             solve();
         }
 
-        public void solve() {
-            MathUtils.Modular modular = new MathUtils.Modular(7);
-            ModGussianElimination mge = new ModGussianElimination(300, 300, modular);
-            while (true) {
-                int n = io.readInt();
-                int m = io.readInt();
-                if (n == 0 && m == 0) {
-                    break;
-                }
-                mge.clear(m, n);
-                for (int i = 0; i < m; i++) {
-                    int num = io.readInt();
-                    int time = -readTime() + readTime() + 1;
-                    mge.setRight(i, time);
-                    for (int k = 0; k < num; k++) {
-                        int id = io.readInt();
-                        mge.mat[i][id - 1]++;
-                    }
-                }
-                boolean hasSolution = mge.solve();
+        int n;
 
-                if (!hasSolution) {
-                    io.cache.append("Inconsistent elements.\n");
-                    continue;
+        public void solve() {
+            n = io.readInt();
+            int m = io.readInt();
+            List<Query> queryList = new ArrayList<>(m);
+
+            for (int i = 1; i <= m; i++) {
+                int t = io.readInt();
+                int a = io.readInt();
+                int b = io.readInt();
+                long c = io.readLong();
+                Query q = new Query();
+                q.type = t - 1;
+                q.l = a;
+                q.r = b;
+                q.v = c;
+                if (q.type == 0) {
+                    q.v = -q.v;
                 }
-                if(mge.rank < n) {
-                    io.cache.append("Multiple solutions.\n");
-                    continue;
-                }
-                for (int i = 0; i < n; i++) {
-                    if (mge.solutions[i] >= 3) {
-                        io.cache.append(mge.solutions[i]);
-                    } else {
-                        io.cache.append(mge.solutions[i] + 7);
-                    }
-                    io.cache.append(' ');
-                }
-                io.cache.setLength(io.cache.length() - 1);
-                io.cache.append('\n');
+                queryList.add(q);
             }
 
-            if (io.cache.length() > 0) {
-                io.cache.setLength(io.cache.length() - 1);
+            segment = new Segment(1, n);
+            dac(queryList.toArray(new Query[0]), 0, queryList.size() - 1, -n, n,
+                    queryList.toArray(new Query[0]));
+
+            for (Query q : queryList) {
+                if (q.type == 1) {
+                    io.cache.append(-q.ans).append('\n');
+                }
             }
         }
 
-        char[] date = new char[3];
-        public int readTime() {
-            io.readString(date, 0);
-            if (date[0] == 'M') {
-                return 1;
+        Segment segment;
+
+        public long floorDiv(long a) {
+            long x = a / 2;
+            if (2 * x > a) {
+                x--;
             }
-            if (date[2] == 'E') {
-                return 2;
+            return x;
+        }
+
+        public void dac(Query[] qs, int ql, int qr, long vl, long vr, Query[] buf) {
+            if (ql > qr) {
+                return;
             }
-            if (date[0] == 'W') {
-                return 3;
+            if (vl == vr) {
+                for (int i = ql; i <= qr; i++) {
+                    if (qs[i].type == 1) {
+                        qs[i].ans = vl;
+                    }
+                }
+                return;
             }
-            if (date[1] == 'H') {
-                return 4;
+            long m = floorDiv(vl + vr);
+            for (int i = ql; i <= qr; i++) {
+                if (qs[i].type == 0) {
+                    if (qs[i].v <= m) {
+                        segment.update(qs[i].l, qs[i].r, 1, n, 1);
+                        qs[i].tag = 0;
+                    } else {
+                        qs[i].tag = 1;
+                    }
+                } else {
+                    long cnt = segment.query(qs[i].l, qs[i].r, 1, n);
+                    if (cnt >= qs[i].v) {
+                        qs[i].tag = 0;
+                    } else {
+                        qs[i].v -= cnt;
+                        qs[i].tag = 1;
+                    }
+                }
             }
-            if (date[0] == 'F') {
-                return 5;
+
+            int wpos = ql;
+            for (int i = ql; i <= qr; i++) {
+                if (qs[i].tag == 0) {
+                    buf[wpos++] = qs[i];
+                }
             }
-            if (date[1] == 'A') {
-                return 6;
+            int sep = wpos;
+            for (int i = ql; i <= qr; i++) {
+                if (qs[i].tag == 1) {
+                    buf[wpos++] = qs[i];
+                }
             }
-            if (date[0] == 'S') {
-                return 7;
+
+            System.arraycopy(buf, ql, qs, ql, qr - ql + 1);
+
+            for (int i = ql; i < sep; i++) {
+                if (qs[i].type == 0) {
+                    segment.update(qs[i].l, qs[i].r, 1, n, -1);
+                }
             }
-            throw new RuntimeException();
+
+            dac(qs, ql, sep - 1, vl, m, buf);
+            dac(qs, sep, qr, m + 1, vr, buf);
         }
     }
 
-    public static class ModGussianElimination {
-        int[][] mat;
-        int[] solutions;
-        int rank;
-        MathUtils.Power power;
-        MathUtils.Modular modular;
-        int n;
-        int m;
+    public static class Segment implements Cloneable {
+        private Segment left;
+        private Segment right;
+        private long sum;
+        private int dirty;
+        private int size;
 
-        public ModGussianElimination(int n, int m, MathUtils.Modular modular) {
-            this.n = n;
-            this.m = m;
-            mat = new int[n + 1][m + 1];
-            solutions = mat[n];
-            this.modular = modular;
-            power = new MathUtils.Power(modular);
+        public void pushUp() {
+            sum = left.sum + right.sum;
+            size = left.size + right.size;
         }
 
-        public void clear(int n, int m) {
-            this.n = n;
-            this.m = m;
-            for (int i = 0; i <= n; i++) {
-                for (int j = 0; j <= m; j++) {
-                    mat[i][j] = 0;
-                }
-            }
-            solutions = mat[n];
+        public void setDirty(int d) {
+            dirty += d;
+            sum += (long) d * size;
         }
 
-
-        public void setRight(int row, int val) {
-            mat[row][m] = val;
-        }
-
-        public boolean solve() {
-            for (int i = 0; i <= n; i++) {
-                for (int j = 0; j <= m; j++) {
-                    mat[i][j] = modular.valueOf(mat[i][j]);
-                }
-            }
-
-            int now = 0;
-            for (int i = 0; i < m; i++) {
-                int maxRow = now;
-                for (int j = now; j < n; j++) {
-                    if (mat[j][i] != 0) {
-                        maxRow = j;
-                        break;
-                    }
-                }
-
-                if (mat[maxRow][i] == 0) {
-                    continue;
-                }
-                swapRow(now, maxRow);
-                divideRow(now, mat[now][i]);
-                for (int j = now + 1; j < n; j++) {
-                    if (mat[j][i] == 0) {
-                        continue;
-                    }
-                    int f = mat[j][i];
-                    subtractRow(j, now, f);
-                }
-
-                now++;
-            }
-
-            rank = now;
-            for (int i = now; i < n; i++) {
-                if (mat[i][m] != 0) {
-                    return false;
-                }
-            }
-
-            for (int i = now - 1; i >= 0; i--) {
-                int x = -1;
-                for (int j = 0; j < m; j++) {
-                    if (mat[i][j] != 0) {
-                        x = j;
-                        break;
-                    }
-                }
-                mat[n][x] = modular.mul(mat[i][m], power.inverse(mat[i][x]));
-                for (int j = i - 1; j >= 0; j--) {
-                    if (mat[j][x] == 0) {
-                        continue;
-                    }
-                    mat[j][m] = modular.plus(mat[j][m], -modular.mul(mat[j][x], mat[n][x]));
-                    mat[j][x] = 0;
-                }
-            }
-            return true;
-        }
-
-        void swapRow(int i, int j) {
-            int[] row = mat[i];
-            mat[i] = mat[j];
-            mat[j] = row;
-        }
-
-        void subtractRow(int i, int j, int f) {
-            for (int k = 0; k <= m; k++) {
-                mat[i][k] = modular.plus(mat[i][k], -modular.mul(mat[j][k], f));
+        public void pushDown() {
+            if (dirty != 0) {
+                left.setDirty(dirty);
+                right.setDirty(dirty);
+                dirty = 0;
             }
         }
 
-        void divideRow(int i, int f) {
-            int divisor = power.inverse(f);
-            for (int k = 0; k <= m; k++) {
-                mat[i][k] = modular.mul(mat[i][k], divisor);
+        public Segment(int l, int r) {
+            if (l < r) {
+                int m = (l + r) >> 1;
+                left = new Segment(l, m);
+                right = new Segment(m + 1, r);
+                pushUp();
+            } else {
+                size = 1;
             }
         }
+
+        private boolean covered(int ll, int rr, int l, int r) {
+            return ll <= l && rr >= r;
+        }
+
+        private boolean noIntersection(int ll, int rr, int l, int r) {
+            return ll > r || rr < l;
+        }
+
+        public void update(int ll, int rr, int l, int r, int d) {
+            if (noIntersection(ll, rr, l, r)) {
+                return;
+            }
+            if (covered(ll, rr, l, r)) {
+                setDirty(d);
+                return;
+            }
+            pushDown();
+            int m = (l + r) >> 1;
+            left.update(ll, rr, l, m, d);
+            right.update(ll, rr, m + 1, r, d);
+            pushUp();
+        }
+
+        public long query(int ll, int rr, int l, int r) {
+            if (noIntersection(ll, rr, l, r)) {
+                return 0;
+            }
+            if (covered(ll, rr, l, r)) {
+                return sum;
+            }
+            pushDown();
+            int m = (l + r) >> 1;
+            return left.query(ll, rr, l, m) +
+                    right.query(ll, rr, m + 1, r);
+        }
+    }
+
+    public static class Query {
+        int type;
+        int l;
+        int r;
+        long v;
+        long ans;
+        int tag;
 
         @Override
         public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < n; i++) {
-                StringBuilder row = new StringBuilder();
-                for (int j = 0; j < m; j++) {
-                    if (mat[i][j] == 0) {
-                        continue;
-                    }
-                    if (mat[i][j] != 1) {
-                        row.append(mat[i][j]);
-                    }
-                    row.append("x").append(j).append('+');
-                }
-                if (row.length() > 0) {
-                    row.setLength(row.length() - 1);
-                } else {
-                    row.append(0);
-                }
-                row.append("=").append(mat[i][m]);
-                builder.append(row).append('\n');
-            }
-            return builder.toString();
-        }
-    }
-
-    public static class MathUtils {
-        private static Random random = new Random(123456789);
-
-
-        /**
-         * 模运算
-         */
-        public static class Modular {
-            final int m;
-
-            public Modular(int m) {
-                this.m = m;
-            }
-
-            public int valueOf(int x) {
-                x %= m;
-                if (x < 0) {
-                    x += m;
-                }
-                return x;
-            }
-
-            public int valueOf(long x) {
-                x %= m;
-                if (x < 0) {
-                    x += m;
-                }
-                return (int) x;
-            }
-
-            public int mul(int x, int y) {
-                return valueOf((long) x * y);
-            }
-
-            public int plus(int x, int y) {
-                return valueOf(x + y);
-            }
-
-            @Override
-            public String toString() {
-                return "mod " + m;
-            }
-        }
-
-
-        /**
-         * 幂运算
-         */
-        public static class Power {
-            final Modular modular;
-
-            public Power(Modular modular) {
-                this.modular = modular;
-            }
-
-            public int pow(int x, long n) {
-                if (n == 0) {
-                    return 1;
-                }
-                long r = pow(x, n >> 1);
-                r = modular.valueOf(r * r);
-                if ((n & 1) == 1) {
-                    r = modular.valueOf(r * x);
-                }
-                return (int) r;
-            }
-
-            public int inverse(int x) {
-                return pow(x, modular.m - 2);
-            }
-
-            public int pow2(int x) {
-                return x * x;
-            }
-
-            public long pow2(long x) {
-                return x * x;
-            }
-
-            public double pow2(double x) {
-                return x * x;
-            }
+            return String.format("%d (%d,%d,%d)", type, l, r, v);
         }
     }
 
     public static class FastIO {
-        public final StringBuilder cache = new StringBuilder();
+        public final StringBuilder cache = new StringBuilder(1 << 13);
         private final InputStream is;
         private final OutputStream os;
         private final Charset charset;
-        private StringBuilder defaultStringBuf = new StringBuilder(1 << 8);
+        private StringBuilder defaultStringBuf = new StringBuilder(1 << 13);
         private byte[] buf = new byte[1 << 13];
         private int bufLen;
         private int bufOffset;
@@ -523,14 +416,10 @@ public class POJ2947 {
             return c;
         }
 
-        public void flush() {
-            try {
-                os.write(cache.toString().getBytes(charset));
-                os.flush();
-                cache.setLength(0);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        public void flush() throws IOException {
+            os.write(cache.toString().getBytes(charset));
+            os.flush();
+            cache.setLength(0);
         }
 
         public boolean hasMore() {

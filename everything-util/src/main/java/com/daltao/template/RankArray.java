@@ -34,7 +34,7 @@ public class RankArray {
 
         private static TreapNode[] splitLE(TreapNode root, Object key, Comparator cmp) {
             if (root == NIL) {
-                return new TreapNode[] { NIL, NIL };
+                return new TreapNode[]{NIL, NIL};
             }
             root.pushDown();
             TreapNode[] trees;
@@ -53,7 +53,7 @@ public class RankArray {
 
         private static TreapNode[] splitL(TreapNode root, Object key, Comparator cmp) {
             if (root == NIL) {
-                return new TreapNode[] { NIL, NIL };
+                return new TreapNode[]{NIL, NIL};
             }
             root.pushDown();
             TreapNode[] trees;
