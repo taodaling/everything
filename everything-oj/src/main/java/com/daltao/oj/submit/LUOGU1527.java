@@ -1,18 +1,18 @@
 package com.daltao.oj.submit;
 
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-
-public class CFContest {
+public class LUOGU1527 {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
-        boolean async = true;
+        boolean local = System.getSecurityManager() == null;
+        boolean async = false;
 
         Charset charset = Charset.forName("ascii");
 
@@ -20,7 +20,7 @@ public class CFContest {
         Task task = new Task(io, new Debug(local));
 
         if (async) {
-            Thread t = new Thread(null, task, "skypool", 1 << 27);
+            Thread t = new Thread(null, task, "dalt", 1 << 27);
             t.setPriority(Thread.MAX_PRIORITY);
             t.start();
             t.join();
@@ -39,8 +39,6 @@ public class CFContest {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        long lInf = (long) 1e18;
-        double dInf = 1e50;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -52,249 +50,161 @@ public class CFContest {
             solve();
         }
 
-
         public void solve() {
             int n = io.readInt();
-            int p = io.readInt();
-            int M = io.readInt();
             int m = io.readInt();
-            TwoSat sat = new TwoSat(p);
-            for (int i = 0; i < n; i++) {
-                sat.or(sat.getElement(io.readInt()), sat.getElement(io.readInt()));
-            }
-            int[][] lr = new int[p + 1][2];
-            for (int i = 1; i <= p; i++) {
-                lr[i][0] = io.readInt();
-                lr[i][1] = io.readInt();
-            }
-
-            for (int i = 0; i < m; i++) {
-                sat.atLeastOneIsFalse(sat.getElement(io.readInt()), sat.getElement(io.readInt()));
-            }
-
-            int l = 1;
-            int r = M;
-
-            while (l < r) {
-                int mid = (l + r) >> 1;
-                for (int i = 1; i <= p; i++) {
-                    sat.cancelAlwaysFalse(sat.getElement(i));
-                    if (lr[i][0] > mid) {
-                        sat.alwaysFalse(sat.getElement(i));
-                    }
-                }
-                if(sat.)
-            }
-        }
-
-        public void test() {
-
-        }
-
-    }
-
-    public static class TwoSat {
-        public static class Node {
-            List<Node> outEdge = new ArrayList(2);
-            List<Node> inEdge = new ArrayList(2);
-            int id;
-            Node inverse;
-            Node head;
-            Node next;
-            int dfn;
-            int low;
-            boolean instack;
-            int value;
-            int relyOn;
-
-            @Override
-            public String toString() {
-                return "" + id;
-            }
-        }
-
-        Node[][] nodes;
-        Deque<Node> deque;
-        int n;
-
-        public TwoSat(int n) {
-            this.n = n;
-            deque = new ArrayDeque(2 * n);
-            nodes = new Node[2][n + 1];
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    nodes[i][j] = new Node();
-                    nodes[i][j].id = i == 0 ? -j : j;
-                }
-            }
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    nodes[i][j].inverse = nodes[1 - i][j];
-                }
-            }
-        }
-
-        void reset(int n) {
-            this.n = n;
-            order = 0;
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    nodes[i][j].dfn = -1;
-                    nodes[i][j].outEdge.clear();
-                    nodes[i][j].inEdge.clear();
-                    nodes[i][j].head = null;
-                    nodes[i][j].value = -1;
-                    nodes[i][j].next = null;
-                    nodes[i][j].relyOn = 0;
-                }
-            }
-        }
-
-        public Node getElement(int i) {
-            return nodes[1][i];
-        }
-
-        public Node getNotElement(int i) {
-            return nodes[0][i];
-        }
-
-        private void addEdge(Node a, Node b) {
-            a.outEdge.add(b);
-            b.inEdge.add(a);
-        }
-
-        public void alwaysTrue(Node node) {
-            addEdge(node.inverse, node);
-        }
-
-        public void cancelAlwaysFalse(Node node) {
-            node.inEdge.remove(node.inverse);
-            node.outEdge.remove(node.inverse);
-            node.inverse.inEdge.remove(node);
-            node.inverse.outEdge.remove(node);
-        }
-
-        public void alwaysFalse(Node node) {
-            addEdge(node, node.inverse);
-        }
-
-        public void and(Node a, Node b) {
-            alwaysTrue(a);
-            alwaysTrue(b);
-        }
-
-        public void or(Node a, Node b) {
-            addEdge(a.inverse, b);
-            addEdge(b.inverse, a);
-        }
-
-        public void atLeastOneIsFalse(Node a, Node b) {
-            or(a.inverse, b.inverse);
-        }
-
-        public void xor(Node a, Node b) {
-            notEqual(a, b);
-        }
-
-        public void notEqual(Node a, Node b) {
-            same(a, b.inverse);
-        }
-
-        public void same(Node a, Node b) {
-            addEdge(a, b);
-            addEdge(b, a);
-            addEdge(a.inverse, b.inverse);
-            addEdge(b.inverse, a.inverse);
-        }
-
-        public boolean valueOf(int i) {
-            return nodes[1][i].value == 1;
-        }
-
-        public boolean solve(boolean fetchValue) {
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    tarjan(nodes[i][j]);
-                }
-            }
+            List<Element> elementList = new ArrayList<>(n * n);
             for (int i = 1; i <= n; i++) {
-                if (nodes[0][i].head == nodes[1][i].head) {
-                    return false;
-                }
-            }
-
-            if (!fetchValue) {
-                return true;
-            }
-
-            //Topological sort
-            for (int i = 0; i < 2; i++) {
                 for (int j = 1; j <= n; j++) {
-                    for (Node node : nodes[i][j].outEdge) {
-                        if (node.head != nodes[i][j].head) {
-                            nodes[i][j].head.relyOn++;
-                        }
-                    }
+                    Element e = new Element();
+                    e.x = i;
+                    e.y = j;
+                    e.v = io.readInt();
+                    elementList.add(e);
                 }
             }
 
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    if (nodes[i][j].head == nodes[i][j] && nodes[i][j].relyOn == 0) {
-                        deque.addLast(nodes[i][j]);
-                    }
-                }
+            List<Query> queryList = new ArrayList<>(m);
+            for (int i = 0; i < m; i++) {
+                Query q = new Query();
+                q.x1 = io.readInt();
+                q.y1 = io.readInt();
+                q.x2 = io.readInt();
+                q.y2 = io.readInt();
+                q.k = io.readInt();
+                queryList.add(q);
             }
 
-            while (!deque.isEmpty()) {
-                Node head = deque.removeFirst();
-                if (head.inverse.value != -1) {
-                    head.value = 0;
-                } else {
-                    head.value = 1;
-                }
-                for (Node trace = head; trace != null; trace = trace.next) {
-                    trace.value = head.value;
-                    for (Node node : trace.inEdge) {
-                        if (node.head == head) {
-                            continue;
-                        }
-                        node.head.relyOn--;
-                        if (node.head.relyOn == 0) {
-                            deque.addLast(node.head);
-                        }
-                    }
-                }
+            Element[] elements = elementList.toArray(new Element[0]);
+            Arrays.sort(elements, (a, b) -> a.v - b.v);
+            bit2D = new BIT2D(n, n);
+            dac(queryList.toArray(new Query[0]), 0, queryList.size() - 1,
+                    elements, 0, elements.length - 1, queryList.toArray(new Query[0]));
+            for (Query q : queryList) {
+                io.cache.append(q.ans.v).append('\n');
             }
-
-            return true;
         }
 
-        int order;
+        BIT2D bit2D;
 
-        private void tarjan(Node root) {
-            if (root.dfn >= 0) {
+        public void dac(Query[] qs, int ql, int qr, Element[] es, int el, int er, Query[] buf) {
+            if (ql > qr) {
                 return;
             }
-            root.low = root.dfn = order++;
-            deque.addLast(root);
-            root.instack = true;
-            for (Node node : root.outEdge) {
-                tarjan(node);
-                if (node.instack) {
-                    root.low = Math.min(root.low, node.low);
+            if (el == er) {
+                for (int i = ql; i <= qr; i++) {
+                    qs[i].ans = es[el];
+                }
+                return;
+            }
+
+            int m = (el + er) / 2;
+            for (int i = el; i <= m; i++) {
+                bit2D.update(es[i].x, es[i].y, 1);
+            }
+
+            for (int i = ql; i <= qr; i++) {
+                Query q = qs[i];
+                int cnt = bit2D.rect(q.x1, q.y1, q.x2, q.y2);
+                if (q.k <= cnt) {
+                    q.tag = 0;
+                } else {
+                    q.k -= cnt;
+                    q.tag = 1;
                 }
             }
-            if (root.dfn == root.low) {
-                while (true) {
-                    Node head = deque.removeLast();
-                    head.instack = false;
-                    head.head = root;
-                    if (head == root) {
-                        break;
-                    }
-                    head.next = root.next;
-                    root.next = head;
+
+            for (int i = el; i <= m; i++) {
+                bit2D.update(es[i].x, es[i].y, -1);
+            }
+
+            int wpos = ql;
+            for (int i = ql; i <= qr; i++) {
+                if (qs[i].tag == 0) {
+                    buf[wpos++] = qs[i];
+                }
+            }
+            int sep = wpos;
+            for (int i = ql; i <= qr; i++) {
+                if (qs[i].tag == 1) {
+                    buf[wpos++] = qs[i];
+                }
+            }
+
+            System.arraycopy(buf, ql, qs, ql, qr - ql + 1);
+
+            dac(qs, ql, sep - 1, es, el, m, buf);
+            dac(qs, sep, qr, es, m + 1, er, buf);
+        }
+    }
+
+    public static class Element {
+        int x;
+        int y;
+        int v;
+    }
+
+    public static class Query {
+        int x1, y1;
+        int x2, y2;
+        int k;
+        Element ans;
+        int tag;
+    }
+
+    public static class BIT2D {
+        private int[][] data;
+        private int n;
+        private int m;
+
+        /**
+         * 创建大小A[1...n][1..,m]
+         */
+        public BIT2D(int n, int m) {
+            this.n = n;
+            this.m = m;
+            data = new int[n + 1][m + 1];
+        }
+
+        /**
+         * 查询左上角为(1,1)，右下角为(x,y)的矩形和
+         */
+        public int query(int x, int y) {
+            int sum = 0;
+            for (int i = x; i > 0; i -= i & -i) {
+                for (int j = y; j > 0; j -= j & -j) {
+                    sum += data[i][j];
+                }
+            }
+            return sum;
+        }
+
+
+        /**
+         * 查询左上角为(ltx,lty)，右下角为(rbx,rby)的矩形和
+         */
+        public int rect(int ltx, int lty, int rbx, int rby) {
+            return query(rbx, rby) - query(ltx - 1, rby) - query(rbx, lty - 1) + query(ltx - 1, lty - 1);
+        }
+
+        /**
+         * 将A[x][y] 更新为A[x][y]+mod
+         */
+        public void update(int x, int y, int mod) {
+            for (int i = x; i <= n; i += i & -i) {
+                for (int j = y; j <= m; j += j & -j) {
+                    data[i][j] += mod;
+                }
+            }
+        }
+
+        /**
+         * 将A全部清0
+         */
+        public void clear() {
+            for (int i = 1; i <= n; i++) {
+                for (int j = 1; j <= m; j++) {
+                    data[i][j] = 0;
                 }
             }
         }
@@ -303,19 +213,22 @@ public class CFContest {
         public String toString() {
             StringBuilder builder = new StringBuilder();
             for (int i = 1; i <= n; i++) {
-                builder.append(valueOf(i)).append(' ');
+                for (int j = 1; j <= m; j++) {
+                    builder.append(query(i, j) + query(i - 1, j - 1) - query(i - 1, j) - query(i, j - 1)).append(' ');
+                }
+                builder.append('\n');
             }
             return builder.toString();
         }
     }
 
     public static class FastIO {
-        public final StringBuilder cache = new StringBuilder(20 << 20);
+        public final StringBuilder cache = new StringBuilder(1 << 13);
         private final InputStream is;
         private final OutputStream os;
         private final Charset charset;
-        private StringBuilder defaultStringBuf = new StringBuilder(1 << 8);
-        private byte[] buf = new byte[1 << 20];
+        private StringBuilder defaultStringBuf = new StringBuilder(1 << 13);
+        private byte[] buf = new byte[1 << 13];
         private int bufLen;
         private int bufOffset;
         private int next;
@@ -485,14 +398,10 @@ public class CFContest {
             return c;
         }
 
-        public void flush() {
-            try {
-                os.write(cache.toString().getBytes(charset));
-                os.flush();
-                cache.setLength(0);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        public void flush() throws IOException {
+            os.write(cache.toString().getBytes(charset));
+            os.flush();
+            cache.setLength(0);
         }
 
         public boolean hasMore() {

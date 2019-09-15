@@ -1,18 +1,16 @@
 package com.daltao.oj.submit;
 
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
 
-
-public class CFContest {
+public class CF1209E2 {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
-        boolean async = true;
+        boolean local = System.getSecurityManager() == null;
+        boolean async = false;
 
         Charset charset = Charset.forName("ascii");
 
@@ -20,7 +18,7 @@ public class CFContest {
         Task task = new Task(io, new Debug(local));
 
         if (async) {
-            Thread t = new Thread(null, task, "skypool", 1 << 27);
+            Thread t = new Thread(null, task, "dalt", 1 << 27);
             t.setPriority(Thread.MAX_PRIORITY);
             t.start();
             t.join();
@@ -39,8 +37,6 @@ public class CFContest {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        long lInf = (long) 1e18;
-        double dInf = 1e50;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -49,273 +45,237 @@ public class CFContest {
 
         @Override
         public void run() {
-            solve();
+            int t = io.readInt();
+            while (t-- > 0)
+                solve();
         }
 
+        int[][] prefix = new int[12][1 << 12];
+        int[][] profits = new int[12][1 << 12];
+        Col[] cols = new Col[2000];
+
+        {
+            for (int i = 0; i < 2000; i++) {
+                cols[i] = new Col(12);
+            }
+        }
 
         public void solve() {
             int n = io.readInt();
-            int p = io.readInt();
-            int M = io.readInt();
             int m = io.readInt();
-            TwoSat sat = new TwoSat(p);
-            for (int i = 0; i < n; i++) {
-                sat.or(sat.getElement(io.readInt()), sat.getElement(io.readInt()));
-            }
-            int[][] lr = new int[p + 1][2];
-            for (int i = 1; i <= p; i++) {
-                lr[i][0] = io.readInt();
-                lr[i][1] = io.readInt();
-            }
 
             for (int i = 0; i < m; i++) {
-                sat.atLeastOneIsFalse(sat.getElement(io.readInt()), sat.getElement(io.readInt()));
+                cols[i].max = 0;
+                cols[i].n = n;
+            }
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < m; j++) {
+                    cols[j].data[i] = io.readInt();
+                    cols[j].max = Math.max(cols[j].max, cols[j].data[i]);
+                }
             }
 
-            int l = 1;
-            int r = M;
+            Arrays.sort(cols, 0, m, (a, b) -> -(a.max - b.max));
+            Col[] cols = Arrays.copyOf(this.cols, Math.min(m, n));
 
-            while (l < r) {
-                int mid = (l + r) >> 1;
-                for (int i = 1; i <= p; i++) {
-                    sat.cancelAlwaysFalse(sat.getElement(i));
-                    if (lr[i][0] > mid) {
-                        sat.alwaysFalse(sat.getElement(i));
+            int mask = (1 << n) - 1;
+            SubsetGenerator sg = new SubsetGenerator();
+            SubsetGenerator2 sg2 = new SubsetGenerator2();
+            BitOperator bo = new BitOperator();
+            for (int i = 0; i < cols.length; i++) {
+                Arrays.fill(profits[i], 0);
+                for (int j = 0; j < n; j++) {
+                    cols[i].rotate();
+                    for (int k = 0; k < n; k++) {
+                        sg2.values[k] = cols[i].data[k];
+                    }
+                    sg2.setSet(mask);
+                    while (sg2.hasNext()) {
+                        profits[i][sg2.next] = Math.max(profits[i][sg2.next], sg2.val);
+                        sg2.next();
                     }
                 }
-                if(sat.)
             }
+
+            prefix[0] = profits[0];
+            for (int i = 1; i < cols.length; i++) {
+                for (int j = 0; j <= mask; j++) {
+                    sg.setSet(j);
+                    prefix[i][j] = prefix[i - 1][j];
+                    while (sg.hasNext()) {
+                        int next = sg.next();
+                        prefix[i][j] = Math.max(prefix[i][j],
+                                profits[i][next] + prefix[i - 1][j ^ next]);
+                    }
+                }
+            }
+
+            io.cache.append(prefix[cols.length - 1][mask]).append('\n');
         }
-
-        public void test() {
-
-        }
-
     }
 
-    public static class TwoSat {
-        public static class Node {
-            List<Node> outEdge = new ArrayList(2);
-            List<Node> inEdge = new ArrayList(2);
-            int id;
-            Node inverse;
-            Node head;
-            Node next;
-            int dfn;
-            int low;
-            boolean instack;
-            int value;
-            int relyOn;
 
-            @Override
-            public String toString() {
-                return "" + id;
-            }
+    /**
+     * Bit operations
+     */
+    public static class BitOperator {
+        public int bitAt(int x, int i) {
+            return (x >> i) & 1;
         }
 
-        Node[][] nodes;
-        Deque<Node> deque;
+        public int bitAt(long x, int i) {
+            return (int) ((x >> i) & 1);
+        }
+
+        public int setBit(int x, int i, boolean v) {
+            if (v) {
+                x |= 1 << i;
+            } else {
+                x &= ~(1 << i);
+            }
+            return x;
+        }
+
+        public long setBit(long x, int i, boolean v) {
+            if (v) {
+                x |= 1L << i;
+            } else {
+                x &= ~(1L << i);
+            }
+            return x;
+        }
+
+        /**
+         * Determine whether x is subset of y
+         */
+        public boolean subset(long x, long y) {
+            return intersect(x, y) == x;
+        }
+
+        /**
+         * Merge two set
+         */
+        public long merge(long x, long y) {
+            return x | y;
+        }
+
+        public long intersect(long x, long y) {
+            return x & y;
+        }
+
+        public long differ(long x, long y) {
+            return x - intersect(x, y);
+        }
+    }
+
+    public static class SubsetGenerator2 {
+        private int[] meanings = new int[33];
+        private int[] values = new int[33];
+        private int[] bits = new int[33];
+        private int remain;
+        private int next;
+        private int val;
+
+        public void setSet(int set) {
+            int bitCount = 0;
+            while (set != 0) {
+                meanings[bitCount] = set & -set;
+                bits[bitCount] = 0;
+                set -= meanings[bitCount];
+                bitCount++;
+            }
+            remain = 1 << bitCount;
+            next = 0;
+            val = 0;
+        }
+
+        public boolean hasNext() {
+            return remain > 0;
+        }
+
+        private void consume() {
+            remain = remain - 1;
+            int i;
+            for (i = 0; bits[i] == 1; i++) {
+                bits[i] = 0;
+                next -= meanings[i];
+                val -= values[i];
+            }
+            bits[i] = 1;
+            next += meanings[i];
+            val += values[i];
+        }
+
+        public int next() {
+            int returned = next;
+            consume();
+            return returned;
+        }
+    }
+
+    public static class SubsetGenerator {
+        private int[] meanings = new int[33];
+        private int[] bits = new int[33];
+        private int remain;
+        private int next;
+
+        public void setSet(int set) {
+            int bitCount = 0;
+            while (set != 0) {
+                meanings[bitCount] = set & -set;
+                bits[bitCount] = 0;
+                set -= meanings[bitCount];
+                bitCount++;
+            }
+            remain = 1 << bitCount;
+            next = 0;
+        }
+
+        public boolean hasNext() {
+            return remain > 0;
+        }
+
+        private void consume() {
+            remain = remain - 1;
+            int i;
+            for (i = 0; bits[i] == 1; i++) {
+                bits[i] = 0;
+                next -= meanings[i];
+            }
+            bits[i] = 1;
+            next += meanings[i];
+        }
+
+        public int next() {
+            int returned = next;
+            consume();
+            return returned;
+        }
+    }
+
+    public static class Col {
+        int[] data;
+        int max;
         int n;
 
-        public TwoSat(int n) {
-            this.n = n;
-            deque = new ArrayDeque(2 * n);
-            nodes = new Node[2][n + 1];
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    nodes[i][j] = new Node();
-                    nodes[i][j].id = i == 0 ? -j : j;
-                }
-            }
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    nodes[i][j].inverse = nodes[1 - i][j];
-                }
-            }
+        public void rotate() {
+            int end = data[n - 1];
+            System.arraycopy(data, 0, data, 1, n - 1);
+            data[0] = end;
         }
 
-        void reset(int n) {
-            this.n = n;
-            order = 0;
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    nodes[i][j].dfn = -1;
-                    nodes[i][j].outEdge.clear();
-                    nodes[i][j].inEdge.clear();
-                    nodes[i][j].head = null;
-                    nodes[i][j].value = -1;
-                    nodes[i][j].next = null;
-                    nodes[i][j].relyOn = 0;
-                }
-            }
-        }
-
-        public Node getElement(int i) {
-            return nodes[1][i];
-        }
-
-        public Node getNotElement(int i) {
-            return nodes[0][i];
-        }
-
-        private void addEdge(Node a, Node b) {
-            a.outEdge.add(b);
-            b.inEdge.add(a);
-        }
-
-        public void alwaysTrue(Node node) {
-            addEdge(node.inverse, node);
-        }
-
-        public void cancelAlwaysFalse(Node node) {
-            node.inEdge.remove(node.inverse);
-            node.outEdge.remove(node.inverse);
-            node.inverse.inEdge.remove(node);
-            node.inverse.outEdge.remove(node);
-        }
-
-        public void alwaysFalse(Node node) {
-            addEdge(node, node.inverse);
-        }
-
-        public void and(Node a, Node b) {
-            alwaysTrue(a);
-            alwaysTrue(b);
-        }
-
-        public void or(Node a, Node b) {
-            addEdge(a.inverse, b);
-            addEdge(b.inverse, a);
-        }
-
-        public void atLeastOneIsFalse(Node a, Node b) {
-            or(a.inverse, b.inverse);
-        }
-
-        public void xor(Node a, Node b) {
-            notEqual(a, b);
-        }
-
-        public void notEqual(Node a, Node b) {
-            same(a, b.inverse);
-        }
-
-        public void same(Node a, Node b) {
-            addEdge(a, b);
-            addEdge(b, a);
-            addEdge(a.inverse, b.inverse);
-            addEdge(b.inverse, a.inverse);
-        }
-
-        public boolean valueOf(int i) {
-            return nodes[1][i].value == 1;
-        }
-
-        public boolean solve(boolean fetchValue) {
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    tarjan(nodes[i][j]);
-                }
-            }
-            for (int i = 1; i <= n; i++) {
-                if (nodes[0][i].head == nodes[1][i].head) {
-                    return false;
-                }
-            }
-
-            if (!fetchValue) {
-                return true;
-            }
-
-            //Topological sort
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    for (Node node : nodes[i][j].outEdge) {
-                        if (node.head != nodes[i][j].head) {
-                            nodes[i][j].head.relyOn++;
-                        }
-                    }
-                }
-            }
-
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    if (nodes[i][j].head == nodes[i][j] && nodes[i][j].relyOn == 0) {
-                        deque.addLast(nodes[i][j]);
-                    }
-                }
-            }
-
-            while (!deque.isEmpty()) {
-                Node head = deque.removeFirst();
-                if (head.inverse.value != -1) {
-                    head.value = 0;
-                } else {
-                    head.value = 1;
-                }
-                for (Node trace = head; trace != null; trace = trace.next) {
-                    trace.value = head.value;
-                    for (Node node : trace.inEdge) {
-                        if (node.head == head) {
-                            continue;
-                        }
-                        node.head.relyOn--;
-                        if (node.head.relyOn == 0) {
-                            deque.addLast(node.head);
-                        }
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        int order;
-
-        private void tarjan(Node root) {
-            if (root.dfn >= 0) {
-                return;
-            }
-            root.low = root.dfn = order++;
-            deque.addLast(root);
-            root.instack = true;
-            for (Node node : root.outEdge) {
-                tarjan(node);
-                if (node.instack) {
-                    root.low = Math.min(root.low, node.low);
-                }
-            }
-            if (root.dfn == root.low) {
-                while (true) {
-                    Node head = deque.removeLast();
-                    head.instack = false;
-                    head.head = root;
-                    if (head == root) {
-                        break;
-                    }
-                    head.next = root.next;
-                    root.next = head;
-                }
-            }
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = 1; i <= n; i++) {
-                builder.append(valueOf(i)).append(' ');
-            }
-            return builder.toString();
+        public Col(int n) {
+            data = new int[n];
         }
     }
 
     public static class FastIO {
-        public final StringBuilder cache = new StringBuilder(20 << 20);
+        public final StringBuilder cache = new StringBuilder(1 << 13);
         private final InputStream is;
         private final OutputStream os;
         private final Charset charset;
-        private StringBuilder defaultStringBuf = new StringBuilder(1 << 8);
-        private byte[] buf = new byte[1 << 20];
+        private StringBuilder defaultStringBuf = new StringBuilder(1 << 13);
+        private byte[] buf = new byte[1 << 13];
         private int bufLen;
         private int bufOffset;
         private int next;
@@ -485,14 +445,10 @@ public class CFContest {
             return c;
         }
 
-        public void flush() {
-            try {
-                os.write(cache.toString().getBytes(charset));
-                os.flush();
-                cache.setLength(0);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        public void flush() throws IOException {
+            os.write(cache.toString().getBytes(charset));
+            os.flush();
+            cache.setLength(0);
         }
 
         public boolean hasMore() {
