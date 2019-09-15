@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
 
 
 public class CFContest {
@@ -55,257 +57,47 @@ public class CFContest {
 
         public void solve() {
             int n = io.readInt();
-            int p = io.readInt();
-            int M = io.readInt();
-            int m = io.readInt();
-            TwoSat sat = new TwoSat(p);
-            for (int i = 0; i < n; i++) {
-                sat.or(sat.getElement(io.readInt()), sat.getElement(io.readInt()));
-            }
-            int[][] lr = new int[p + 1][2];
-            for (int i = 1; i <= p; i++) {
-                lr[i][0] = io.readInt();
-                lr[i][1] = io.readInt();
-            }
+            char[] s = new char[n];
+            io.readString(s, 0);
+            int halfN = n / 2;
 
-            for (int i = 0; i < m; i++) {
-                sat.atLeastOneIsFalse(sat.getElement(io.readInt()), sat.getElement(io.readInt()));
-            }
-
-            int l = 1;
-            int r = M;
-
-            while (l < r) {
-                int mid = (l + r) >> 1;
-                for (int i = 1; i <= p; i++) {
-                    sat.cancelAlwaysFalse(sat.getElement(i));
-                    if (lr[i][0] > mid) {
-                        sat.alwaysFalse(sat.getElement(i));
-                    }
+            Side[] sides = new Side[]{new Side(), new Side()};
+            for (int i = 0; i < halfN; i++) {
+                if (s[i] == '?') {
+                    sides[0].unknown++;
+                } else {
+                    sides[0].sum += s[i] - '0';
                 }
-                if(sat.)
             }
-        }
 
-        public void test() {
+            for (int i = halfN; i < n; i++) {
+                if (s[i] == '?') {
+                    sides[1].unknown++;
+                } else {
+                    sides[1].sum += s[i] - '0';
+                }
+            }
+
+            Arrays.sort(sides, (a, b) -> a.sum - b.sum);
+            int d = -(sides[1].sum - sides[0].sum - 9 * sides[0].unknown);
+            int chance = sides[1].unknown + sides[0].unknown;
+
+            if (d != (chance / 2) * 9) {
+                io.cache.append("Monocarp");
+            } else {
+                io.cache.append("Bicarp");
+            }
 
         }
 
     }
 
-    public static class TwoSat {
-        public static class Node {
-            List<Node> outEdge = new ArrayList(2);
-            List<Node> inEdge = new ArrayList(2);
-            int id;
-            Node inverse;
-            Node head;
-            Node next;
-            int dfn;
-            int low;
-            boolean instack;
-            int value;
-            int relyOn;
+    public static class Side {
+        int sum;
+        int unknown;
 
-            @Override
-            public String toString() {
-                return "" + id;
-            }
-        }
-
-        Node[][] nodes;
-        Deque<Node> deque;
-        int n;
-
-        public TwoSat(int n) {
-            this.n = n;
-            deque = new ArrayDeque(2 * n);
-            nodes = new Node[2][n + 1];
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    nodes[i][j] = new Node();
-                    nodes[i][j].id = i == 0 ? -j : j;
-                }
-            }
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    nodes[i][j].inverse = nodes[1 - i][j];
-                }
-            }
-        }
-
-        void reset(int n) {
-            this.n = n;
-            order = 0;
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    nodes[i][j].dfn = -1;
-                    nodes[i][j].outEdge.clear();
-                    nodes[i][j].inEdge.clear();
-                    nodes[i][j].head = null;
-                    nodes[i][j].value = -1;
-                    nodes[i][j].next = null;
-                    nodes[i][j].relyOn = 0;
-                }
-            }
-        }
-
-        public Node getElement(int i) {
-            return nodes[1][i];
-        }
-
-        public Node getNotElement(int i) {
-            return nodes[0][i];
-        }
-
-        private void addEdge(Node a, Node b) {
-            a.outEdge.add(b);
-            b.inEdge.add(a);
-        }
-
-        public void alwaysTrue(Node node) {
-            addEdge(node.inverse, node);
-        }
-
-        public void cancelAlwaysFalse(Node node) {
-            node.inEdge.remove(node.inverse);
-            node.outEdge.remove(node.inverse);
-            node.inverse.inEdge.remove(node);
-            node.inverse.outEdge.remove(node);
-        }
-
-        public void alwaysFalse(Node node) {
-            addEdge(node, node.inverse);
-        }
-
-        public void and(Node a, Node b) {
-            alwaysTrue(a);
-            alwaysTrue(b);
-        }
-
-        public void or(Node a, Node b) {
-            addEdge(a.inverse, b);
-            addEdge(b.inverse, a);
-        }
-
-        public void atLeastOneIsFalse(Node a, Node b) {
-            or(a.inverse, b.inverse);
-        }
-
-        public void xor(Node a, Node b) {
-            notEqual(a, b);
-        }
-
-        public void notEqual(Node a, Node b) {
-            same(a, b.inverse);
-        }
-
-        public void same(Node a, Node b) {
-            addEdge(a, b);
-            addEdge(b, a);
-            addEdge(a.inverse, b.inverse);
-            addEdge(b.inverse, a.inverse);
-        }
-
-        public boolean valueOf(int i) {
-            return nodes[1][i].value == 1;
-        }
-
-        public boolean solve(boolean fetchValue) {
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    tarjan(nodes[i][j]);
-                }
-            }
-            for (int i = 1; i <= n; i++) {
-                if (nodes[0][i].head == nodes[1][i].head) {
-                    return false;
-                }
-            }
-
-            if (!fetchValue) {
-                return true;
-            }
-
-            //Topological sort
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    for (Node node : nodes[i][j].outEdge) {
-                        if (node.head != nodes[i][j].head) {
-                            nodes[i][j].head.relyOn++;
-                        }
-                    }
-                }
-            }
-
-            for (int i = 0; i < 2; i++) {
-                for (int j = 1; j <= n; j++) {
-                    if (nodes[i][j].head == nodes[i][j] && nodes[i][j].relyOn == 0) {
-                        deque.addLast(nodes[i][j]);
-                    }
-                }
-            }
-
-            while (!deque.isEmpty()) {
-                Node head = deque.removeFirst();
-                if (head.inverse.value != -1) {
-                    head.value = 0;
-                } else {
-                    head.value = 1;
-                }
-                for (Node trace = head; trace != null; trace = trace.next) {
-                    trace.value = head.value;
-                    for (Node node : trace.inEdge) {
-                        if (node.head == head) {
-                            continue;
-                        }
-                        node.head.relyOn--;
-                        if (node.head.relyOn == 0) {
-                            deque.addLast(node.head);
-                        }
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        int order;
-
-        private void tarjan(Node root) {
-            if (root.dfn >= 0) {
-                return;
-            }
-            root.low = root.dfn = order++;
-            deque.addLast(root);
-            root.instack = true;
-            for (Node node : root.outEdge) {
-                tarjan(node);
-                if (node.instack) {
-                    root.low = Math.min(root.low, node.low);
-                }
-            }
-            if (root.dfn == root.low) {
-                while (true) {
-                    Node head = deque.removeLast();
-                    head.instack = false;
-                    head.head = root;
-                    if (head == root) {
-                        break;
-                    }
-                    head.next = root.next;
-                    root.next = head;
-                }
-            }
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            for (int i = 1; i <= n; i++) {
-                builder.append(valueOf(i)).append(' ');
-            }
-            return builder.toString();
+        public int max() {
+            return sum + (unknown + 1) / 2 * 9;
         }
     }
 
