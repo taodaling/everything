@@ -44,6 +44,7 @@ public class TwoSat {
                 nodes[i][j].inverse = nodes[1 - i][j];
             }
         }
+        reset(n);
     }
 
     void reset(int n) {
@@ -83,28 +84,53 @@ public class TwoSat {
         addEdge(node, node.inverse);
     }
 
+    /**
+     * a && b
+     */
     public void and(Node a, Node b) {
         alwaysTrue(a);
         alwaysTrue(b);
     }
 
+    /**
+     * a || b
+     */
     public void or(Node a, Node b) {
         addEdge(a.inverse, b);
         addEdge(b.inverse, a);
     }
 
+    /**
+     * a -> b
+     */
+    public void deduce(Node a, Node b) {
+        or(a.inverse, b);
+    }
+
+    /**
+     * a == false || b == false
+     */
     public void atLeastOneIsFalse(Node a, Node b) {
         or(a.inverse, b.inverse);
     }
 
+    /**
+     * a ^ b
+     */
     public void xor(Node a, Node b) {
         notEqual(a, b);
     }
 
+    /**
+     * a != b
+     */
     public void notEqual(Node a, Node b) {
         same(a, b.inverse);
     }
 
+    /**
+     * a == b
+     */
     public void same(Node a, Node b) {
         addEdge(a, b);
         addEdge(b, a);

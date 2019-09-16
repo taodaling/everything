@@ -31,7 +31,7 @@ public class NumberTheoryTransform {
         }
     }
 
-    private static void dft(int[] r, int[] p, int m) {
+    public static void dft(int[] r, int[] p, int m) {
         int n = 1 << m;
 
         for (int i = 0; i < n; i++) {
@@ -62,7 +62,7 @@ public class NumberTheoryTransform {
         }
     }
 
-    private static void idft(int[] r, int[] p, int m) {
+    public static void idft(int[] r, int[] p, int m) {
         dft(r, p, m);
 
         int n = 1 << m;
