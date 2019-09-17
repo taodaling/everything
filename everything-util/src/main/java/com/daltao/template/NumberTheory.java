@@ -402,6 +402,22 @@ public class NumberTheory {
             return x;
         }
 
+        public long swapBit(long x, int i, int j) {
+            int bi = bitAt(x, i);
+            int bj = bitAt(x, j);
+            x = setBit(x, i, bj == 1);
+            x = setBit(x, j, bi == 1);
+            return x;
+        }
+
+        public int swapBit(int x, int i, int j) {
+            int bi = bitAt(x, i);
+            int bj = bitAt(x, j);
+            x = setBit(x, i, bj == 1);
+            x = setBit(x, j, bi == 1);
+            return x;
+        }
+
         /**
          * Determine whether x is subset of y
          */

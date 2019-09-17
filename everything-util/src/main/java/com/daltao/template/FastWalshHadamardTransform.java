@@ -1,13 +1,13 @@
 package com.daltao.template;
 
 public class FastWalshHadamardTransform {
-    public static void OrFWT(int[] p, int l, int r) {
+    public static void orFWT(int[] p, int l, int r) {
         if (l == r) {
             return;
         }
         int m = (l + r) >> 1;
-        OrFWT(p, l, m);
-        OrFWT(p, m + 1, r);
+        orFWT(p, l, m);
+        orFWT(p, m + 1, r);
         for (int i = 0, until = m - l; i <= until; i++) {
             int a = p[l + i];
             int b = p[m + 1 + i];
@@ -15,7 +15,7 @@ public class FastWalshHadamardTransform {
         }
     }
 
-    public static void OrIFWT(int[] p, int l, int r) {
+    public static void orIFWT(int[] p, int l, int r) {
         if (l == r) {
             return;
         }
@@ -25,17 +25,17 @@ public class FastWalshHadamardTransform {
             int b = p[m + 1 + i];
             p[m + 1 + i] = b - a;
         }
-        OrIFWT(p, l, m);
-        OrIFWT(p, m + 1, r);
+        orIFWT(p, l, m);
+        orIFWT(p, m + 1, r);
     }
 
-    public static void AndFWT(int[] p, int l, int r) {
+    public static void andFWT(int[] p, int l, int r) {
         if (l == r) {
             return;
         }
         int m = (l + r) >> 1;
-        AndFWT(p, l, m);
-        AndFWT(p, m + 1, r);
+        andFWT(p, l, m);
+        andFWT(p, m + 1, r);
         for (int i = 0, until = m - l; i <= until; i++) {
             int a = p[l + i];
             int b = p[m + 1 + i];
@@ -43,7 +43,7 @@ public class FastWalshHadamardTransform {
         }
     }
 
-    public static void AndIFWT(int[] p, int l, int r) {
+    public static void andIFWT(int[] p, int l, int r) {
         if (l == r) {
             return;
         }
@@ -53,17 +53,17 @@ public class FastWalshHadamardTransform {
             int b = p[m + 1 + i];
             p[l + i] = a - b;
         }
-        AndIFWT(p, l, m);
-        AndIFWT(p, m + 1, r);
+        andIFWT(p, l, m);
+        andIFWT(p, m + 1, r);
     }
 
-    public static void XorFWT(int[] p, int l, int r) {
+    public static void xorFWT(int[] p, int l, int r) {
         if (l == r) {
             return;
         }
         int m = (l + r) >> 1;
-        XorFWT(p, l, m);
-        XorFWT(p, m + 1, r);
+        xorFWT(p, l, m);
+        xorFWT(p, m + 1, r);
         for (int i = 0, until = m - l; i <= until; i++) {
             int a = p[l + i];
             int b = p[m + 1 + i];
@@ -72,7 +72,7 @@ public class FastWalshHadamardTransform {
         }
     }
 
-    public static void XorIFWT(int[] p, int l, int r) {
+    public static void xorIFWT(int[] p, int l, int r) {
         if (l == r) {
             return;
         }
@@ -83,11 +83,11 @@ public class FastWalshHadamardTransform {
             p[l + i] = (a + b) / 2;
             p[m + 1 + i] = (a - b) / 2;
         }
-        XorIFWT(p, l, m);
-        XorIFWT(p, m + 1, r);
+        xorIFWT(p, l, m);
+        xorIFWT(p, m + 1, r);
     }
 
-    public static void DotMul(int[] a, int[] b, int n) {
+    public static void dotMul(int[] a, int[] b, int n) {
         for (int i = 0; i < n; i++) {
             a[i] = a[i] * b[i];
         }
