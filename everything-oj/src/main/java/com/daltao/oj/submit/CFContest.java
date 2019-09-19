@@ -68,10 +68,12 @@ public class CFContest {
             }
 
             DiscreteMap map = new DiscreteMap(seq, 0, seqTail);
-            for (int i = 0; i < n; i++) {
 
-            }
 
+        }
+
+        public int dist(int[] xy) {
+            if(xyy[0])
         }
 
     }
