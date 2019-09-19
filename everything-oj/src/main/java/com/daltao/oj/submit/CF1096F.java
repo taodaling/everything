@@ -1,24 +1,16 @@
 package com.daltao.oj.submit;
 
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
-
-public class CFContest {
+public class CF1096F {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
-        boolean async = true;
+        boolean local = System.getSecurityManager() == null;
+        boolean async = false;
 
         Charset charset = Charset.forName("ascii");
 
@@ -26,7 +18,7 @@ public class CFContest {
         Task task = new Task(io, new Debug(local));
 
         if (async) {
-            Thread t = new Thread(null, task, "skypool", 1 << 27);
+            Thread t = new Thread(null, task, "dalt", 1 << 27);
             t.setPriority(Thread.MAX_PRIORITY);
             t.start();
             t.join();
@@ -45,8 +37,8 @@ public class CFContest {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        long lInf = (long) 1e18;
-        double dInf = 1e50;
+        Modular mod = new Modular(998244353);
+        Power power = new Power(mod);
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -60,93 +52,215 @@ public class CFContest {
 
         public void solve() {
             int n = io.readInt();
-            long k = io.readLong();
-
-            int[] seq = new int[n];
-            long[] visit = new long[n];
-            Arrays.fill(visit, -1L);
-            for (int i = 0; i < n; i++) {
+            int[] seq = new int[n + 1];
+            for (int i = 1; i <= n; i++) {
                 seq[i] = io.readInt();
             }
-
-            int[] next = new int[n];
-            Arrays.fill(next, -1);
-            Map<Integer, Integer> indexMap = new HashMap<>(n);
-            for (int i = n - 1; i >= 0; i--) {
-                if (indexMap.containsKey(seq[i])) {
-                    next[i] = indexMap.get(seq[i]);
-                }
-                indexMap.put(seq[i], i);
-            }
-            for (int i = n - 1; i >= 0; i--) {
-                if (next[i] == -1) {
-                    next[i] = indexMap.get(seq[i]);
-                }
-            }
-
-            long loop = 1;
-            int index = 0;
-            boolean subed = false;
-            while (loop < k) {
-                if (visit[index] != -1 && !subed) {
-                    long diff = loop - visit[index];
-                    long remainLoop = k - loop;
-                    long skip = remainLoop / diff;
-                    loop += skip * diff;
-                    subed = true;
-                } else {
-                    visit[index] = loop;
-                }
-                if (loop >= k) {
-                    break;
-                }
-                int nextIndex = next[index];
-                if (nextIndex <= index) {
-                    loop++;
-                }
-                index = nextIndex + 1;
-                if (index == n) {
-                    index = 0;
-                    loop++;
-                }
-            }
-
-            if (loop > k) {
-                return;
-            }
-
-            Deque<Integer> deque = new ArrayDeque<>(n);
-            Set<Integer> contain = new HashSet<>(n);
-            for (int i = index; i < n; i++) {
-                Integer e = seq[i];
-                if (contain.contains(e)) {
-                    contain.remove(e);
-                    while (true) {
-                        Integer tail = deque.removeLast();
-                        contain.remove(tail);
-                        if (tail.equals(e)) {
-                            break;
-                        }
-                    }
+            BIT bit = new BIT(n);
+            int exist = 0;
+            int m = 0;
+            for (int i = n; i >= 1; i--) {
+                if (seq[i] == -1) {
+                    m++;
                     continue;
                 }
-                contain.add(e);
-                deque.addLast(e);
+                exist = mod.plus(exist, bit.query(seq[i]));
+                bit.update(seq[i], 1);
+            }
+            int betweenUnknown = mod.mul(mod.valueOf((long) m * (m - 1) / 2), power.inverse(2));
+            int betweenUnknownAndKnown = 0;
+
+            int leftUnknown = 0;
+            for (int i = 1; i <= n; i++) {
+                if (seq[i] == -1) {
+                    leftUnknown++;
+                    continue;
+                }
+                int gUnknown = n - seq[i] - (bit.query(n) - bit.query(seq[i]));
+                betweenUnknownAndKnown = mod.plus(betweenUnknownAndKnown,
+                        mod.mul(gUnknown, mod.mul(leftUnknown, power.inverse(m))));
             }
 
-            while (!deque.isEmpty()) {
-                io.cache.append(deque.removeFirst()).append(' ');
+            int rightUnknown = 0;
+            for (int i = n; i >= 1; i--) {
+                if (seq[i] == -1) {
+                    rightUnknown++;
+                    continue;
+                }
+                int lUnknown = seq[i] - bit.query(seq[i]);
+                betweenUnknownAndKnown = mod.plus(betweenUnknownAndKnown,
+                        mod.mul(lUnknown, mod.mul(rightUnknown, power.inverse(m))));
             }
+
+            int expect = mod.plus(betweenUnknown, betweenUnknownAndKnown);
+            expect = mod.plus(expect, exist);
+            io.cache.append(expect);
+        }
+    }
+
+    /**
+     * Created by dalt on 2018/5/20.
+     */
+    public static class BIT {
+        private int[] data;
+        private int n;
+
+        /**
+         * 创建大小A[1...n]
+         */
+        public BIT(int n) {
+            this.n = n;
+            data = new int[n + 1];
+        }
+
+        /**
+         * 查询A[1]+A[2]+...+A[i]
+         */
+        public int query(int i) {
+            int sum = 0;
+            for (; i > 0; i -= i & -i) {
+                sum += data[i];
+            }
+            return sum;
+        }
+
+        /**
+         * 将A[i]更新为A[i]+mod
+         */
+        public void update(int i, int mod) {
+            for (; i <= n; i += i & -i) {
+                data[i] += mod;
+            }
+        }
+
+        /**
+         * 将A全部清0
+         */
+        public void clear() {
+            Arrays.fill(data, 0);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 1; i <= n; i++) {
+                builder.append(query(i) - query(i - 1)).append(' ');
+            }
+            return builder.toString();
+        }
+    }
+
+
+    /**
+     * Power operations
+     */
+    public static class Power {
+        public Modular getModular() {
+            return modular;
+        }
+
+        final Modular modular;
+
+        public Power(Modular modular) {
+            this.modular = modular;
+        }
+
+        public int pow(int x, long n) {
+            if (n == 0) {
+                return 1;
+            }
+            long r = pow(x, n >> 1);
+            r = modular.valueOf(r * r);
+            if ((n & 1) == 1) {
+                r = modular.valueOf(r * x);
+            }
+            return (int) r;
+        }
+
+        public int inverse(int x) {
+            return pow(x, modular.m - 2);
+        }
+
+        public int pow2(int x) {
+            return x * x;
+        }
+
+        public long pow2(long x) {
+            return x * x;
+        }
+
+        public double pow2(double x) {
+            return x * x;
+        }
+    }
+
+    /**
+     * Mod operations
+     */
+    public static class Modular {
+        int m;
+
+        public Modular(int m) {
+            this.m = m;
+        }
+
+        public int valueOf(int x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
+            }
+            return x;
+        }
+
+        public int valueOf(long x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
+            }
+            return (int) x;
+        }
+
+        public int mul(int x, int y) {
+            return valueOf((long) x * y);
+        }
+
+        public int mul(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x * y);
+        }
+
+        public int plus(int x, int y) {
+            return valueOf(x + y);
+        }
+
+        public int plus(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x + y);
+        }
+
+        public int subtract(int x, int y) {
+            return valueOf(x - y);
+        }
+
+        public int subtract(long x, long y) {
+            return valueOf(x - y);
+        }
+
+        @Override
+        public String toString() {
+            return "mod " + m;
         }
     }
 
     public static class FastIO {
-        public final StringBuilder cache = new StringBuilder(20 << 20);
+        public final StringBuilder cache = new StringBuilder(1 << 13);
         private final InputStream is;
         private final OutputStream os;
         private final Charset charset;
-        private StringBuilder defaultStringBuf = new StringBuilder(1 << 8);
-        private byte[] buf = new byte[1 << 20];
+        private StringBuilder defaultStringBuf = new StringBuilder(1 << 13);
+        private byte[] buf = new byte[1 << 13];
         private int bufLen;
         private int bufOffset;
         private int next;
@@ -316,14 +430,10 @@ public class CFContest {
             return c;
         }
 
-        public void flush() {
-            try {
-                os.write(cache.toString().getBytes(charset));
-                os.flush();
-                cache.setLength(0);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        public void flush() throws IOException {
+            os.write(cache.toString().getBytes(charset));
+            os.flush();
+            cache.setLength(0);
         }
 
         public boolean hasMore() {

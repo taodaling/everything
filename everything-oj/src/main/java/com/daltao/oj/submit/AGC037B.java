@@ -1,24 +1,16 @@
 package com.daltao.oj.submit;
 
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
-
-public class CFContest {
+public class AGC037B {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
-        boolean async = true;
+        boolean local = System.getSecurityManager() == null;
+        boolean async = false;
 
         Charset charset = Charset.forName("ascii");
 
@@ -26,7 +18,7 @@ public class CFContest {
         Task task = new Task(io, new Debug(local));
 
         if (async) {
-            Thread t = new Thread(null, task, "skypool", 1 << 27);
+            Thread t = new Thread(null, task, "dalt", 1 << 27);
             t.setPriority(Thread.MAX_PRIORITY);
             t.start();
             t.join();
@@ -45,8 +37,7 @@ public class CFContest {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        long lInf = (long) 1e18;
-        double dInf = 1e50;
+        Modular mod = new Modular(998244353);
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -59,94 +50,124 @@ public class CFContest {
         }
 
         public void solve() {
+            int r = 1;
+            int g = 2;
+            int b = 4;
             int n = io.readInt();
-            long k = io.readLong();
+            int[] dp = new int[(r | g | b) + 1];
+            int ans = 1;
+            for (int i = 0; i < 3 * n; i++) {
+                char c = io.readChar();
+                int type = c == 'R' ? r : c == 'G' ? g : b;
 
-            int[] seq = new int[n];
-            long[] visit = new long[n];
-            Arrays.fill(visit, -1L);
-            for (int i = 0; i < n; i++) {
-                seq[i] = io.readInt();
-            }
-
-            int[] next = new int[n];
-            Arrays.fill(next, -1);
-            Map<Integer, Integer> indexMap = new HashMap<>(n);
-            for (int i = n - 1; i >= 0; i--) {
-                if (indexMap.containsKey(seq[i])) {
-                    next[i] = indexMap.get(seq[i]);
-                }
-                indexMap.put(seq[i], i);
-            }
-            for (int i = n - 1; i >= 0; i--) {
-                if (next[i] == -1) {
-                    next[i] = indexMap.get(seq[i]);
-                }
-            }
-
-            long loop = 1;
-            int index = 0;
-            boolean subed = false;
-            while (loop < k) {
-                if (visit[index] != -1 && !subed) {
-                    long diff = loop - visit[index];
-                    long remainLoop = k - loop;
-                    long skip = remainLoop / diff;
-                    loop += skip * diff;
-                    subed = true;
-                } else {
-                    visit[index] = loop;
-                }
-                if (loop >= k) {
-                    break;
-                }
-                int nextIndex = next[index];
-                if (nextIndex <= index) {
-                    loop++;
-                }
-                index = nextIndex + 1;
-                if (index == n) {
-                    index = 0;
-                    loop++;
-                }
-            }
-
-            if (loop > k) {
-                return;
-            }
-
-            Deque<Integer> deque = new ArrayDeque<>(n);
-            Set<Integer> contain = new HashSet<>(n);
-            for (int i = index; i < n; i++) {
-                Integer e = seq[i];
-                if (contain.contains(e)) {
-                    contain.remove(e);
-                    while (true) {
-                        Integer tail = deque.removeLast();
-                        contain.remove(tail);
-                        if (tail.equals(e)) {
-                            break;
-                        }
-                    }
+                int inv = (r | g | b) - type;
+                if (dp[inv] > 0) {
+                    ans = mod.mul(dp[inv], ans);
+                    dp[inv]--;
                     continue;
                 }
-                contain.add(e);
-                deque.addLast(e);
+
+                if (dp[r] + dp[g] + dp[b] == 0 || dp[type] != 0) {
+                    dp[type]++;
+                    continue;
+                }
+
+                if (dp[r] > 0) {
+                    ans = mod.mul(dp[r], ans);
+                    dp[r]--;
+                    dp[r | type]++;
+                    continue;
+                }
+                if (dp[g] > 0) {
+                    ans = mod.mul(dp[g], ans);
+                    dp[g]--;
+                    dp[g | type]++;
+                    continue;
+                }
+                if (dp[b] > 0) {
+                    ans = mod.mul(dp[b], ans);
+                    dp[b]--;
+                    dp[b | type]++;
+                    continue;
+                }
+
             }
 
-            while (!deque.isEmpty()) {
-                io.cache.append(deque.removeFirst()).append(' ');
+            for(int i = 1; i <= n; i++){
+                ans = mod.mul(i, ans);
             }
+            io.cache.append(ans);
+        }
+    }
+
+
+    /**
+     * Mod operations
+     */
+    public static class Modular {
+        int m;
+
+        public Modular(int m) {
+            this.m = m;
+        }
+
+        public int valueOf(int x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
+            }
+            return x;
+        }
+
+        public int valueOf(long x) {
+            x %= m;
+            if (x < 0) {
+                x += m;
+            }
+            return (int) x;
+        }
+
+        public int mul(int x, int y) {
+            return valueOf((long) x * y);
+        }
+
+        public int mul(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x * y);
+        }
+
+        public int plus(int x, int y) {
+            return valueOf(x + y);
+        }
+
+        public int plus(long x, long y) {
+            x = valueOf(x);
+            y = valueOf(y);
+            return valueOf(x + y);
+        }
+
+        public int subtract(int x, int y) {
+            return valueOf(x - y);
+        }
+
+        public int subtract(long x, long y) {
+            return valueOf(x - y);
+        }
+
+        @Override
+        public String toString() {
+            return "mod " + m;
         }
     }
 
     public static class FastIO {
-        public final StringBuilder cache = new StringBuilder(20 << 20);
+        public final StringBuilder cache = new StringBuilder(1 << 13);
         private final InputStream is;
         private final OutputStream os;
         private final Charset charset;
-        private StringBuilder defaultStringBuf = new StringBuilder(1 << 8);
-        private byte[] buf = new byte[1 << 20];
+        private StringBuilder defaultStringBuf = new StringBuilder(1 << 13);
+        private byte[] buf = new byte[1 << 13];
         private int bufLen;
         private int bufOffset;
         private int next;
@@ -316,14 +337,10 @@ public class CFContest {
             return c;
         }
 
-        public void flush() {
-            try {
-                os.write(cache.toString().getBytes(charset));
-                os.flush();
-                cache.setLength(0);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        public void flush() throws IOException {
+            os.write(cache.toString().getBytes(charset));
+            os.flush();
+            cache.setLength(0);
         }
 
         public boolean hasMore() {
