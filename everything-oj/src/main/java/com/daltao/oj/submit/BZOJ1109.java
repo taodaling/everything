@@ -1,18 +1,18 @@
 package com.daltao.oj.submit;
 
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Random;
 
-
-public class CFContest {
+public class BZOJ1109 {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
-        boolean async = true;
+        boolean local = System.getSecurityManager() == null;
+        boolean async = false;
 
         Charset charset = Charset.forName("ascii");
 
@@ -20,7 +20,7 @@ public class CFContest {
         Task task = new Task(io, new Debug(local));
 
         if (async) {
-            Thread t = new Thread(null, task, "skypool", 1 << 27);
+            Thread t = new Thread(null, task, "dalt", 1 << 27);
             t.setPriority(Thread.MAX_PRIORITY);
             t.start();
             t.join();
@@ -39,8 +39,6 @@ public class CFContest {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        long lInf = (long) 1e18;
-        double dInf = 1e50;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -52,28 +50,44 @@ public class CFContest {
             solve();
         }
 
-
         public void solve() {
             int n = io.readInt();
-            Segment segment = new Segment(1, n);
-            int[][] xy = new int[n][3];
-            int[] seq = new int[n * 2];
-            int seqTail = 0;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < 2; j++) {
-                    xy[i][j] = io.readInt();
-                }
-                seq[seqTail++] = xy[i][0];
-                seq[seqTail++] = xy[i][1];
+            int[] x = new int[n];
+            Element[] es = new Element[n + 1];
+            for (int i = 1; i <= n; i++) {
+                es[i] = new Element();
+                es[i].x = io.readInt();
+                es[i].y = i - es[i].x;
+                x[i - 1] = es[i].x;
             }
 
-            DiscreteMap map = new DiscreteMap(seq, 0, seqTail);
+            Arrays.sort(es, 1, n + 1, new Comparator<Element>() {
+                @Override
+                public int compare(Element o1, Element o2) {
+                    int c = o1.y - o2.y;
+                    if (c == 0) {
+                        c = o1.x - o2.x;
+                    }
+                    return c;
+                }
+            });
 
+            DiscreteMap map = new DiscreteMap(x, 0, n);
+            for (int i = 1; i <= n; i++) {
+                es[i].x = map.rankOf(es[i].x);
+            }
 
+            Segment seg = new Segment(map.minRank(), map.maxRank());
+            for (int i = 1; i <= n; i++) {
+                if (es[i].y < 0) {
+                    continue;
+                }
+                int dp = seg.query(map.minRank(), es[i].x - 1, map.minRank(), map.maxRank()) + 1;
+                seg.update(es[i].x, es[i].x, map.minRank(), map.maxRank(), dp);
+            }
+
+            io.cache.append(seg.query(map.minRank(), map.maxRank(), map.minRank(), map.maxRank()));
         }
-
-
-
     }
 
     /**
@@ -207,20 +221,33 @@ public class CFContest {
         }
     }
 
+    public static class Element {
+        int x;
+        int y;
+    }
+
     public static class Segment implements Cloneable {
         private Segment left;
         private Segment right;
-        private long cost;
-        private long prefixSum;
+        private int m;
+        private int setMax;
+
+        public void setMax(int v) {
+            m = Math.max(m, v);
+            setMax = Math.max(setMax, v);
+        }
 
         public void pushUp() {
-            cost = left.cost + right.cost;
-            prefixSum = Math.max(left.cost + right.prefixSum, left.prefixSum);
+            m = Math.max(left.m, right.m);
         }
 
         public void pushDown() {
+            if (setMax != 0) {
+                left.setMax(setMax);
+                right.setMax(setMax);
+                setMax = 0;
+            }
         }
-
 
         public Segment(int l, int r) {
             if (l < r) {
@@ -241,43 +268,43 @@ public class CFContest {
             return ll > r || rr < l;
         }
 
-        public void update(int ll, int rr, int l, int r, int price) {
+        public void update(int ll, int rr, int l, int r, int max) {
             if (noIntersection(ll, rr, l, r)) {
                 return;
             }
             if (covered(ll, rr, l, r)) {
-                prefixSum = Math.max(0, cost - price);
+                setMax(max);
                 return;
             }
             pushDown();
             int m = (l + r) >> 1;
-            left.update(ll, rr, l, m, price);
-            right.update(ll, rr, m + 1, r, price);
+            left.update(ll, rr, l, m, max);
+            right.update(ll, rr, m + 1, r, max);
             pushUp();
         }
 
-        public void query(int ll, int rr, int l, int r) {
+        public int query(int ll, int rr, int l, int r) {
             if (noIntersection(ll, rr, l, r)) {
-                return;
+                return 0;
             }
             if (covered(ll, rr, l, r)) {
-                return;
+                return m;
             }
             pushDown();
             int m = (l + r) >> 1;
-            left.query(ll, rr, l, m);
-            right.query(ll, rr, m + 1, r);
+            return Math.max(left.query(ll, rr, l, m),
+                    right.query(ll, rr, m + 1, r));
         }
     }
 
 
     public static class FastIO {
-        public final StringBuilder cache = new StringBuilder(20 << 20);
+        public final StringBuilder cache = new StringBuilder(1 << 13);
         private final InputStream is;
         private final OutputStream os;
         private final Charset charset;
-        private StringBuilder defaultStringBuf = new StringBuilder(1 << 8);
-        private byte[] buf = new byte[1 << 20];
+        private StringBuilder defaultStringBuf = new StringBuilder(1 << 13);
+        private byte[] buf = new byte[1 << 13];
         private int bufLen;
         private int bufOffset;
         private int next;
@@ -447,14 +474,10 @@ public class CFContest {
             return c;
         }
 
-        public void flush() {
-            try {
-                os.write(cache.toString().getBytes(charset));
-                os.flush();
-                cache.setLength(0);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        public void flush() throws IOException {
+            os.write(cache.toString().getBytes(charset));
+            os.flush();
+            cache.setLength(0);
         }
 
         public boolean hasMore() {

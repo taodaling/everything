@@ -1,18 +1,16 @@
 package com.daltao.oj.submit;
 
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
 
-
-public class CFContest {
+public class PE21 {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
-        boolean async = true;
+        boolean local = System.getSecurityManager() == null;
+        boolean async = false;
 
         Charset charset = Charset.forName("ascii");
 
@@ -20,7 +18,7 @@ public class CFContest {
         Task task = new Task(io, new Debug(local));
 
         if (async) {
-            Thread t = new Thread(null, task, "skypool", 1 << 27);
+            Thread t = new Thread(null, task, "dalt", 1 << 27);
             t.setPriority(Thread.MAX_PRIORITY);
             t.start();
             t.join();
@@ -39,8 +37,6 @@ public class CFContest {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        long lInf = (long) 1e18;
-        double dInf = 1e50;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -52,232 +48,37 @@ public class CFContest {
             solve();
         }
 
-
         public void solve() {
-            int n = io.readInt();
-            Segment segment = new Segment(1, n);
-            int[][] xy = new int[n][3];
-            int[] seq = new int[n * 2];
-            int seqTail = 0;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < 2; j++) {
-                    xy[i][j] = io.readInt();
+            int n = 10000;
+            int[] d = new int[n + 1];
+            for (int i = 1; i <= n; i++) {
+                d[i] = 0;
+                for (int j = 1; j < i; j++) {
+                    if (i % j == 0) {
+                        d[i] += j;
+                    }
                 }
-                seq[seqTail++] = xy[i][0];
-                seq[seqTail++] = xy[i][1];
             }
 
-            DiscreteMap map = new DiscreteMap(seq, 0, seqTail);
-
-
-        }
-
-
-
-    }
-
-    /**
-     * Created by dalt on 2018/6/1.
-     */
-    public static class Randomized {
-        static Random random = new Random();
-
-        public static double nextDouble(double min, double max) {
-            return random.nextDouble() * (max - min) + min;
-        }
-
-        public static void randomizedArray(int[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                int tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static void randomizedArray(long[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                long tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static void randomizedArray(double[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                double tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static void randomizedArray(float[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                float tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static <T> void randomizedArray(T[] data, int from, int to) {
-            to--;
-            for (int i = from; i <= to; i++) {
-                int s = nextInt(i, to);
-                T tmp = data[i];
-                data[i] = data[s];
-                data[s] = tmp;
-            }
-        }
-
-        public static int nextInt(int l, int r) {
-            return random.nextInt(r - l + 1) + l;
-        }
-    }
-
-    public static class DiscreteMap {
-        int[] val;
-        int f;
-        int t;
-
-        public DiscreteMap(int[] val, int f, int t) {
-            Randomized.randomizedArray(val, f, t);
-            Arrays.sort(val, f, t);
-            int wpos = f + 1;
-            for (int i = f + 1; i < t; i++) {
-                if (val[i] == val[i - 1]) {
-                    continue;
+            debug.assertTrue(d[284] == 220);
+            int sum = 0;
+            for (int i = 1; i <= n; i++) {
+                if (d[i] > i && d[i] <= n && d[d[i]] == i) {
+                    sum += i + d[i];
                 }
-                val[wpos++] = val[i];
             }
-            this.val = val;
-            this.f = f;
-            this.t = wpos;
-        }
 
-        /**
-         * Return 0, 1, so on
-         */
-        public int rankOf(int x) {
-            return Arrays.binarySearch(val, f, t, x) - f;
-        }
-
-        public int floorRankOf(int x) {
-            int index = Arrays.binarySearch(val, f, t, x);
-            if (index >= 0) {
-                return index - f;
-            }
-            index = -(index + 1);
-            return index - 1 - f;
-        }
-
-        public int ceilRankOf(int x) {
-            int index = Arrays.binarySearch(val, f, t, x);
-            if (index >= 0) {
-                return index - f;
-            }
-            index = -(index + 1);
-            return index - f;
-        }
-
-        /**
-         * Get the i-th smallest element
-         */
-        public int iThElement(int i) {
-            return val[f + i];
-        }
-
-        public int minRank() {
-            return 0;
-        }
-
-        public int maxRank() {
-            return t - f - 1;
-        }
-
-        @Override
-        public String toString() {
-            return Arrays.toString(Arrays.copyOfRange(val, f, t));
+            io.cache.append(sum);
         }
     }
-
-    public static class Segment implements Cloneable {
-        private Segment left;
-        private Segment right;
-        private long cost;
-        private long prefixSum;
-
-        public void pushUp() {
-            cost = left.cost + right.cost;
-            prefixSum = Math.max(left.cost + right.prefixSum, left.prefixSum);
-        }
-
-        public void pushDown() {
-        }
-
-
-        public Segment(int l, int r) {
-            if (l < r) {
-                int m = (l + r) >> 1;
-                left = new Segment(l, m);
-                right = new Segment(m + 1, r);
-                pushUp();
-            } else {
-
-            }
-        }
-
-        private boolean covered(int ll, int rr, int l, int r) {
-            return ll <= l && rr >= r;
-        }
-
-        private boolean noIntersection(int ll, int rr, int l, int r) {
-            return ll > r || rr < l;
-        }
-
-        public void update(int ll, int rr, int l, int r, int price) {
-            if (noIntersection(ll, rr, l, r)) {
-                return;
-            }
-            if (covered(ll, rr, l, r)) {
-                prefixSum = Math.max(0, cost - price);
-                return;
-            }
-            pushDown();
-            int m = (l + r) >> 1;
-            left.update(ll, rr, l, m, price);
-            right.update(ll, rr, m + 1, r, price);
-            pushUp();
-        }
-
-        public void query(int ll, int rr, int l, int r) {
-            if (noIntersection(ll, rr, l, r)) {
-                return;
-            }
-            if (covered(ll, rr, l, r)) {
-                return;
-            }
-            pushDown();
-            int m = (l + r) >> 1;
-            left.query(ll, rr, l, m);
-            right.query(ll, rr, m + 1, r);
-        }
-    }
-
 
     public static class FastIO {
-        public final StringBuilder cache = new StringBuilder(20 << 20);
+        public final StringBuilder cache = new StringBuilder(1 << 13);
         private final InputStream is;
         private final OutputStream os;
         private final Charset charset;
-        private StringBuilder defaultStringBuf = new StringBuilder(1 << 8);
-        private byte[] buf = new byte[1 << 20];
+        private StringBuilder defaultStringBuf = new StringBuilder(1 << 13);
+        private byte[] buf = new byte[1 << 13];
         private int bufLen;
         private int bufOffset;
         private int next;
@@ -447,14 +248,10 @@ public class CFContest {
             return c;
         }
 
-        public void flush() {
-            try {
-                os.write(cache.toString().getBytes(charset));
-                os.flush();
-                cache.setLength(0);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        public void flush() throws IOException {
+            os.write(cache.toString().getBytes(charset));
+            os.flush();
+            cache.setLength(0);
         }
 
         public boolean hasMore() {

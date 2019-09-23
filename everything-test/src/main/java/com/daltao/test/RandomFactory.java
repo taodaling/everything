@@ -7,7 +7,7 @@ import java.util.Random;
 import java.util.function.Supplier;
 
 public abstract class RandomFactory implements Factory<Input> {
-    protected Random random = new Random();
+    protected Random random = new Random(0);
 
     protected int nextInt(int l, int r) {
         return random.nextInt(r - l + 1) + l;

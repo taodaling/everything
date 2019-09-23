@@ -1,18 +1,17 @@
 package com.daltao.oj.submit;
 
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Random;
 
-
-public class CFContest {
+public class BZOJ1110 {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
-        boolean async = true;
+        boolean local = System.getSecurityManager() == null;
+        boolean async = false;
 
         Charset charset = Charset.forName("ascii");
 
@@ -20,7 +19,7 @@ public class CFContest {
         Task task = new Task(io, new Debug(local));
 
         if (async) {
-            Thread t = new Thread(null, task, "skypool", 1 << 27);
+            Thread t = new Thread(null, task, "dalt", 1 << 27);
             t.setPriority(Thread.MAX_PRIORITY);
             t.start();
             t.join();
@@ -39,8 +38,6 @@ public class CFContest {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
-        long lInf = (long) 1e18;
-        double dInf = 1e50;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
@@ -52,28 +49,136 @@ public class CFContest {
             solve();
         }
 
+        DiscreteMap map;
 
         public void solve() {
             int n = io.readInt();
-            Segment segment = new Segment(1, n);
-            int[][] xy = new int[n][3];
-            int[] seq = new int[n * 2];
-            int seqTail = 0;
+            int m = io.readInt();
+            Container[] containers = new Container[n];
             for (int i = 0; i < n; i++) {
-                for (int j = 0; j < 2; j++) {
-                    xy[i][j] = io.readInt();
-                }
-                seq[seqTail++] = xy[i][0];
-                seq[seqTail++] = xy[i][1];
+                containers[i] = new Container();
+                containers[i].cap = io.readInt();
+            }
+            int[] w = new int[m];
+            for (int i = 0; i < m; i++) {
+                w[i] = io.readInt();
+            }
+            Randomized.randomizedArray(w, 0, m);
+            Arrays.sort(w, 0, m);
+            map = new DiscreteMap(w.clone(), 0, m);
+
+            for (int i = 0; i < m; i++) {
+                w[i] = map.rankOf(w[i]);
             }
 
-            DiscreteMap map = new DiscreteMap(seq, 0, seqTail);
+            int l = 0;
+            int r = m;
+            while (l < r) {
+                int mid = (1 + l + r) >> 1;
+                if (check(containers, w, mid)) {
+                    l = mid;
+                } else {
+                    r = mid - 1;
+                }
+            }
 
-
+            io.cache.append(l);
         }
 
+        public boolean check(Container[] containers, int[] w, int k) {
+            int max = map.maxRank();
+            int[] cnt = new int[max + 1];
+            int total = k;
+            for (int i = 0; i < k; i++) {
+                cnt[w[i]]++;
+            }
 
 
+            for (Container c : containers) {
+                if (total == 0) {
+                    break;
+                }
+                int sum = 0;
+                for (int i = max; i >= 0; i--) {
+                    int v = map.iThElement(i);
+                    int rm = Math.min(cnt[i], (c.cap - sum) / v);
+                    cnt[i] -= rm;
+                    total -= rm;
+                    sum += rm * v;
+                }
+            }
+
+            return total == 0;
+        }
+    }
+
+    public static class Container {
+        int cap;
+    }
+
+
+    public static class DiscreteMap {
+        int[] val;
+        int f;
+        int t;
+
+        public DiscreteMap(int[] val, int f, int t) {
+            int wpos = f + 1;
+            for (int i = f + 1; i < t; i++) {
+                if (val[i] == val[i - 1]) {
+                    continue;
+                }
+                val[wpos++] = val[i];
+            }
+            this.val = val;
+            this.f = f;
+            this.t = wpos;
+        }
+
+        /**
+         * Return 0, 1, so on
+         */
+        public int rankOf(int x) {
+            return Arrays.binarySearch(val, f, t, x) - f;
+        }
+
+        public int floorRankOf(int x) {
+            int index = Arrays.binarySearch(val, f, t, x);
+            if (index >= 0) {
+                return index - f;
+            }
+            index = -(index + 1);
+            return index - 1 - f;
+        }
+
+        public int ceilRankOf(int x) {
+            int index = Arrays.binarySearch(val, f, t, x);
+            if (index >= 0) {
+                return index - f;
+            }
+            index = -(index + 1);
+            return index - f;
+        }
+
+        /**
+         * Get the i-th smallest element
+         */
+        public int iThElement(int i) {
+            return val[f + i];
+        }
+
+        public int minRank() {
+            return 0;
+        }
+
+        public int maxRank() {
+            return t - f - 1;
+        }
+
+        @Override
+        public String toString() {
+            return Arrays.toString(Arrays.copyOfRange(val, f, t));
+        }
     }
 
     /**
@@ -141,143 +246,14 @@ public class CFContest {
         }
     }
 
-    public static class DiscreteMap {
-        int[] val;
-        int f;
-        int t;
-
-        public DiscreteMap(int[] val, int f, int t) {
-            Randomized.randomizedArray(val, f, t);
-            Arrays.sort(val, f, t);
-            int wpos = f + 1;
-            for (int i = f + 1; i < t; i++) {
-                if (val[i] == val[i - 1]) {
-                    continue;
-                }
-                val[wpos++] = val[i];
-            }
-            this.val = val;
-            this.f = f;
-            this.t = wpos;
-        }
-
-        /**
-         * Return 0, 1, so on
-         */
-        public int rankOf(int x) {
-            return Arrays.binarySearch(val, f, t, x) - f;
-        }
-
-        public int floorRankOf(int x) {
-            int index = Arrays.binarySearch(val, f, t, x);
-            if (index >= 0) {
-                return index - f;
-            }
-            index = -(index + 1);
-            return index - 1 - f;
-        }
-
-        public int ceilRankOf(int x) {
-            int index = Arrays.binarySearch(val, f, t, x);
-            if (index >= 0) {
-                return index - f;
-            }
-            index = -(index + 1);
-            return index - f;
-        }
-
-        /**
-         * Get the i-th smallest element
-         */
-        public int iThElement(int i) {
-            return val[f + i];
-        }
-
-        public int minRank() {
-            return 0;
-        }
-
-        public int maxRank() {
-            return t - f - 1;
-        }
-
-        @Override
-        public String toString() {
-            return Arrays.toString(Arrays.copyOfRange(val, f, t));
-        }
-    }
-
-    public static class Segment implements Cloneable {
-        private Segment left;
-        private Segment right;
-        private long cost;
-        private long prefixSum;
-
-        public void pushUp() {
-            cost = left.cost + right.cost;
-            prefixSum = Math.max(left.cost + right.prefixSum, left.prefixSum);
-        }
-
-        public void pushDown() {
-        }
-
-
-        public Segment(int l, int r) {
-            if (l < r) {
-                int m = (l + r) >> 1;
-                left = new Segment(l, m);
-                right = new Segment(m + 1, r);
-                pushUp();
-            } else {
-
-            }
-        }
-
-        private boolean covered(int ll, int rr, int l, int r) {
-            return ll <= l && rr >= r;
-        }
-
-        private boolean noIntersection(int ll, int rr, int l, int r) {
-            return ll > r || rr < l;
-        }
-
-        public void update(int ll, int rr, int l, int r, int price) {
-            if (noIntersection(ll, rr, l, r)) {
-                return;
-            }
-            if (covered(ll, rr, l, r)) {
-                prefixSum = Math.max(0, cost - price);
-                return;
-            }
-            pushDown();
-            int m = (l + r) >> 1;
-            left.update(ll, rr, l, m, price);
-            right.update(ll, rr, m + 1, r, price);
-            pushUp();
-        }
-
-        public void query(int ll, int rr, int l, int r) {
-            if (noIntersection(ll, rr, l, r)) {
-                return;
-            }
-            if (covered(ll, rr, l, r)) {
-                return;
-            }
-            pushDown();
-            int m = (l + r) >> 1;
-            left.query(ll, rr, l, m);
-            right.query(ll, rr, m + 1, r);
-        }
-    }
-
 
     public static class FastIO {
-        public final StringBuilder cache = new StringBuilder(20 << 20);
+        public final StringBuilder cache = new StringBuilder(1 << 13);
         private final InputStream is;
         private final OutputStream os;
         private final Charset charset;
-        private StringBuilder defaultStringBuf = new StringBuilder(1 << 8);
-        private byte[] buf = new byte[1 << 20];
+        private StringBuilder defaultStringBuf = new StringBuilder(1 << 13);
+        private byte[] buf = new byte[1 << 13];
         private int bufLen;
         private int bufOffset;
         private int next;
@@ -447,14 +423,10 @@ public class CFContest {
             return c;
         }
 
-        public void flush() {
-            try {
-                os.write(cache.toString().getBytes(charset));
-                os.flush();
-                cache.setLength(0);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        public void flush() throws IOException {
+            os.write(cache.toString().getBytes(charset));
+            os.flush();
+            cache.setLength(0);
         }
 
         public boolean hasMore() {
