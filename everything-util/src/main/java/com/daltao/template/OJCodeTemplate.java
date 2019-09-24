@@ -37,6 +37,8 @@ public class OJCodeTemplate {
         final FastIO io;
         final Debug debug;
         int inf = (int) 1e8;
+        long lInf = (long) 1e18;
+        double dInf = 1e50;
 
         public Task(FastIO io, Debug debug) {
             this.io = io;
