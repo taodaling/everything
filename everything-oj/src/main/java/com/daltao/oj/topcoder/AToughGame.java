@@ -3,45 +3,31 @@ package com.daltao.oj.topcoder;
 public class AToughGame {
     double expectedGain(int[] A, int[] B) {
         int n = A.length;
-        double[] probs = new double[n];
+        double[] p = new double[n + 1];
+        double pass = 1;
         for (int i = 0; i < n; i++) {
-            probs[i] = A[i] / 1000D;
+            p[i] = pass * (1 - A[i] / 1000D);
+            pass *= A[i] / 1000D;
         }
-        double[] preProd = new double[n];
-        preProd[0] = probs[0];
-        for (int i = 1; i < n; i++) {
-            preProd[i] = probs[i] * preProd[i - 1];
-        }
-        double[] dieProb = new double[n];
-        dieProb[0] = 1 - probs[0];
-        for (int i = 1; i < n; i++) {
-            dieProb[i] = preProd[i - 1] * (1 - probs[i]);
-        }
-        double[] preSumOfDieProb = new double[n];
-        preSumOfDieProb[0] = dieProb[0];
-        for (int i = 1; i < n; i++) {
-            preSumOfDieProb[i] = preSumOfDieProb[i - 1] + dieProb[i];
+        p[n] = pass;
+        double[] x = new double[n + 1];
+        x[n] = 1;
+        double suffix = x[n] * p[n];
+        for (int i = n - 1; i >= 0; i--) {
+            x[i] = suffix / (1 - p[i]);
+            suffix += x[i] * p[i];
         }
 
-        double[] exp = new double[n];
-        double[] probEnter = new double[n];
-        for (int i = 0; i < n; i++) {
-            probEnter[i] = dieProb[i];
-            for (int j = 0; j < i; j++) {
-                double pji = dieProb[i] / (1 - preSumOfDieProb[j]);
-                probEnter[i] += probEnter[j] * pji;
-            }
+        int[] sum = new int[n + 1];
+        for (int i = 1; i <= n; i++) {
+            sum[i] = sum[i - 1] + B[i - 1];
+        }
 
-            double fail = dieProb[i] / (1 - (i >= 1 ? preSumOfDieProb[i - 1] : 0));
-            exp[i] = 1 / (1 - fail);
-        }
-        double ans = 0;
-        double sum = 0;
+        double exp = 0;
         for (int i = 0; i < n; i++) {
-            ans += exp[i] * probEnter[i] * sum;
-            sum += B[i];
+            exp += p[i] * x[i] * sum[i];
         }
-        ans += 1 * sum;
-        return ans;
+        exp = exp / p[n];
+        return exp + sum[n];
     }
 }
