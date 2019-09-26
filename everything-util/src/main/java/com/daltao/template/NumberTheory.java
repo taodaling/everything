@@ -635,6 +635,10 @@ public class NumberTheory {
             return valueOf(a + b);
         }
 
+        public long subtract(long a, long b) {
+            return valueOf(a - b);
+        }
+
         public long valueOf(long a) {
             a %= m;
             if (a < 0) {
@@ -645,6 +649,10 @@ public class NumberTheory {
     }
 
     public static class LongPower {
+        public LongModular getModular() {
+            return modular;
+        }
+
         final LongModular modular;
 
         public LongPower(LongModular modular) {
