@@ -4,15 +4,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.math.BigInteger;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
 
-
-public class CFContest {
+public class LUOGU1329 {
     public static void main(String[] args) throws Exception {
-        boolean local = System.getProperty("ONLINE_JUDGE") == null;
-        boolean async = true;
+        boolean local = System.getSecurityManager() == null;
+        boolean async = false;
 
         Charset charset = Charset.forName("ascii");
 
@@ -20,7 +18,7 @@ public class CFContest {
         Task task = new Task(io, new Debug(local));
 
         if (async) {
-            Thread t = new Thread(null, task, "skypool", 1 << 27);
+            Thread t = new Thread(null, task, "dalt", 1 << 27);
             t.setPriority(Thread.MAX_PRIORITY);
             t.start();
             t.join();
@@ -38,7 +36,7 @@ public class CFContest {
     public static class Task implements Runnable {
         final FastIO io;
         final Debug debug;
-        int inf = (int) 1e9;
+        int inf = (int) 1e8;
         long lInf = (long) 1e18;
         double dInf = 1e50;
 
@@ -54,123 +52,74 @@ public class CFContest {
 
         public void solve() {
             int n = io.readInt();
-            int m = io.readInt();
-            Node[] nodes = new Node[n + 1];
-            for (int i = 1; i <= n; i++) {
-                nodes[i] = new Node();
-                nodes[i].id = i;
-            }
-            for (int i = 0; i < m; i++) {
-                Node a = nodes[io.readInt()];
-                Node b = nodes[io.readInt()];
-                a.next.add(b);
+            int s = io.readInt();
+            exp = s;
+            if (Math.abs(s) >= 10000) {
+                io.cache.append(0);
+                return;
             }
 
-            for (int i = 1; i <= n; i++) {
-                if (search(nodes[i])) {
-                    reverse();
-                    List<Node> ans = findProper();
-                    io.cache.append(ans.size()).append('\n');
-                    for (Node node : ans) {
-                        io.cache.append(node.id).append('\n');
-                    }
-                    return;
+            int zero = 10000;
+            long[][] dp = new long[n][20000];
+            dp[0][zero] = 1;
+            for (int i = 1; i < n; i++) {
+                int v = n - i;
+                for (int j = 0; j < 20000; j++) {
+                    dp[i][j] = get(dp[i - 1], j - v) +
+                            get(dp[i - 1], j + v);
                 }
             }
 
-            io.cache.append(-1);
+            io.cache.append(dp[n - 1][s + zero]).append('\n');
+            find(dp, n - 1, s + zero, new int[n]);
         }
 
-        public List<Node> findProper() {
-            int n = circle.size();
-            Map<Node, Integer> indexMap = new HashMap<>(n);
-            for (int i = 0; i < n; i++) {
-                indexMap.put(circle.get(i), i);
-            }
+        int remain = 100;
+        int exp;
 
-            for (int i = 0; i < n; i++) {
-                Node node = circle.get(i);
-                Node next = circle.get((i + 1) % n);
-                for (Node child : node.next) {
-                    if (child == next) {
-                        continue;
-                    }
-                    if (!indexMap.containsKey(child)) {
-                        continue;
-                    }
-                    int childIndex = indexMap.get(child);
-                    if (childIndex > i) {
-                        List<Node> newCircle = new ArrayList<>();
-                        newCircle.addAll(circle.subList(0, i + 1));
-                        newCircle.addAll(circle.subList(childIndex, n));
-                        circle = newCircle;
-                        return findProper();
-                    } else {
-                        circle = circle.subList(childIndex, i + 1);
-                        return findProper();
-                    }
+        public void find(long[][] dp, int i, int j, int[] q) {
+            if (remain <= 0) {
+                return;
+            }
+            if (i == 0) {
+                remain--;
+                int last = 0;
+                int sum = 0;
+                io.cache.append(last).append(' ');
+                for (int k = 1; k < q.length; k++) {
+                    last += Integer.signum(q[k]);
+                    io.cache.append(last).append(' ');
+                    sum += last;
                 }
-            }
-
-            return circle;
-        }
-
-        Deque<Node> deque = new ArrayDeque<>();
-        List<Node> circle = new ArrayList<>();
-
-        public void reverse() {
-            int l = 0;
-            int r = circle.size() - 1;
-            while (l < r) {
-                Node tmp = circle.get(l);
-                circle.set(l, circle.get(r));
-                circle.set(r, tmp);
-                l++;
-                r--;
-            }
-        }
-
-        public boolean search(Node root) {
-            if (root.visited) {
-                if (root.instk) {
-                    Node head;
-                    circle.add(root);
-                    while ((head = deque.removeLast()) != root) {
-                        circle.add(head);
-                    }
-                    return true;
+                if (sum != exp) {
+                    throw new RuntimeException();
                 }
+                io.cache.append('\n');
+                return;
             }
-            root.visited = true;
-            root.instk = true;
-            deque.addLast(root);
-
-            for (Node node : root.next) {
-                if (search(node)) {
-                    return true;
-                }
+            int v = q.length - i;
+            if (get(dp[i - 1], j - v) > 0) {
+                q[i] = v;
+                find(dp, i - 1, j - v, q);
             }
-
-            deque.removeLast();
-            root.instk = false;
-            return false;
+            if (get(dp[i - 1], j + v) > 0) {
+                q[i] = -v;
+                find(dp, i - 1, j + v, q);
+            }
         }
-    }
 
-    public static class Node {
-        List<Node> next = new ArrayList<>();
-        boolean instk;
-        boolean visited;
-        int id;
+        public long get(long[] arr, int i) {
+            return i < 0 || i >= arr.length ? 0L : arr[i];
+        }
     }
 
     public static class FastIO {
-        public final StringBuilder cache = new StringBuilder(20 << 20);
+        public final StringBuilder cache = new StringBuilder(1 << 13);
         private final InputStream is;
         private final OutputStream os;
         private final Charset charset;
-        private StringBuilder defaultStringBuf = new StringBuilder(1 << 8);
-        private byte[] buf = new byte[1 << 20];
+        private StringBuilder defaultStringBuf = new StringBuilder(1 << 13);
+        private byte[] buf = new byte[1 << 13];
         private int bufLen;
         private int bufOffset;
         private int next;
@@ -340,14 +289,10 @@ public class CFContest {
             return c;
         }
 
-        public void flush() {
-            try {
-                os.write(cache.toString().getBytes(charset));
-                os.flush();
-                cache.setLength(0);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        public void flush() throws IOException {
+            os.write(cache.toString().getBytes(charset));
+            os.flush();
+            cache.setLength(0);
         }
 
         public boolean hasMore() {
