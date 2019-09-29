@@ -52,116 +52,182 @@ public class CFContest {
             solve();
         }
 
+        int n;
+
         public void solve() {
-            int n = io.readInt();
-            int m = io.readInt();
-            Node[] nodes = new Node[n + 1];
-            for (int i = 1; i <= n; i++) {
+            n = io.readInt();
+            int nodeNum = (1 << n) - 1;
+            int m = (1 << n) - 3;
+            Node[] nodes = new Node[nodeNum + 1];
+            for (int i = 1; i <= nodeNum; i++) {
                 nodes[i] = new Node();
                 nodes[i].id = i;
             }
-            for (int i = 0; i < m; i++) {
+            for (int i = 1; i <= m; i++) {
                 Node a = nodes[io.readInt()];
                 Node b = nodes[io.readInt()];
                 a.next.add(b);
+                b.next.add(a);
             }
 
-            for (int i = 1; i <= n; i++) {
-                if (search(nodes[i])) {
-                    reverse();
-                    List<Node> ans = findProper();
-                    io.cache.append(ans.size()).append('\n');
-                    for (Node node : ans) {
-                        io.cache.append(node.id).append('\n');
-                    }
-                    return;
+            for (int i = 1; i <= nodeNum; i++) {
+                if (nodes[i].next.size() != 0) {
+                    Node tmp = nodes[i];
+                    nodes[i] = nodes[1];
+                    nodes[1] = tmp;
                 }
             }
 
-            io.cache.append(-1);
-        }
+            dfsForDiameter(nodes[1], null);
+            Deque<Node> deque = new ArrayDeque<>(nodeNum);
+            traceDiameter(nodes[1].farthest, null, 0, nodes[1].diameter, deque);
 
-        public List<Node> findProper() {
-            int n = circle.size();
-            Map<Node, Integer> indexMap = new HashMap<>(n);
-            for (int i = 0; i < n; i++) {
-                indexMap.put(circle.get(i), i);
+            for (int i = 0; i < nodes[1].diameter / 2; i++) {
+                deque.removeFirst();
             }
 
-            for (int i = 0; i < n; i++) {
-                Node node = circle.get(i);
-                Node next = circle.get((i + 1) % n);
-                for (Node child : node.next) {
-                    if (child == next) {
-                        continue;
-                    }
-                    if (!indexMap.containsKey(child)) {
-                        continue;
-                    }
-                    int childIndex = indexMap.get(child);
-                    if (childIndex > i) {
-                        List<Node> newCircle = new ArrayList<>();
-                        newCircle.addAll(circle.subList(0, i + 1));
-                        newCircle.addAll(circle.subList(childIndex, n));
-                        circle = newCircle;
-                        return findProper();
-                    } else {
-                        circle = circle.subList(childIndex, i + 1);
-                        return findProper();
-                    }
-                }
+
+            handleNode(deque.removeFirst());
+            if (nodes[1].diameter % 2 == 1) {
+                handleNode(deque.removeFirst());
             }
 
-            return circle;
-        }
-
-        Deque<Node> deque = new ArrayDeque<>();
-        List<Node> circle = new ArrayList<>();
-
-        public void reverse() {
-            int l = 0;
-            int r = circle.size() - 1;
-            while (l < r) {
-                Node tmp = circle.get(l);
-                circle.set(l, circle.get(r));
-                circle.set(r, tmp);
-                l++;
-                r--;
+            ans.sort(Comparator.naturalOrder());
+            io.cache.append(ans.size()).append('\n');
+            for (Integer id : ans) {
+                io.cache.append(id).append(' ');
             }
         }
 
-        public boolean search(Node root) {
-            if (root.visited) {
-                if (root.instk) {
-                    Node head;
-                    circle.add(root);
-                    while ((head = deque.removeLast()) != root) {
-                        circle.add(head);
-                    }
-                    return true;
-                }
+        public void handleNode(Node root) {
+            root = clone(root, null);
+            dfsForHeight(root);
+            if (tryRepaire(root) && check(root, n)) {
+                ans.add(repaire.id);
             }
-            root.visited = true;
-            root.instk = true;
-            deque.addLast(root);
+        }
 
+        List<Integer> ans = new ArrayList<>();
+
+        public boolean check(Node root, int h) {
+            if (h == 1) {
+                return root.next.size() == 0;
+            }
+            if (root.next.size() != 2) {
+                return false;
+            }
             for (Node node : root.next) {
-                if (search(node)) {
+                if (!check(node, h - 1)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        Node repaire;
+
+        public boolean tryRepaire(Node root) {
+            if (root.next.size() == 1) {
+                root.repaire = true;
+                root.next.add(new Node());
+                repaire = root;
+                return true;
+            }
+            if (root.next.size() == 3) {
+                root.repaire = true;
+                root.next.sort((a, b) -> a.height - b.height);
+                Node node = new Node();
+                node.next.addAll(root.next.subList(0, 2));
+                root.next.removeAll(node.next);
+                root.next.add(node);
+                repaire = root;
+                return true;
+            }
+            for (Node node : root.next) {
+                if (tryRepaire(node)) {
                     return true;
                 }
             }
-
-            deque.removeLast();
-            root.instk = false;
             return false;
+        }
+
+        public void dfsForHeight(Node root) {
+            root.height = 1;
+            for (Node node : root.next) {
+                dfsForHeight(node);
+                root.height = Math.max(root.height, node.height + 1);
+            }
+        }
+
+        public Node clone(Node root, Node father) {
+            Node clone = new Node();
+            clone.id = root.id;
+            for (Node node : root.next) {
+                if (node == father) {
+                    continue;
+                }
+                Node nodeClone = clone(node, root);
+                clone.next.add(nodeClone);
+            }
+            return clone;
+        }
+
+        public boolean traceDiameter(Node root, Node father, int distance, int targetDiameter, Deque<Node> deque) {
+            deque.addLast(root);
+            if (distance == targetDiameter) {
+                return true;
+            }
+            for (Node node : root.next) {
+                if (node == father) {
+                    continue;
+                }
+                if (traceDiameter(node, root, distance + 1, targetDiameter, deque)) {
+                    return true;
+                }
+            }
+            deque.removeLast();
+            return false;
+        }
+
+        public void dfsForDiameter(Node root, Node father) {
+            root.farthest = root;
+            root.diameter = 0;
+            root.depth = father == null ? 0 : father.depth + 1;
+            root.depthest = root;
+            for (Node node : root.next) {
+                if (node == father) {
+                    continue;
+                }
+                dfsForDiameter(node, root);
+                if (root.diameter < node.diameter) {
+                    root.diameter = node.diameter;
+                    root.farthest = node.farthest;
+                }
+                if (root.diameter < root.depthest.depth + node.depthest.depth - 2 * root.depth) {
+                    root.diameter = root.depthest.depth + node.depthest.depth - 2 * root.depth;
+                    root.farthest = root.depthest;
+                }
+                if (root.depthest.depth < node.depthest.depth) {
+                    root.depthest = node.depthest;
+                }
+            }
         }
     }
 
     public static class Node {
-        List<Node> next = new ArrayList<>();
-        boolean instk;
-        boolean visited;
+        List<Node> next = new ArrayList<>(2);
+        Node farthest;
+        Node depthest;
+        int depth;
+        int diameter;
         int id;
+        int height;
+        boolean repaire;
+
+        @Override
+        public String toString() {
+            return "" + id;
+        }
     }
 
     public static class FastIO {
