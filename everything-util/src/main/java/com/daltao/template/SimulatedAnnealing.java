@@ -21,7 +21,7 @@ public abstract class SimulatedAnnealing<S> {
         double weight = eval(now);
         double t = temperature;
         while (t > threshold) {
-            S next = next(now, temperature);
+            S next = next(now, t);
             double nextWeight = eval(next);
             if (nextWeight > weight || random.nextDouble() < Math.exp((nextWeight - weight) / (k * t))) {
                 abandon(now);

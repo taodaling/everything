@@ -1,13 +1,22 @@
 package com.daltao.template;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.List;
 
 public class GeometryUtils {
-    private static final double PREC = 1e-8;
+    private static final double PREC = 1e-12;
     private static final double INF = 1e30;
 
     public static double valueOf(double x) {
         return x > -PREC && x < PREC ? 0 : x;
+    }
+
+    public static boolean near(double a, double b) {
+        return valueOf(a - b) == 0;
     }
 
     public static double pow2(double x) {
@@ -44,6 +53,10 @@ public class GeometryUtils {
 
         public double distanceBetween(Point2D another) {
             return valueOf(Math.sqrt(distance2Between(another)));
+        }
+
+        public boolean near(Point2D another) {
+            return distance2Between(another) <= PREC;
         }
 
         /**
@@ -186,8 +199,8 @@ public class GeometryUtils {
          */
         public boolean contain(Point2D p) {
             return cross(p.x - a.x, p.y - a.y, d.x, d.y) == 0
-                    && valueOf(p.x - Math.min(a.x, b.x)) >= 0 && valueOf(p.x - Math.min(a.x, b.x)) <= 0
-                    && valueOf(p.y - Math.min(a.y, b.y)) >= 0 && valueOf(p.y - Math.min(a.y, b.y)) <= 0;
+                    && valueOf(p.x - Math.min(a.x, b.x)) >= 0 && valueOf(p.x - Math.max(a.x, b.x)) <= 0
+                    && valueOf(p.y - Math.min(a.y, b.y)) >= 0 && valueOf(p.y - Math.max(a.y, b.y)) <= 0;
         }
 
         /**
@@ -195,9 +208,16 @@ public class GeometryUtils {
          */
         public Point2D intersect(Segment2D another) {
             Point2D point = super.intersect(another);
-            return point != null && contain(point) ? point : null;
+            return point != null && contain(point) && another.contain(point) ? point : null;
         }
 
+        public double length2() {
+            return a.distance2Between(b);
+        }
+
+        public double length() {
+            return a.distanceBetween(b);
+        }
     }
 
     /**

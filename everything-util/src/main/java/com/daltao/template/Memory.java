@@ -119,6 +119,4 @@ public class Memory {
             fill(v, val);
         }
     }
-
-
 }
