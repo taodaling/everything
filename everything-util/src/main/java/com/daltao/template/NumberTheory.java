@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Random;
 
 public class NumberTheory {
+
     private static final Random RANDOM = new Random();
 
     public static class ExtLucasFactorial {
@@ -687,6 +688,9 @@ public class NumberTheory {
          * Check whether n is a prime s times
          */
         public boolean mr(long n, int s) {
+            if (n <= 1) {
+                return false;
+            }
             if (n == 2) {
                 return true;
             }
