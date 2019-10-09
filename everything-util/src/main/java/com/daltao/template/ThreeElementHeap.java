@@ -62,7 +62,7 @@ public class ThreeElementHeap {
     }
 
     public void clear(){
-        Arrays.fill(abc, 0);
+        Arrays.fill(abc, Long.MIN_VALUE);
     }
 
     @Override
