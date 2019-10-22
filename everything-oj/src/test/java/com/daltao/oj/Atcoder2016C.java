@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 
-public class TaskCTest {
+public class Atcoder2016C {
     @Test
     public void test() {
         Assert.assertTrue(new TestCaseExecutor.Builder()
