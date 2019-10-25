@@ -4,16 +4,52 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.BitSet;
+
 public class BitsetTest {
     Bitset bs;
+    BitSet bitSet;
 
+    int limit = 10000000;
     @BeforeEach
     public void before() {
-        bs = new Bitset(20);
-        for (int i = 0; i < 20; i += 2) {
+        bs = new Bitset(limit);
+        bitSet = new BitSet(limit);
+        for(int i = 0; i < limit; i++){
+            bs.set(i, i % 2 == 0);
+            bitSet.set(i, i % 2 == 0);
+        }
+    }
+
+    @Test
+    public void bsSetSpeed(){
+        for(int i = 0; i < limit; i++){
             bs.set(i, true);
         }
     }
+
+    @Test
+    public void bitSetSetSpeed(){
+        for(int i = 0; i < limit; i++){
+            bitSet.set(i, true);
+        }
+    }
+
+    @Test
+    public void bsGetSpeed(){
+        for(int i = 0; i < limit; i++){
+            bs.get(i);
+        }
+    }
+
+    @Test
+    public void bitGetSetSpeed(){
+        for(int i = 0; i < limit; i++){
+            bitSet.get(i);
+        }
+    }
+
+
 
     @Test
     public void test() {
@@ -31,4 +67,6 @@ public class BitsetTest {
         Assertions.assertFalse(Bitset.intersect(bs.leftShiftView(1), bs.leftShiftView(4)));
         Assertions.assertFalse(Bitset.intersect(bs.leftShiftView(4), bs.rightShiftView(18)));
     }
+
+
 }
