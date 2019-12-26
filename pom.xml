@@ -50,7 +50,7 @@
         <curator-recipes.version>4.1.0</curator-recipes.version>
         <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
         <dubbo.version>2.6.5</dubbo.version>
-        <tomcat-embed-core.version>9.0.14</tomcat-embed-core.version>
+        <tomcat-embed-core.version>9.0.30</tomcat-embed-core.version>
         <spring-cloud-dependencies.version>Finchley.RELEASE</spring-cloud-dependencies.version>
         <maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
         <amqp-client.version>5.5.2</amqp-client.version>
