@@ -19,7 +19,7 @@ import java.io.OutputStreamWriter;
  * @version 1.0
  * @since <pre>七月 3, 2019</pre>
  */
-public class BZOJ1146Test {
+public class BZOJ1146TestTest {
     @Test
     public void test() throws FileNotFoundException {
         Assertions.assertTrue(

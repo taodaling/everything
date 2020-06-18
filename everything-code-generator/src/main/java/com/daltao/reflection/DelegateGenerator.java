@@ -1,6 +1,8 @@
 package com.daltao.reflection;
 
 
+import com.daltao.reflection.cls.FansStatistics;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -11,7 +13,7 @@ import java.util.Deque;
 public class DelegateGenerator extends AbstractClassVisitor {
     public static void main(String[] args) throws Exception {
         DelegateGenerator visitor = new DelegateGenerator();
-        new ClassHostImpl(Deque.class).accept(visitor);
+        new ClassHostImpl(FansStatistics.class).accept(visitor);
         System.out.println(visitor);
     }
 

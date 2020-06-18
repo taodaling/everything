@@ -1,0 +1,14 @@
+com\daltao\test\EqualChecker.class
+com\daltao\test\MultiDirectionInput.class
+com\daltao\test\TestCaseExecutor$1.class
+com\daltao\test\Input.class
+com\daltao\test\MultiDirectionInput$InputProxy.class
+com\daltao\test\MultiDirectionInput$1.class
+com\daltao\test\RandomFactory.class
+com\daltao\test\TestCase.class
+com\daltao\test\FailResultPrinter.class
+com\daltao\test\Checker.class
+com\daltao\test\EmptyInput.class
+com\daltao\test\TestCaseExecutor$Builder.class
+com\daltao\test\QueueInput.class
+com\daltao\test\TestCaseExecutor.class

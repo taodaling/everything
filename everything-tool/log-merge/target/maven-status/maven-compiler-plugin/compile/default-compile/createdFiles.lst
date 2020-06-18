@@ -1,0 +1,8 @@
+com\daltao\log\TestCaseGenerator.class
+com\daltao\log\CommandLineArguments.class
+com\daltao\log\FilteredLogReader.class
+com\daltao\log\LogMain.class
+com\daltao\log\LogMerger.class
+com\daltao\log\TransformedLogReader.class
+com\daltao\log\LogReader.class
+com\daltao\log\LogMerger$LogMeta.class
