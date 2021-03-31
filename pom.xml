@@ -43,7 +43,7 @@
         <maven-assembly-plugin>3.1.0</maven-assembly-plugin>
         <bytebuddy.version>1.9.4</bytebuddy.version>
         <rocketmq-client.version>4.3.0</rocketmq-client.version>
-        <guava.version>27.0.1-jre</guava.version>
+        <guava.version>29.0-jre</guava.version>
         <brave.version>5.6.0</brave.version>
         <resteasy-jaxrs.version>3.0.19.Final</resteasy-jaxrs.version>
         <validation-api.version>2.0.1.Final</validation-api.version>
